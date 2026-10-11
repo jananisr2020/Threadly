@@ -1,6 +1,6 @@
 {
-  "appId": "com.threadlyfashion.app",
-  "appName": "Threadly",
+  "appId": "com.junofashion.app",
+  "appName": "Juno",
   "webDir": "www",
   "server": {
     "url": "https://threadly-fashion.netlify.app",
