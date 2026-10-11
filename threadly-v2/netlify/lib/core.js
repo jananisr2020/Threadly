@@ -188,7 +188,7 @@ const health = async () => {
   names.forEach(k => env[k] = process.env[k] ? 'set' : 'MISSING');
   const key = process.env.GOOGLE_PRIVATE_KEY || '', keyCheck = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'looks wrong: paste the whole private_key including the BEGIN and END lines' : /^\s*["']/.test(key) ? 'looks wrong: remove the quote marks around it' : 'looks fine';
   const tabs = {};
-  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests']) { try { await sheets.read(t); tabs[t] = 'ok' } catch (x) { tabs[t] = why(x) } }
+  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets']) { try { await sheets.read(t); tabs[t] = 'ok' } catch (x) { tabs[t] = why(x) } }
   return { env, privateKey: keyCheck, shareSheetWith: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '(not set)', tabs };
 };
 /* ---------- pincode lookup and Tamil Nadu coverage ---------- */
