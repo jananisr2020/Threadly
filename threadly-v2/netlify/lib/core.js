@@ -56,7 +56,7 @@ const login = async (b, e) => {
 };
 /* ---------- orders ---------- */
 const OIDX = { id: 0, date: 1, name: 2, email: 3, phone: 4, addr: 5, pin: 6, items: 7, count: 8, sub: 9, disc: 10, ship: 11, total: 12, method: 13, pay: 14, payid: 15, eta: 16, status: 17, track: 18, notes: 19 };
-const METHODS = ['UPI', 'Card / Netbanking', 'COD'];
+const METHODS = ['UPI', 'Card / Netbanking'];
 async function buildOrder(b, u) {
   const a = b.addr || {}; if (clean(a.name).length < 2 || !/^[6-9]\d{9}$/.test(a.phone || '') || clean(a.line).length < 8 || !/^\d{6}$/.test(a.pin || '')) throw new E('Please check your delivery details.');
   if (!(await tnPin(a.pin))) throw new E('We currently deliver only in Tamil Nadu. We are expanding to other states soon.');
@@ -70,10 +70,10 @@ async function record(o, payStatus, payId) {
     for (const [id, n] of o.qty) { const p = ps.find(x => x['product id'] === id); if (p && p.stock !== '' && si >= 0) { const row = rows[p.row - 1].slice(); while (row.length < 13) row.push(''); row[si] = Math.max(0, num(p.stock) - n); await sheets.update('Products', p.row, row) } }
     invalidate() } catch (x) { console.error('stock update failed', x) }
 }
-const placeCod = async (b, e, u) => { limit('ord:' + u.email, 20, 36e5); const o = await buildOrder({ ...b, method: 'COD' }, u); await record(o, 'COD - collect on delivery'); return { orderId: o.id } };
+const placeCod = async () => { throw new E('Cash on delivery is not available. Please pay online using UPI, cards or netbanking.', 410) };
 const rz = () => { if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) throw new E('Payments are not set up yet.', 500); return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET }) };
 const createOrder = async (b, e, u) => {
-  if (b.method === 'COD') throw new E('Use cash on delivery checkout.');
+  if (b.method === 'COD') throw new E('Cash on delivery is not available. Please pay online using UPI, cards or netbanking.', 400);
   limit('ord:' + u.email, 20, 36e5);
   const o = await buildOrder(b, u), r = await rz().orders.create({ amount: o.total * 100, currency: 'INR', receipt: o.id, notes: { orderId: o.id, email: o.email } });
   try { await sheets.append('Pending', [r.id, JSON.stringify(o), now(), 'pending']) } catch (x) { console.error('pending save failed'); throw new E('Order tracking is not ready. Please contact support before paying.', 503) }
