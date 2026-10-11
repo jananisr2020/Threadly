@@ -1,13 +1,13 @@
-/* Threadly PWA service worker.
+/* Juno PWA service worker.
  * Keep API responses, checkout, account and payment flows network-only.
  */
-const CACHE_NAME = "threadly-shell-v1";
+const CACHE_NAME = "juno-shell-v2";
 const SHELL_URLS = [
   "/",
   "/index.html",
   "/offline.html",
   "/manifest.webmanifest",
-  "/favicon.svg",
+  "/favicon.svg?v=3",
   "/icon-192.png",
   "/icon-512.png",
   "/apple-touch-icon.png"
@@ -25,7 +25,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((key) => key.startsWith("threadly-shell-") && key !== CACHE_NAME)
+        keys.filter((key) => (key.startsWith("threadly-shell-") || key.startsWith("juno-shell-")) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
