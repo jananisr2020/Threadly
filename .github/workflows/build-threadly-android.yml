@@ -1,4 +1,4 @@
-name: Build Threadly Android APK
+name: Build Juno Android APK
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
       - feat/threadly-android-app
     paths:
       - "threadly-android/**"
-      - "threadly-v2/public/icon-512.png"
+      - "threadly-v2/public/favicon.svg"
       - ".github/workflows/build-threadly-android.yml"
 
 permissions:
@@ -42,15 +42,15 @@ jobs:
       - name: Create local web placeholder
         run: |
           mkdir -p www
-          printf '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>Opening Threadly…</body></html>' > www/index.html
+          printf '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>Opening Juno…</body></html>' > www/index.html
 
       - name: Generate Android project
         run: npx cap add android
 
-      - name: Apply Threadly launcher icon
+      - name: Apply Juno launcher icon
         run: |
           mkdir -p assets
-          convert ../threadly-v2/public/icon-512.png -resize 1024x1024 assets/icon.png
+          convert ../threadly-v2/public/favicon.svg -resize 1024x1024 assets/icon.png
           npx --yes @capacitor/assets generate --android
 
       - name: Build debug APK
@@ -62,7 +62,7 @@ jobs:
       - name: Upload APK for phone testing
         uses: actions/upload-artifact@v4
         with:
-          name: threadly-debug-apk
+          name: juno-debug-apk
           path: threadly-android/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
