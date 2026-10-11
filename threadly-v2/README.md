@@ -1,4 +1,4 @@
-# Threadly on Netlify: setup guide
+# Juno on Netlify: setup guide
 
 Your Google Sheet is the database. You add products there (or on the /admin page), and the store, orders and customer list all read and write to it. Nothing needs editing in the HTML.
 
