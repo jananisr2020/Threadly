@@ -35,7 +35,7 @@ async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
   const cat = await catalogue(); let sub = 0, count = 0; const lines = [], qty = [];
   for (const it of items) { const p = cat[it.id], n = Math.floor(+it.n); if (!p || !(n >= 1 && n <= 20)) throw new E('A product in your cart is no longer available.'); if (p.stock < n) throw new E(p.name + ' has only ' + p.stock + ' left.'); sub += p.price * n; count += n; lines.push(p.name + ' (' + clean(it.s) + ') x' + n); qty.push([it.id, n]) }
-  const disc = String(coupon || '').toUpperCase() === 'THREAD10' ? Math.round(sub * .1) : 0, ship = sub - disc < 299 ? 39 : 0;
+  const disc = ['JUNO10', 'THREAD10'].includes(String(coupon || '').toUpperCase()) ? Math.round(sub * .1) : 0, ship = sub - disc < 299 ? 39 : 0;
   return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty };
 }
 /* ---------- users ---------- */
