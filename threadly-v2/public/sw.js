@@ -8,9 +8,6 @@ const SHELL_URLS = [
   "/offline.html",
   "/manifest.webmanifest",
   "/favicon.svg?v=3",
-  "/icon-192.png",
-  "/icon-512.png",
-  "/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {
