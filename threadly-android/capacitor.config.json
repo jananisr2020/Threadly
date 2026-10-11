@@ -1,0 +1,13 @@
+{
+  "appId": "com.threadlyfashion.app",
+  "appName": "Threadly",
+  "webDir": "www",
+  "server": {
+    "url": "https://threadly-fashion.netlify.app",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
