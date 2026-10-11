@@ -251,6 +251,7 @@ Object.keys(NM).forEach(c=>{const [sg,g,lo,hi,det,ic,sz,lab]=NM[c];for(let i=0;i
 /* ---- Google Sheet / products.csv loader ---- */
 function parseCSV(t){const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=h}else if(h==='"')q=true;else if(h===','){r.push(c);c=''}else if(h==='\n'||h==='\r'){if(h==='\r'&&t[i+1]==='\n')i++;r.push(c);rows.push(r);r=[];c=''}else c+=h}if(c||r.length){r.push(c);rows.push(r)}return rows}
 const imgUrl=u=>{u=(u||'').trim();if(!u)return'';const m=u.match(/drive\.google\.com\/file\/d\/([^/]+)/)||u.match(/drive\.google\.com\/open\?id=([^&]+)/);if(m)return'https://drive.google.com/uc?export=view&id='+m[1];return/^(https?:|data:)/.test(u)?u:CFG.IMG_BASE+u};
+let catalogueReady=false;
 async function loadSheet(){
   if(!CFG.PRODUCTS_CSV)return;
   try{const response=await fetch(CFG.PRODUCTS_CSV,{cache:'no-store'});if(!response.ok)throw new Error('Product API returned HTTP '+response.status);const t=await response.text();if(!t.trim()||t.trim().startsWith('{'))throw new Error('Product API did not return catalogue CSV');const [h,...rows]=parseCSV(t),k=h.map(x=>x.trim().toLowerCase().replace(/\s*\(.*\)\s*$/,'')),ix=n=>k.indexOf(n),num=v=>+String(v||'').replace(/[^\d.]/g,'')||0,out=[];
@@ -258,7 +259,7 @@ async function loadSheet(){
       if(!name||!price||v('show on site').toLowerCase()==='no')return;
       const cat=v('category')||'More',sizes=v('sizes/colours').split(/[|,]/).map(x=>x.trim()).filter(Boolean);
       out.push({id:v('product id')||'TL'+(i+1),cat,name,brand:v('details'),g:v('for')||'Unisex',mrp,price,off:Math.max(0,Math.round((mrp-price)/mrp*100)),rt:(num(v('rating'))||4.2).toFixed(1),rv:Math.floor(50+(i*137)%2000),col:COL[i%COL.length],sizes:sizes.length?sizes:['One size'],sz:sizes.length>0&&sizes.every(s=>/^(XXS|XS|S|M|L|XL|XXL|3XL|\d{1,2}(-\d{1,2}Y)?)$/i.test(s)),stock:v('stock')===''?99:num(v('stock')),sale:/^y/i.test(v('flash sale')),img:imgUrl(v('image')),ic:ICM[cat]||cat,lab:/case|cover/i.test(cat)?'model':''})});
-    if(!out.length)throw new Error('No published products were returned');P.length=0;P.push(...out)}catch(e){console.error('Juno catalogue load failed:',e);toast('Live products could not load. Showing preview catalogue; check store setup.')}}
+    if(!out.length)throw new Error('No published products were returned');P.length=0;P.push(...out);catalogueReady=true}catch(e){catalogueReady=false;if(LIVE)P.length=0;console.error('Juno catalogue load failed:',e);toast('Live products could not load. Check store setup and try again.')}}
 
 /* ---- delivery estimate ---- */
 const pin=()=>ST.get('tl_pin')||'';
@@ -289,7 +290,7 @@ function render(){const r=list();$('#count').textContent=(S.wv?'Wishlist · ':''
   
   renderExtras(r);ST.set('tl_later',S.later);ST.set('tl_cart',S.cart);ST.set('tl_wl',[...S.wl]);ST.set('tl_coupon',S.coupon);
   $('#wc').textContent=S.wl.size;$('#cc').textContent=S.cart.reduce((a,c)=>a+c.n,0);$('#wb').classList.toggle('on',S.wv)}
-function onCard(e){const T=e.target,cc=T.closest('[data-c]');if(cc){S.cat=cc.dataset.c;S.wv=false;$('#q').value='';chips();rr();return}
+function onCard(e){const T=e.target;if(T.closest('#reload-catalogue')){e.preventDefault();loadSheet().then(()=>{renderNav();chips();render()});return}const cc=T.closest('[data-c]');if(cc){S.cat=cc.dataset.c;S.wv=false;$('#q').value='';chips();rr();return}
   const ub=T.closest('[data-under]');if(ub){S.f.max=+ub.dataset.under;rr();$('#grid').scrollIntoView({behavior:'smooth'});return}
   const qa=T.closest('[data-qa]');if(qa){quickAdd(qa.dataset.qa);return}const shb=T.closest('[data-sh]');if(shb){shareP(shb.dataset.sh);return}
   const w=e.target.closest('[data-w]');if(w){const i=w.dataset.w;S.wl.has(i)?S.wl.delete(i):(S.wl.add(i),toast('Saved to wishlist'));render();return}const a=e.target.closest('.p');if(a)openP(a.dataset.id)}
@@ -395,7 +396,7 @@ function homeSecs(){
   const ess=ESS.filter(c=>live.some(p=>p.cat===c)).flatMap(c=>live.filter(p=>p.cat===c).sort((a,b)=>a.price-b.price).slice(0,2)).slice(0,12);
   const rep=g=>{const l=P.filter(g.test);return l.find(p=>p.img)||l[0]};
   const rail=(t,l,sub)=>l.length?`<section class="sec" aria-label="${esc(t)}"><div class="sh2"><div><h2>${t}</h2>${sub?`<small style="color:var(--mut)">${sub}</small>`:''}</div><div class="arr"><button data-rail="-1" aria-label="Scroll ${esc(t)} left">‹</button><button data-rail="1" aria-label="Scroll ${esc(t)} right">›</button></div></div><div class="rail">${l.map(card).join('')}</div></section>`:'';
-  if(!P.length){$('#home').innerHTML='';return}
+  if(!P.length){$('#home').innerHTML='<section class="hero2" role="status"><div><div><span class="pill">Juno store update</span><h2>We are refreshing the catalogue</h2><p>Live product data is temporarily unavailable, so we have hidden preview products to prevent incorrect orders. Please try again shortly.</p><button class="cta" id="reload-catalogue">Try again</button></div></div></section>';return}
   const picks=[];gs.forEach(g=>{const p=rep(g);if(p&&!picks.includes(p)&&picks.length<4)picks.push(p)});
   const under=[99,199,499].map(n=>({n,c:live.filter(p=>p.price<=n).length})).filter(x=>x.c);
   const offs=cats.map(c=>({c,off:Math.max(...live.filter(p=>p.cat===c).map(p=>p.off))})).filter(x=>isFinite(x.off)&&x.off>=10).sort((a,b)=>b.off-a.off).slice(0,3);
@@ -617,7 +618,7 @@ $('#ub').onclick=()=>user?acct():authUI('in');
 $('#aov').onclick=e=>{const t=e.target;if(t.id==='aov'||t.dataset.x)show('#aov',false);else if(t.dataset.tk!==undefined){show('#aov',false);openTicket()}else if(t.dataset.rq)reqUI(t.dataset.rq,t.dataset.o);else if(t.id==='rsend')sendReq();else if(t.id==='rback')acct();else if(t.dataset.m)t.dataset.m==='fp'?forgotUI():authUI(t.dataset.m);else if(t.id==='fgo')doForgot();else if(t.id==='rgo')doReset();else if(t.id==='go')doAuth($('#an')?'up':'in');else if(t.id==='lo'){user=null;ST.set('tl_session',null);ubtn();show('#aov',false);toast('Logged out')}};
 
 /* ---- checkout & payment ---- */
-function checkoutStart(){if(!S.cart.length)return toast('Your cart is empty');if(!user){S.pc=1;authUI('in')}else openPay()}
+function checkoutStart(){if(LIVE&&!catalogueReady)return toast('Live products are unavailable right now. Please try again shortly.');if(!S.cart.length)return toast('Your cart is empty');if(!user){S.pc=1;authUI('in')}else openPay()}
 function addressKey(){return 'juno_addresses_'+String(user&&user.email||'guest').toLowerCase()}
 function addressBook(){const a=ST.get(addressKey());return Array.isArray(a)?a.filter(x=>x&&x.id):[]}
 function writeAddressBook(a){ST.set(addressKey(),a)}
