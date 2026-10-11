@@ -658,10 +658,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 
 <!-- Threadly PWA setup -->
 <style id="threadly-pwa-setup">
-#threadly-install{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1000;border:0;border-radius:999px;padding:12px 16px;background:#d9186c;color:#fff;font:700 14px system-ui,sans-serif;box-shadow:0 8px 24px #16162e30;display:none}
+#threadly-install{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1000;border:0;border-radius:999px;padding:14px 18px;background:#d9186c;color:#fff;font:700 14px system-ui,sans-serif;box-shadow:0 8px 24px #16162e30;display:block;cursor:pointer}
 #threadly-install:focus-visible{outline:3px solid #7b3fe4;outline-offset:3px}
 </style>
-<button id="threadly-install" type="button" aria-label="Install Threadly app">Install Threadly</button>
+<button id="threadly-install" type="button" aria-label="Get the Threadly app">Get the Threadly App</button>
 <script id="threadly-pwa-setup">
 (() => {
   if ("serviceWorker" in navigator && location.protocol === "https:") {
@@ -682,8 +682,17 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
     installButton.style.display = "block";
   });
 
+  // Keep the call-to-action visible even when the browser does not expose
+  // its native install prompt. Never imply a Play Store listing exists yet.
+  if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true) {
+    installButton.style.display = "none";
+  }
+
   installButton.addEventListener("click", async () => {
-    if (!installPrompt) return;
+    if (!installPrompt) {
+      window.alert("To add Threadly to your phone: open this website in Chrome, tap the three-dot menu (⋮), then choose Install app or Add to Home screen. If neither option appears, update Chrome and try again later.");
+      return;
+    }
     installButton.disabled = true;
     try {
       await installPrompt.prompt();
@@ -693,7 +702,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
     } finally {
       installPrompt = null;
       installButton.disabled = false;
-      installButton.style.display = "none";
+      installButton.style.display = "block";
     }
   });
 
