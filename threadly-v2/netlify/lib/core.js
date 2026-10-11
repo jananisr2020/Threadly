@@ -114,7 +114,7 @@ const webhook = async (b, e) => {
 /* Password reset by email (Brevo) */
 const mail = async (to, subject, html) => {
   const k = process.env.BREVO_API_KEY, from = process.env.MAIL_FROM; if (!k || !from) throw new E('Email is not set up yet. Please contact the store.', 500);
-  const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': k, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ sender: { name: 'Threadly', email: from }, to: [{ email: to }], subject, htmlContent: html }) });
+  const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': k, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ sender: { name: 'Juno', email: from }, to: [{ email: to }], subject, htmlContent: html }) });
   if (!r.ok) { console.error('mail failed', r.status); throw new E('Could not send the email. Please try again later.', 500) }
 };
 const forgot = async (b, e) => {
@@ -123,7 +123,7 @@ const forgot = async (b, e) => {
   if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM) throw new E('Email is not set up yet. Please contact the store.', 500);
   const f = await findUser(email);
   if (f) { const t = sign({ email, purpose: 'reset', h: String(f.v[2]).slice(-12) }, '30m'), base = process.env.URL || ('https://' + ((e.headers || {}).host || '')), link = base + '/?reset=' + encodeURIComponent(t);
-    await mail(email, 'Reset your Threadly password', `<p>Hi ${clean(f.v[0])},</p><p>Tap the button to choose a new password. The link works for 30 minutes and only once.</p><p><a href="${link}" style="background:#f0287a;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Reset password</a></p><p>If you did not ask for this, you can ignore this email.</p>`) }
+    await mail(email, 'Reset your Juno password', `<p>Hi ${clean(f.v[0])},</p><p>Tap the button to choose a new password. The link works for 30 minutes and only once.</p><p><a href="${link}" style="background:#f0287a;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Reset password</a></p><p>If you did not ask for this, you can ignore this email.</p>`) }
   return { ok: true };
 };
 const reset = async (b, e) => {
@@ -232,7 +232,7 @@ const ticket = async (b, e) => {
   const id = 'TK' + Date.now().toString().slice(-8);
   await sheets.append('Tickets', [id, now(), type, name, email, phone, order, msg, 'Open', '', now()]);
   if (SUP()) await tryMail(SUP(), `[${id}] ${type} from ${name}`, `<p><b>${type}</b> ticket <b>${id}</b></p><p>${name} · ${email} · ${phone || 'no phone'}${order ? ' · Order ' + order : ''}</p><p>${brk(msg)}</p>`);
-  const emailed = await tryMail(email, `We received your ${type.toLowerCase()} (${id})`, `<p>Hi ${name},</p><p>Thanks for contacting Threadly. Your ticket number is <b>${id}</b>. We will reply by email. You can also call us on ${PHONE()}.</p><p><i>Your message:</i><br>${brk(msg)}</p>`);
+  const emailed = await tryMail(email, `We received your ${type.toLowerCase()} (${id})`, `<p>Hi ${name},</p><p>Thanks for contacting Juno. Your ticket number is <b>${id}</b>. We will reply by email. You can also call us on ${PHONE()}.</p><p><i>Your message:</i><br>${brk(msg)}</p>`);
   return { ok: true, id, emailed };
 };
 const myTickets = async (b, e, u) => { let rows = []; try { rows = (await sheets.read('Tickets')).slice(1) } catch (x) { } return rows.filter(r => String(r[4] || '').toLowerCase() === u.email).reverse().map(r => ({ id: r[0], date: String(r[1] || '').split(',')[0], type: r[2], message: r[7], status: r[8], reply: r[9] || '' })) };
