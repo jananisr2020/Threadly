@@ -527,6 +527,23 @@ $('#cka').onclick=()=>cookieChoice('all');$('#cke').onclick=()=>cookieChoice('es
 function loadRzp(){return new Promise(res=>{if(typeof Razorpay!=='undefined')return res(true);const s=document.createElement('script');s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=()=>res(true);s.onerror=()=>res(false);document.head.append(s)})}
 /* ---- product page ---- */
 let sel=null,qty=1;
+function productMeta(p){
+  // Query-string product URLs are included in the sitemap; give those pages product-specific metadata.
+  if(!new URLSearchParams(location.search).has('p'))return;
+  const url=location.origin+location.pathname+'?p='+encodeURIComponent(p.id);
+  const title=p.name+' | Threadly';
+  const description=('Shop '+p.name+(p.brand?' by '+p.brand:'')+' at Threadly for ₹'+p.price+'. Explore affordable fashion and accessories with delivery across Tamil Nadu.').slice(0,300);
+  document.title=title;
+  const set=(selector,attr,value)=>{const el=document.querySelector(selector);if(el)el.setAttribute(attr,value)};
+  set('meta[name="description"]','content',description);
+  set('meta[property="og:title"]','content',title);
+  set('meta[property="og:description"]','content',description);
+  set('meta[property="og:url"]','content',url);
+  set('meta[name="twitter:title"]','content',title);
+  set('meta[name="twitter:description"]','content',description);
+  set('link[rel="canonical"]','href',url);
+  if(p.img&&/^https?:/.test(p.img))set('meta[property="og:image"]','content',p.img);
+}
 function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length===1?p.sizes[0]:null;qty=1;ST.set('tl_rv',[id,...arr('tl_rv').filter(x=>x!==id)].slice(0,12));
   $('#modal').innerHTML=`<div class="im zm" style="${bg(p)};aspect-ratio:auto;min-height:300px">${img(p)}</div><div class="md"><button class="x" data-close aria-label="Close">×</button><small>${esc(p.brand)}</small><h2 style="margin:0">${esc(p.name)}</h2>${p.rc?`<div class="rt">★ ${p.rr} · ${p.rc} review${p.rc>1?'s':''}</div>`:''}
   <div class="pr"><b style="font-size:26px">${inr(p.price)}</b><s>${inr(p.mrp)}</s><span>${p.off}% off</span></div>${p.off>=30?'<div class="pill" style="align-self:flex-start;background:var(--acc);color:#fff">⚡ Sale price</div>':''}
@@ -536,7 +553,7 @@ function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length=
   <div class="q" style="margin:2px 0"><span>Quantity</span><button data-qm aria-label="Less">−</button><b id="qv">1</b><button data-qp aria-label="More">+</button></div>
   <div class="row2"><button class="cta" id="add" ${p.stock<=0?'disabled':''}>Add to cart</button><button class="cta alt" id="buy" ${p.stock<=0?'disabled':''}>Buy now</button></div>
   <small>✔ 7-day easy returns · ✔ Cash on delivery · ✔ Secure UPI, card and netbanking payments</small>${chart(p)}</div><div style="grid-column:1/-1;padding:0 20px 20px">${railsFor(p)}<div id="rv"></div></div>`;
-  show('#mov');loadReviews(p.id);productLD(p);
+  show('#mov');loadReviews(p.id);productLD(p);productMeta(p);
   $('#modal').onclick=e=>{const t=e.target,s=t.dataset.s;if(t.dataset.close!==undefined)return show('#mov',false);
     if(t.closest('.p')){onCard(e);return}
     if(t.id==='wr'){if(!user){show('#mov',false);authUI('in');return toast('Log in to write a review')}rvR=0;$('#rf').innerHTML=`<div class="fm" style="margin-top:8px"><div>${[1,2,3,4,5].map(n=>`<button class="chip" data-rs="${n}">${n}★</button>`).join(' ')}</div><textarea id="rtx" rows="3" maxlength="500" placeholder="Share what you liked or did not like"></textarea><div class="err" id="rer"></div><button class="cta" id="rsub">Submit review</button></div>`}
