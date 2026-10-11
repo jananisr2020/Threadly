@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://threadly-fashion.netlify.app/sitemap.xml
