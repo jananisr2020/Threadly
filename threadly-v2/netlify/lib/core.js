@@ -76,7 +76,14 @@ const createOrder = async (b, e, u) => {
   if (b.method === 'COD') throw new E('Use cash on delivery checkout.');
   limit('ord:' + u.email, 20, 36e5);
   const o = await buildOrder(b, u), r = await rz().orders.create({ amount: o.total * 100, currency: 'INR', receipt: o.id, notes: { orderId: o.id, email: o.email } });
-  try { await sheets.append('Pending', [r.id, JSON.stringify(o), now(), 'pending']) } catch (x) { console.error('pending save failed', x) }
+  try {
+    // Do not open Razorpay Checkout unless the server can persist the recovery record.
+    // The webhook relies on this row to recover orders if the customer closes the page.
+    await sheets.append('Pending', [r.id, JSON.stringify(o), now(), 'pending']);
+  } catch (x) {
+    console.error('pending save failed', x);
+    throw new E('Checkout could not be saved safely. No payment window was opened. Please try again.', 503);
+  }
   return { id: r.id, amount: r.amount, key: process.env.RAZORPAY_KEY_ID, orderId: o.id, orderToken: sign({ o, rzp: r.id }, '2h') };
 };
 async function markPending(id, status) { try { const rows = await sheets.read('Pending'), i = rows.findIndex((r, k) => k > 0 && r[0] === id); if (i > 0) { const r = rows[i].slice(); while (r.length < 4) r.push(''); r[3] = status; await sheets.update('Pending', i + 1, r) } } catch (x) { console.error('pending mark failed', x) } }
@@ -188,7 +195,7 @@ const health = async () => {
   names.forEach(k => env[k] = process.env[k] ? 'set' : 'MISSING');
   const key = process.env.GOOGLE_PRIVATE_KEY || '', keyCheck = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'looks wrong: paste the whole private_key including the BEGIN and END lines' : /^\s*["']/.test(key) ? 'looks wrong: remove the quote marks around it' : 'looks fine';
   const tabs = {};
-  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests']) { try { await sheets.read(t); tabs[t] = 'ok' } catch (x) { tabs[t] = why(x) } }
+  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets']) { try { await sheets.read(t); tabs[t] = 'ok' } catch (x) { tabs[t] = why(x) } }
   return { env, privateKey: keyCheck, shareSheetWith: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '(not set)', tabs };
 };
 /* ---------- pincode lookup and Tamil Nadu coverage ---------- */
