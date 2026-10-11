@@ -253,12 +253,12 @@ function parseCSV(t){const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;
 const imgUrl=u=>{u=(u||'').trim();if(!u)return'';const m=u.match(/drive\.google\.com\/file\/d\/([^/]+)/)||u.match(/drive\.google\.com\/open\?id=([^&]+)/);if(m)return'https://drive.google.com/uc?export=view&id='+m[1];return/^(https?:|data:)/.test(u)?u:CFG.IMG_BASE+u};
 async function loadSheet(){
   if(!CFG.PRODUCTS_CSV)return;
-  try{const t=await(await fetch(CFG.PRODUCTS_CSV,{cache:'no-store'})).text(),[h,...rows]=parseCSV(t),k=h.map(x=>x.trim().toLowerCase().replace(/\s*\(.*\)\s*$/,'')),ix=n=>k.indexOf(n),num=v=>+String(v||'').replace(/[^\d.]/g,'')||0,out=[];
+  try{const response=await fetch(CFG.PRODUCTS_CSV,{cache:'no-store'});if(!response.ok)throw new Error('Product API returned HTTP '+response.status);const t=await response.text();if(!t.trim()||t.trim().startsWith('{'))throw new Error('Product API did not return catalogue CSV');const [h,...rows]=parseCSV(t),k=h.map(x=>x.trim().toLowerCase().replace(/\s*\(.*\)\s*$/,'')),ix=n=>k.indexOf(n),num=v=>+String(v||'').replace(/[^\d.]/g,'')||0,out=[];
     rows.forEach((r,i)=>{const v=n=>(r[ix(n)]||'').trim(),name=v('product name'),price=num(v('selling price')),mrp=num(v('mrp'))||price;
       if(!name||!price||v('show on site').toLowerCase()==='no')return;
       const cat=v('category')||'More',sizes=v('sizes/colours').split(/[|,]/).map(x=>x.trim()).filter(Boolean);
       out.push({id:v('product id')||'TL'+(i+1),cat,name,brand:v('details'),g:v('for')||'Unisex',mrp,price,off:Math.max(0,Math.round((mrp-price)/mrp*100)),rt:(num(v('rating'))||4.2).toFixed(1),rv:Math.floor(50+(i*137)%2000),col:COL[i%COL.length],sizes:sizes.length?sizes:['One size'],sz:sizes.length>0&&sizes.every(s=>/^(XXS|XS|S|M|L|XL|XXL|3XL|\d{1,2}(-\d{1,2}Y)?)$/i.test(s)),stock:v('stock')===''?99:num(v('stock')),sale:/^y/i.test(v('flash sale')),img:imgUrl(v('image')),ic:ICM[cat]||cat,lab:/case|cover/i.test(cat)?'model':''})});
-    if(out.length){P.length=0;P.push(...out)}}catch(e){toast('Could not load the sheet, showing saved catalogue')}}
+    if(!out.length)throw new Error('No published products were returned');P.length=0;P.push(...out)}catch(e){console.error('Juno catalogue load failed:',e);toast('Live products could not load. Showing preview catalogue; check store setup.')}}
 
 /* ---- delivery estimate ---- */
 const pin=()=>ST.get('tl_pin')||'';
