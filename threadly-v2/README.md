@@ -74,7 +74,7 @@ Nothing on the homepage is typed in by hand. Each section reads your product she
 - **Header and mega-menus:** Women, Men, Kids, Ethnic Wear, Footwear, Bags, Accessories and Sale. A group only appears if the sheet has products for it. Women/Men use the **For** column, the others match on category names. Edit the `GROUPS` list near the top of the homepage script in `public/index.html` to change the rules.
 - **Hero and category tiles:** use the first product photo in each group (from the **Image** column), or a drawn placeholder until you add photos.
 - **Shop by budget:** counts of real products at or under ₹99, ₹199 and ₹499.
-- **Sale offers:** the largest real discount per category (selling price versus MRP). The only coupon promoted is THREAD10, which is real.
+- **Sale offers:** the largest real discount per category (selling price versus MRP). The only coupon promoted is JUNO10, which is real.
 - **New collections / New arrivals:** the most recently added rows in your sheet.
 - **Trending now / Bestsellers:** from real orders in the **Orders** tab (cancelled and returned orders are ignored; Trending looks at the last 14 days). They appear only after you have orders. Until then the page shows **Biggest savings** instead.
 - **Everyday essentials:** the two lowest-priced products in each everyday category. Edit the `ESS` list to choose the categories.
