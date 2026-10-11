@@ -3,9 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="alternate icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#d9186c">
-<title>Threadly | Budget Fashion for Women, Men &amp; Kids in Tamil Nadu</title>
-<meta name="description" content="Threadly: budget fashion and accessories for women, men and kids. Clothes, footwear, bags, jewellery and more, delivered across Tamil Nadu. Pay by UPI, card or cash on delivery.">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Threadly"><meta property="og:title" content="Threadly – Budget Fashion for Everyone"><meta property="og:description" content="Clothes, footwear and accessories for women, men and kids, delivered across Tamil Nadu."><meta property="og:locale" content="en_IN"><meta name="twitter:card" content="summary">
+<title>Threadly – Affordable Fashion for Women, Men &amp; Kids</title>
+<meta name="description" content="Shop affordable clothing, footwear, bags, jewellery and fashion accessories for women, men and kids at Threadly. Discover budget-friendly styles with delivery across Tamil Nadu.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Threadly">
+<link rel="canonical" href="https://threadly-fashion.netlify.app/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Threadly"><meta property="og:title" content="Threadly – Affordable Fashion for Everyone"><meta property="og:description" content="Shop budget-friendly clothes, footwear, bags and accessories for women, men and kids, with delivery across Tamil Nadu."><meta property="og:url" content="https://threadly-fashion.netlify.app/"><meta property="og:image" content="https://threadly-fashion.netlify.app/icon-512.png"><meta property="og:image:alt" content="Threadly fashion store logo"><meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary"><meta name="twitter:title" content="Threadly – Affordable Fashion for Everyone"><meta name="twitter:description" content="Budget-friendly clothes and accessories for women, men and kids.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -379,7 +383,7 @@ function crumbUpdate(br){const el=$('#crumb');if(!br){el.innerHTML='<h2>All prod
   el.innerHTML='<h2>'+(p.join(' › ')||'Products')+'</h2><button class="chip" data-home>← Back to home</button>'}
 function seoInit(){const ld=(id,o)=>{let e=document.getElementById(id);if(!e){e=document.createElement('script');e.type='application/ld+json';e.id=id;document.head.append(e)}e.text=JSON.stringify(o)};
   ld('ld-org',{'@context':'https://schema.org','@type':'Organization',name:'Threadly',url:location.origin,telephone:'+91'+CFG.phone,email:CFG.email,areaServed:{'@type':'AdministrativeArea',name:'Tamil Nadu'}});
-  const c=document.createElement('link');c.rel='canonical';const pp=new URLSearchParams(location.search).get('p');c.href=location.origin+location.pathname+(pp?'?p='+encodeURIComponent(pp):'');document.head.append(c)}
+  const c=document.querySelector('link[rel="canonical"]')||document.createElement('link');c.rel='canonical';const pp=new URLSearchParams(location.search).get('p');c.href=location.origin+location.pathname+(pp?'?p='+encodeURIComponent(pp):'');if(!c.isConnected)document.head.append(c)}
 function productLD(p){let e=document.getElementById('pld');if(!e){e=document.createElement('script');e.type='application/ld+json';e.id='pld';document.head.append(e)}
   const o={'@context':'https://schema.org','@type':'Product',name:p.name,sku:p.id,category:p.cat,description:p.name+(p.brand?' – '+p.brand:''),offers:{'@type':'Offer',priceCurrency:'INR',price:p.price,availability:p.stock>0?'https://schema.org/InStock':'https://schema.org/OutOfStock',url:location.origin+location.pathname+'?p='+encodeURIComponent(p.id)}};
   if(p.img&&/^https?:/.test(p.img))o.image=p.img;if(p.rc)o.aggregateRating={'@type':'AggregateRating',ratingValue:p.rr,reviewCount:p.rc};e.text=JSON.stringify(o)}
