@@ -76,7 +76,7 @@ const createOrder = async (b, e, u) => {
   if (b.method === 'COD') throw new E('Use cash on delivery checkout.');
   limit('ord:' + u.email, 20, 36e5);
   const o = await buildOrder(b, u), r = await rz().orders.create({ amount: o.total * 100, currency: 'INR', receipt: o.id, notes: { orderId: o.id, email: o.email } });
-  try { await sheets.append('Pending', [r.id, JSON.stringify(o), now(), 'pending']) } catch (x) { console.error('pending save failed', x) }
+  try { await sheets.append('Pending', [r.id, JSON.stringify(o), now(), 'pending']) } catch (x) { console.error('pending save failed'); throw new E('Order tracking is not ready. Please contact support before paying.', 503) }
   return { id: r.id, amount: r.amount, key: process.env.RAZORPAY_KEY_ID, orderId: o.id, orderToken: sign({ o, rzp: r.id }, '2h') };
 };
 async function markPending(id, status) { try { const rows = await sheets.read('Pending'), i = rows.findIndex((r, k) => k > 0 && r[0] === id); if (i > 0) { const r = rows[i].slice(); while (r.length < 4) r.push(''); r[3] = status; await sheets.update('Pending', i + 1, r) } } catch (x) { console.error('pending mark failed', x) } }
