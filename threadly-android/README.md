@@ -1,18 +1,18 @@
-# Threadly Android app
+# Juno Android app
 
-This folder builds an installable Android app package for Threadly.
+This folder builds an installable Android app package for Juno.
 
 ## How it works
-- App name: Threadly
-- Android application ID: `com.threadlyfashion.app`
-- Uses the existing live Threadly storefront at https://threadly-fashion.netlify.app so current catalogue, login, order APIs and Razorpay website checkout continue using the existing HTTPS origin.
+- App name: Juno
+- Android application ID: `com.junofashion.app`
+- Uses the existing live Juno storefront at https://threadly-fashion.netlify.app so current catalogue, login, order APIs and Razorpay website checkout continue using the existing HTTPS origin.
 - Capacitor provides the Android application shell. This first build is an MVP wrapper; it is not yet a fully native shopping UI.
 
 ## Build a test APK
 1. Open the repository's **Actions** tab on GitHub.
-2. Choose **Build Threadly Android APK**.
+2. Choose **Build Juno Android APK**.
 3. Select **Run workflow** on the `feat/threadly-android-app` branch (or merge this branch and run on `main`).
-4. Download the `threadly-debug-apk` artifact from the completed workflow.
+4. Download the `juno-debug-apk` artifact from the completed workflow.
 5. Install the APK on an Android test phone. Android may ask you to allow installs from the browser/file manager.
 
 ## Google Play Store release
