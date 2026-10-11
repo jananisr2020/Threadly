@@ -1,1 +1,29 @@
-{"name":"Threadly","short_name":"Threadly","start_url":"/","display":"standalone","background_color":"#fff5f9","theme_color":"#f0287a","icons":[{"src":"/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"/icon-512.png","sizes":"512x512","type":"image/png"}]}
+{
+  "id": "/",
+  "name": "Threadly | Budget Fashion for Everyone",
+  "short_name": "Threadly",
+  "description": "Shop budget fashion and accessories for women, men and kids.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff5f9",
+  "theme_color": "#d9186c",
+  "categories": [
+    "shopping",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
