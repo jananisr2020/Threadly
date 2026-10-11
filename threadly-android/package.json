@@ -2,7 +2,7 @@
   "name": "threadly-android",
   "version": "1.0.0",
   "private": true,
-  "description": "Android application shell for Threadly fashion shopping",
+  "description": "Android application shell for Juno fashion shopping",
   "scripts": {
     "android:sync": "cap sync android",
     "android:open": "cap open android"
