@@ -8,6 +8,7 @@ on:
       - feat/threadly-android-app
     paths:
       - "threadly-android/**"
+      - "threadly-v2/public/icon-512.png"
       - ".github/workflows/build-threadly-android.yml"
 
 permissions:
@@ -45,6 +46,12 @@ jobs:
 
       - name: Generate Android project
         run: npx cap add android
+
+      - name: Apply Threadly launcher icon
+        run: |
+          mkdir -p assets
+          convert ../threadly-v2/public/icon-512.png -resize 1024x1024 assets/icon.png
+          npx --yes @capacitor/assets generate --android
 
       - name: Build debug APK
         working-directory: threadly-android/android
