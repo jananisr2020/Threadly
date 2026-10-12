@@ -4,7 +4,10 @@ on:
     branches: [main]
     paths:
       - "threadly-v2/public/index.html"
+      - "threadly-v2/public/manifest.webmanifest"
+      - "threadly-v2/public/sw.js"
       - "threadly-v2/netlify/**"
+      - "netlify.toml"
       - ".github/workflows/validate-juno.yml"
   pull_request:
     branches: [main]
@@ -36,5 +39,25 @@ jobs:
           console.log('Extracted ' + scripts.length + ' script block(s)');
           NODE
           for file in /tmp/juno-inline-*.js; do node --check "$file"; done
+      - name: Check Juno payment and deployment invariants
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('threadly-v2/public/index.html', 'utf8');
+          if (/cash\s*on\s*delivery|\bCOD\b/i.test(html)) {
+            throw new Error('Cash on delivery must remain disabled in the storefront');
+          }
+          const manifest = JSON.parse(fs.readFileSync('threadly-v2/public/manifest.webmanifest', 'utf8'));
+          if (manifest.short_name !== 'Juno') throw new Error('PWA brand must be Juno');
+          if (!manifest.icons.some(icon => icon.src.startsWith('/favicon.svg') && /maskable/.test(icon.purpose || ''))) {
+            throw new Error('Manifest must include the existing Juno icon as maskable');
+          }
+          if (!fs.existsSync('threadly-v2/public/favicon.svg')) throw new Error('Juno favicon is missing');
+          const config = fs.readFileSync('netlify.toml', 'utf8');
+          if (!/base\s*=\s*"threadly-v2"/.test(config) || !/publish\s*=\s*"public"/.test(config)) {
+            throw new Error('Netlify must build and publish from threadly-v2');
+          }
+          console.log('Juno branding, online-only storefront, PWA icon and Netlify paths verified');
+          NODE
       - name: Check Netlify function syntax
         run: find threadly-v2/netlify -name '*.js' -print0 | xargs -0 -n1 node --check
