@@ -19,7 +19,7 @@ Razorpay Dashboard > Account & Settings > API Keys > Generate. Start with **Test
 
 ## Step 4. Deploy on Netlify
 Netlify's drag-and-drop upload does not run the order and login functions, so deploy from GitHub (free):
-1. Make a GitHub repository and upload everything in this folder (not the `Threadly_Database.xlsx`, and never an `.env` file).
+1. Use the existing `jananisr2020/Threadly` GitHub repository and keep the monorepo layout intact. The root `netlify.toml` configures Netlify to build `threadly-v2/`; do not create a second repository just for this subfolder. Never commit `Threadly_Database.xlsx`, a `.env` file, private keys, or payment secrets.
 2. On netlify.com: Add new site > Import an existing project > pick the repository. Leave the build settings as they are (netlify.toml has them). Deploy.
 3. Site configuration > Environment variables, add these 10:
 
@@ -60,7 +60,7 @@ The 💬 button is a free, built-in assistant (no key or subscription needed). I
 - **Reviews:** logged-in customers can review a product once. Reviews are marked Verified purchase when that customer ordered the product, and go live straight away. Hide any you do not want from Admin > Reviews.
 - **Cancel:** a customer can cancel an order from their account. If it is still New, it cancels automatically. If it is Packed, the request goes to Admin > Returns for you to decide. Shipped orders cannot be cancelled.
 - **Return:** possible once you set the order to Delivered. You check the 7-day window yourself, then set the request status (Approved, Pickup scheduled, Refunded and so on) and add a note the customer sees in their account.
-- **Refund:** in Admin > Returns, the Refund button sends the full amount back through Razorpay for orders paid online (it asks you to confirm first). For cash-on-delivery orders, refund by UPI or bank transfer yourself, then set Payment Status to Refunded.
+- **Refund:** in Admin > Returns, the Refund button sends the full amount back through Razorpay for online-paid orders (it asks you to confirm first). Juno checkout supports online payment only; cash on delivery is disabled in both the storefront and API.
 - **Stock** is not added back when an order is cancelled or returned. Update the stock number in the sheet.
 
 ## Tamil Nadu delivery, contact details, tickets and pincode autocomplete
