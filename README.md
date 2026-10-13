@@ -77,6 +77,21 @@ flowchart TD
 
 The Android shell opens the deployed Juno site rather than maintaining a separate product database. Once the live API and Google Sheet are configured, website and app users can see the same live catalogue. The bundled JSON is a resilience fallback, not a replacement for the shared database.
 
+### Product image galleries
+
+Product records support up to **five product image URLs**: one primary image plus four additional views. The product detail modal displays the available images as a tappable thumbnail gallery; the primary image remains the product-card image.
+
+For the Google Sheet used by the live catalogue, keep the existing `image` column for the main photo and add optional columns named `image 2`, `image 3`, `image 4`, and `image 5`. You can also put extra URLs in an `additional images` cell, separated by `|` or `;`. Use public, stable HTTPS image URLs that load directly. Each URL should show the **same exact product** from another angle, close-up, or relevant lifestyle/model view.
+
+Suggested five-photo sequence:
+1. Clean hero photo of the exact product.
+2. On-model / in-use view when the product can be worn or used.
+3. Alternate angle or back/side view.
+4. Close-up of texture, clasp, stitching, finish, or other real details.
+5. Lifestyle / scale view showing how it looks in use.
+
+For earrings, scrunchies, sunglasses and other wearable accessories, model photos are useful additional views; for bags and jewellery, retain a clear product-only hero photo and add model/lifestyle views. **Do not reuse one image five times or publish AI-generated views until they have been checked against the uploaded product**—generated images must preserve its actual colour, shape, finish and included quantity. The current code supports galleries; it does not itself generate or host AI images.
+
 ## Repository layout
 
 ```text
