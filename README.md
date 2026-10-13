@@ -248,3 +248,8 @@ Admin access, product management, order management and customer account behaviou
 - Treat the workbook's catalogue values as starter data until reviewed by the store owner.
 - The bundled catalogue is intentionally public and should contain only public product data.
 - A successful GitHub Actions check confirms the code check/build only; it does not prove that Netlify environment variables, Google Sheets permissions or live payment configuration are correct.
+
+
+## Lifestyle category expansion
+
+The catalogue taxonomy now includes eight MINISO-inspired lifestyle categories: Plush Toys & Collectibles, Stationery & Desk, Home & Kitchen, Drinkware & Lunch, Tech Accessories, Personal Care, Fragrance, and Snacks & Treats. These are shown as **Coming soon** on the storefront until real products, verified product images, supplier costs, sale prices, and stock are supplied. Do not turn them into purchasable listings using invented inventory or unrelated stock photos.
