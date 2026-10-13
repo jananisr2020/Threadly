@@ -1,7 +1,7 @@
 {
   "source": "Juno catalogue taxonomy expanded with MINISO-inspired lifestyle categories; new categories remain coming soon until real product listings, supplier prices, stock and verified photos are added.",
   "productCount": 504,
-  "categoryCount": 26,
+  "categoryCount": 23,
   "notice": "New lifestyle categories are planned/coming soon and do not represent available stock. Verify supplier, product photos, price and stock before accepting real orders.",
   "categories": [
     "Hair Accessories",
@@ -26,10 +26,7 @@
     "Stationery & Desk",
     "Home & Kitchen",
     "Drinkware & Lunch",
-    "Tech Accessories",
-    "Personal Care",
-    "Fragrance",
-    "Snacks & Treats"
+    "Tech Accessories"
   ],
   "products": [
     {
