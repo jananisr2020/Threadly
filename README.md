@@ -2,7 +2,7 @@
 
 Juno is a budget-fashion storefront for women, men and kids, with accessories, a responsive web experience, an installable PWA, an Android shell, a Netlify serverless API, Google Sheets data storage and Razorpay online checkout.
 
-> **Catalogue recovery:** the storefront now includes a bundled catalogue generated from the supplied `Threadly_Database.xlsx` workbook. It contains **56 product rows across 14 categories**. The website tries the live Google Sheets-backed API first and falls back to this bundled catalogue if the API is unavailable, so a temporary backend/configuration failure should no longer leave the product grid empty.
+> **Catalogue recovery:** the storefront now includes a bundled catalogue generated from the supplied `Threadly_Database.xlsx` workbook. It contains **504 products across 18 categories**. The website tries the live Google Sheets-backed API first and falls back to this bundled catalogue if the API is unavailable, so a temporary backend/configuration failure should no longer leave the product grid empty.
 >
 > **Data accuracy note:** the supplied workbook's “How to use” tab describes its rows as samples. The rows have been copied as provided; verify product names, prices and stock before accepting real orders. The workbook contains no product image URLs, so the storefront uses its built-in category illustrations until images are added.
 
@@ -52,7 +52,7 @@ flowchart TD
 
 ## Catalogue and data flow
 
-The current product snapshot contains 56 rows from the supplied workbook: Dresses, Tops, Ethnic, Footwear, Menswear, Kidswear, Wallets, Hair Clips, Scrunchies, Hair Bands, Sunglasses, Watches, Earrings and Bags.
+The current bundled catalogue contains 504 products across 18 accessory categories. It retains the 72 entries from the supplied Juno workbook and adds illustrative catalogue entries to reach 28 items per category. Category representative images are included.
 
 ```mermaid
 flowchart TD
