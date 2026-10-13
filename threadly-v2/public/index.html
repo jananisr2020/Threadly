@@ -94,7 +94,7 @@ a.logo{text-decoration:none;color:var(--ink)}
 .skip{position:absolute;left:-999px;top:8px;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;z-index:200}.skip:focus{left:8px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .hr{display:flex;gap:10px;align-items:center;padding:10px 16px;flex-wrap:wrap;max-width:1400px;margin:auto}#mb{display:none}
-nav#nav{border-top:1px solid var(--line);position:relative}.nv{list-style:none;margin:0 auto;padding:0 16px;display:flex;gap:2px;max-width:1400px;flex-wrap:wrap}
+nav#nav{border-top:1px solid var(--line);position:relative}.nv{gap:clamp(10px,1.6vw,24px);justify-content:center}.nb{white-space:nowrap}.mega{min-width:360px}.mg{padding:18px 22px}.mcols{grid-template-columns:1fr 1fr}.mcols a{padding:8px 0;border-bottom:1px solid var(--line)}#fshop>div{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}.nv{list-style:none;margin:0 auto;padding:0 16px;display:flex;gap:2px;max-width:1400px;flex-wrap:wrap}
 .nb{background:none;border:0;padding:12px 14px;font-weight:600;border-bottom:3px solid transparent}.nb:hover,.ni.open .nb{border-color:var(--acc);color:var(--acc)}.nb.sale{color:var(--acc)}
 .mega{display:none;position:absolute;left:0;right:0;top:100%;background:var(--card);border-bottom:1px solid var(--line);box-shadow:0 18px 30px rgba(0,0,0,.12);z-index:30}.ni.open .mega{display:block}
 .mg{display:grid;grid-template-columns:1fr 220px;gap:24px;max-width:1400px;margin:auto;padding:20px 16px}.mcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px}.mcols h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc)}.mcols a{display:block;padding:5px 0;color:var(--ink);text-decoration:none}.mcols a:hover{color:var(--acc);text-decoration:underline}
@@ -355,11 +355,23 @@ async function loadSignals(){if(!LIVE)return;try{const r=await fetch(API+'/api/s
 function popular(){const b=(SIG.bestsellers||[]).map(i=>P.find(p=>p.id===i&&p.stock>0)).filter(Boolean).slice(0,3);return b.length?b:P.filter(p=>p.stock>0).sort((a,b)=>b.off-a.off).slice(0,3)}
 function megaHTML(g){const ps=P.filter(g.test),cols={};[...new Set(ps.map(p=>p.cat))].forEach(c=>(cols[clsOf(c)]=cols[clsOf(c)]||[]).push(c));const rep=ps.find(p=>p.img)||ps[0];
   return `<div class="mg"><div class="mcols">${Object.entries(cols).map(([k,l])=>`<div><h3>${esc(k)}</h3>${l.map(c=>`<a href="#" data-gc="${esc(g.id)}|${esc(c)}">${esc(c)}</a>`).join('')}</div>`).join('')}</div><a href="#" class="mf" data-g="${g.id}"><span class="tci" style="${bg(rep)}">${img(rep)}</span><b>Shop all ${esc(g.label)}</b><small>${ps.length} styles</small></a></div>`}
-function renderNav(){const gs=GROUPS.filter(g=>P.some(g.test)),sale=P.some(p=>p.stock>0&&p.off>=30);
-  $('#navl').innerHTML=gs.map(g=>`<li class="ni"><button class="nb" aria-haspopup="true" aria-expanded="false">${esc(g.label)}</button><div class="mega" role="region" aria-label="${esc(g.label)} categories">${megaHTML(g)}</div></li>`).join('')+(sale?'<li class="ni"><button class="nb sale" data-sale>Sale</button></li>':'');
-  const det=g=>`<details><summary>${esc(g.label)}</summary><a href="#" data-g="${g.id}">All ${esc(g.label)}</a>${[...new Set(P.filter(g.test).map(p=>p.cat))].map(c=>`<a href="#" data-gc="${g.id}|${esc(c)}">${esc(c)}</a>`).join('')}</details>`;
-  $('#mnub').innerHTML='<h2 style="margin:0 0 8px">Menu</h2>'+gs.map(det).join('')+(sale?'<a href="#" data-sale>Sale</a>':'')+'<hr><a href="#" data-act="orders">My orders &amp; tracking</a><a href="#" data-tkopen>Raise a ticket</a><a href="/refund-policy.html">Returns &amp; refunds</a><a href="/shipping-policy.html">Shipping &amp; delivery</a><a href="/privacy-policy.html">Privacy policy</a><a href="/terms.html">Terms &amp; conditions</a><a href="/cookie-policy.html">Cookie policy</a><a href="#" data-ck>Cookie settings</a><a href="/contact.html">Contact us</a>';
-  $('#fshop').innerHTML=gs.map(g=>`<a href="#" data-g="${g.id}">${esc(g.label)}</a>`).join('')}
+function renderNav(){
+  const sale=P.some(p=>p.stock>0&&p.off>=30);
+  const navGroups=[
+    {id:'hairbeauty',label:'Hair & Beauty',cats:['Hair Accessories','Beauty Accessories','Makeup & Nail Accessories']},
+    {id:'jewellery',label:'Jewellery',cats:['Artificial Jewellery','Jewellery & Accessory Storage','Sunglasses & Eyewear','Watches']},
+    {id:'bagscharms',label:'Bags & Charms',cats:['Bags & Purses','Phone & Bag Charms','Personalised Accessories']},
+    {id:'everyday',label:'Everyday',cats:['Everyday Essentials','Fashion Accessories','Socks & Small Wearables']},
+    {id:'gifts',label:'Gifts & Storage',cats:['Gifts & Sets','Cute & Kawaii Accessories','Storage & Organisers']},
+    {id:'travelparty',label:'Travel & Occasion',cats:['Travel Accessories','Party & Occasion Accessories']}
+  ];
+  const present=c=>P.some(p=>p.cat===c);
+  const menuGroup=g=>{const cats=g.cats.filter(present);return `<div class="mg"><div class="mcols"><div><h3>${esc(g.label)}</h3>${cats.map(c=>`<a href="#" data-navcat="${esc(c)}">${esc(c)}</a>`).join('')}</div></div><a href="#" class="mf" data-navcat="${esc(cats[0]||'')}"><b>Explore ${esc(g.label)}</b><small>Browse curated Juno picks</small></a></div>`};
+  $('#navl').innerHTML='<li class="ni"><button class="nb" data-navall>All categories</button></li>'+navGroups.filter(g=>g.cats.some(present)).map(g=>`<li class="ni"><button class="nb" aria-haspopup="true" aria-expanded="false">${esc(g.label)}</button><div class="mega" role="region" aria-label="${esc(g.label)} categories">${menuGroup(g)}</div></li>`).join('')+(sale?'<li class="ni"><button class="nb sale" data-sale>Sale</button></li>':'');
+  const mobileGroup=g=>{const cats=g.cats.filter(present);return cats.length?`<details><summary>${esc(g.label)}</summary>${cats.map(c=>`<a href="#" data-navcat="${esc(c)}">${esc(c)}</a>`).join('')}</details>`:''};
+  $('#mnub').innerHTML='<h2 style="margin:0 0 8px">Shop Juno</h2><a href="#" data-navall>All products</a>'+navGroups.map(mobileGroup).join('')+(sale?'<a href="#" data-sale>Sale</a>':'')+'<hr><a href="#" data-act="orders">My orders &amp; tracking</a><a href="#" data-tkopen>Raise a ticket</a><a href="/refund-policy.html">Returns &amp; refunds</a><a href="/shipping-policy.html">Shipping &amp; delivery</a><a href="/privacy-policy.html">Privacy policy</a><a href="/terms.html">Terms &amp; conditions</a><a href="/cookie-policy.html">Cookie policy</a><a href="#" data-ck>Cookie settings</a><a href="/contact.html">Contact us</a>';
+  $('#fshop').innerHTML=navGroups.map(g=>`<div><b>${esc(g.label)}</b>${g.cats.filter(present).map(c=>`<a href="#" data-navcat="${esc(c)}">${esc(c)}</a>`).join('')}</div>`).join('');
+}
 const megaClose=()=>document.querySelectorAll('.ni.open').forEach(li=>{li.classList.remove('open');li.querySelector('.nb').setAttribute('aria-expanded','false')});
 function megaToggle(li,on){const o=on===undefined?!li.classList.contains('open'):on;megaClose();if(o){li.classList.add('open');li.querySelector('.nb').setAttribute('aria-expanded','true')}}
 $('#navl').addEventListener('click',e=>{const b=e.target.closest('.nb');if(b&&b.parentElement.querySelector('.mega'))megaToggle(b.parentElement)});
@@ -369,6 +381,8 @@ $('#mb').onclick=()=>{show('#mov2');$('#mb').setAttribute('aria-expanded','true'
 $('#mov2').onclick=e=>{if(e.target.id==='mov2'||e.target.dataset.xm!==undefined){show('#mov2',false);$('#mb').setAttribute('aria-expanded','false')}};
 function goTo(grp,cat){S.grp=grp||'';S.cat=cat||'All';S.wv=false;$('#q').value='';chips();rr();megaClose();show('#mov2',false);$('#crumb').scrollIntoView({behavior:'smooth'})}
 document.addEventListener('click',e=>{const T=e.target;let x;
+  if(T.closest('[data-navall]')){e.preventDefault();S.grp='';S.cat='All';S.wv=false;$('#q').value='';chips();rr();megaClose();show('#mov2',false);$('#crumb').scrollIntoView({behavior:'smooth'});return}
+  if(x=T.closest('[data-navcat]')){e.preventDefault();S.grp='';S.cat=x.dataset.navcat;S.wv=false;$('#q').value='';chips();rr();megaClose();show('#mov2',false);$('#crumb').scrollIntoView({behavior:'smooth'});return}
   if(x=T.closest('[data-g]')){e.preventDefault();return goTo(x.dataset.g)}
   if(x=T.closest('[data-gc]')){e.preventDefault();const[g,c]=x.dataset.gc.split('|');return goTo(g,c)}
   if(T.closest('[data-sale]')){e.preventDefault();S.f.disc=30;$('#sort').value='dc';S.grp='';S.cat='All';$('#q').value='';chips();rr();megaClose();show('#mov2',false);return $('#crumb').scrollIntoView({behavior:'smooth'})}
