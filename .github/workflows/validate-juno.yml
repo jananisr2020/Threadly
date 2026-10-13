@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - "threadly-v2/public/index.html"
+      - "threadly-v2/public/catalog.json"
+      - "threadly-v2/public/images/categories/**"
       - "threadly-v2/public/manifest.webmanifest"
       - "threadly-v2/public/sw.js"
       - "threadly-v2/netlify/**"
@@ -53,6 +55,14 @@ jobs:
             throw new Error('Manifest must include the existing Juno icon as maskable');
           }
           if (!fs.existsSync('threadly-v2/public/favicon.svg')) throw new Error('Juno favicon is missing');
+          const catalogue = JSON.parse(fs.readFileSync('threadly-v2/public/catalog.json', 'utf8'));
+          if (!Array.isArray(catalogue.products) || catalogue.products.length < 100) {
+            throw new Error('Bundled catalogue must contain at least 100 products');
+          }
+          if (catalogue.productCount !== catalogue.products.length) {
+            throw new Error('Bundled catalogue productCount does not match products array');
+          }
+          console.log('Bundled catalogue contains ' + catalogue.products.length + ' products');
           const config = fs.readFileSync('netlify.toml', 'utf8');
           if (!/base\s*=\s*"threadly-v2"/.test(config) || !/publish\s*=\s*"public"/.test(config)) {
             throw new Error('Netlify must build and publish from threadly-v2');
