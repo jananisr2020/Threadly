@@ -587,7 +587,7 @@ function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length=
   show('#mov');loadReviews(p.id);productLD(p);productMeta(p);
   $('#modal').onclick=e=>{const t=e.target,s=t.dataset.s;if(t.dataset.close!==undefined)return show('#mov',false);
     if(t.closest('.p')){onCard(e);return}
-    if(t.dataset.pimg!==undefined){const next=+t.dataset.pimg,urls=productImageUrls(p);if(urls[next]){galleryIndex=next;const main=$('#pimgmain');if(main){main.src=urls[next];main.style.display=''}document.querySelectorAll('.pg-thumb').forEach((b,i)=>b.classList.toggle('on',i===next))}return}
+    const thumb=t.closest('[data-pimg]');if(thumb){const next=+thumb.dataset.pimg,urls=productImageUrls(p);if(urls[next]){galleryIndex=next;const main=$('#pimgmain');if(main){main.src=urls[next];main.style.display=''}document.querySelectorAll('.pg-thumb').forEach((b,i)=>b.classList.toggle('on',i===next))}return}
     if(t.id==='wr'){if(!user){show('#mov',false);authUI('in');return toast('Log in to write a review')}rvR=0;$('#rf').innerHTML=`<div class="fm" style="margin-top:8px"><div>${[1,2,3,4,5].map(n=>`<button class="chip" data-rs="${n}">${n}★</button>`).join(' ')}</div><textarea id="rtx" rows="3" maxlength="500" placeholder="Share what you liked or did not like"></textarea><div class="err" id="rer"></div><button class="cta" id="rsub">Submit review</button></div>`}
     if(t.dataset.rs){rvR=+t.dataset.rs;document.querySelectorAll('[data-rs]').forEach(b=>b.classList.toggle('on',+b.dataset.rs<=rvR))}
     if(t.id==='rsub')submitReview(p.id);
