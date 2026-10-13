@@ -1,7 +1,7 @@
 /* Juno PWA service worker.
  * Keep API responses, checkout, account and payment flows network-only.
  */
-const CACHE_NAME = "juno-shell-v2";
+const CACHE_NAME = "juno-shell-v3";
 const SHELL_URLS = [
   "/",
   "/index.html",
@@ -55,6 +55,20 @@ self.addEventListener("fetch", (event) => {
           const cached = await caches.match("/index.html");
           return cached || caches.match("/offline.html");
         })
+    );
+    return;
+  }
+
+  // Always refresh the bundled catalogue after a deploy instead of pinning stale data.
+  if (url.pathname === "/catalog.json") {
+    event.respondWith(
+      fetch(request, { cache: "no-store" }).catch(async () => {
+        const cached = await caches.match(request);
+        return cached || new Response(JSON.stringify({ products: [], productCount: 0 }), {
+          status: 503,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        });
+      })
     );
     return;
   }
