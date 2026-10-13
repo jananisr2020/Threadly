@@ -252,4 +252,4 @@ Admin access, product management, order management and customer account behaviou
 
 ## Lifestyle category expansion
 
-The catalogue taxonomy now includes eight MINISO-inspired lifestyle categories: Plush Toys & Collectibles, Stationery & Desk, Home & Kitchen, Drinkware & Lunch, Tech Accessories, Personal Care, Fragrance, and Snacks & Treats. These are shown as **Coming soon** on the storefront until real products, verified product images, supplier costs, sale prices, and stock are supplied. Do not turn them into purchasable listings using invented inventory or unrelated stock photos.
+The catalogue taxonomy now includes five MINISO-inspired lifestyle categories: Plush Toys & Collectibles, Stationery & Desk, Home & Kitchen, Drinkware & Lunch, and Tech Accessories. These are shown as **Coming soon** on the storefront until real products, verified product images, supplier costs, sale prices, and stock are supplied. Do not turn them into purchasable listings using invented inventory or unrelated stock photos.
