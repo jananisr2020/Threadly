@@ -1,31 +1,87 @@
 # Juno AI Product Studio
 
-A first integrated admin utility for generating multiple candidate gallery views from one uploaded product photo.
+## Local image generation + database update
 
-## What it does
+The existing Python workflow is `scripts/generate_product_views.py`. It now supports generating five separate views per product, resuming from existing files, and writing the resulting image references into the Juno JSON catalogue and an XLSX workbook.
 
-- Upload one PNG/JPG/WebP product photo (up to 12 MB).
-- Generate selected front/hero, alternate-angle, rear, detail and model/lifestyle candidates using an image-editing model.
-- Review and download each output separately, plus export a JSON manifest.
-- Keeps the provider API key server-side and protects the function with a dedicated studio token.
-- Does **not** automatically publish generated images or write them to the product database. Human review and persistent image storage are required before catalog updates.
+### 1. Install dependencies (Windows PowerShell)
 
-## Netlify setup
+From the repository's `threadly-v2` directory:
 
-Add these environment variables in Netlify Site configuration → Environment variables:
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install requests python-dotenv openpyxl
+```
 
-- `OPENAI_API_KEY`: API key with image-generation access.
-- `JUNO_AI_STUDIO_TOKEN`: long random secret used only for this studio.
-- `OPENAI_IMAGE_MODEL` (optional): defaults to `gpt-image-1`.
+Create `.env` inside `threadly-v2`:
 
-Redeploy the site after setting variables. Open `/admin-product-studio.html` on the deployed site and enter the studio token. The function endpoint is `/.netlify/functions/ai-product-views`.
+```text
+OPENAI_API_KEY=your_real_openai_api_key
+OPENAI_IMAGE_MODEL=gpt-image-1
+```
 
-Never put the provider API key in HTML, source control, or browser storage. The access token is sent only in the request header; the page does not persist it.
+Keep `.env` private. Never commit it or place the API key in frontend code.
 
-## Important accuracy warning
+### 2. Test with one product first
 
-Image editing models can alter product details even when instructed not to. Compare every output to the original for exact color, silhouette, print, quantity, material, stitching, clasps and branding. Do not use an invented back view or a synthetic model view as proof of the actual product. Keep the original image as the primary image until a generated alternative has been checked.
+```powershell
+python scripts/generate_product_views.py --product-id JN0001 --views front side detail
+```
 
-## Next integration step
+The generated PNGs and resumable manifest are saved under `public/generated_product_views/JN0001/`. Check your OpenAI API account has image-generation access and billing enabled. Each view is a separate paid API request.
 
-After choosing persistent image storage (for example, an approved object-storage bucket) and deciding the product image fields in the live Google Sheets catalogue, connect approved outputs to the existing product update flow. This first slice deliberately does not store large base64 images in Google Sheets or commit product imagery to Git.
+### 3. Write image paths into the site catalogue
+
+After reviewing the generated files, run:
+
+```powershell
+python scripts/generate_product_views.py --product-id JN0001 --views front side detail --update-catalog
+```
+
+The script updates `public/catalog.json` for successfully generated views only. The paths point to files under `public/generated_product_views`, so they can be served by the site after those image files and the updated catalogue are committed and deployed. Failed views retain their existing references.
+
+To process the first two products (up to 10 image requests):
+
+```powershell
+python scripts/generate_product_views.py --limit 2 --update-catalog
+```
+
+To process all catalogue products (604 × 5 = up to 3,020 image requests):
+
+```powershell
+python scripts/generate_product_views.py --update-catalog
+```
+
+Do not start the full run until a small batch has been reviewed and the expected API cost is acceptable.
+
+### 4. Update an existing XLSX database
+
+The workbook is updated by matching its product-ID column against catalogue product IDs. Existing workbook cells/columns are preserved; five image URL columns are updated or added. An updated copy is created, leaving the original untouched.
+
+```powershell
+python scripts/generate_product_views.py --product-id JN0001 --views front side detail --xlsx "C:\path\to\Threadly_Database.xlsx"
+```
+
+The default output is `Threadly_Database_Updated.xlsx` beside the original. To choose another path, use `--xlsx-output "C:\path\to\Juno_Database_Updated.xlsx"`. Install `openpyxl` as shown above. The workbook needs a header such as `ID`, `Product ID`, `SKU`, or `Product SKU` with values matching the catalogue IDs (for example `JN0001`).
+
+For XLSX-only use, the script writes generated local file paths when the output is outside the site's public directory. For deployable web image paths, keep the default output under `public/generated_product_views` and use `--update-catalog`.
+
+### What is and is not automatic
+
+- **Local:** image generation, resumable manifest, catalogue JSON edits, and XLSX copy updates are handled by the script.
+- **Not automatic:** the script does not write to Google Sheets, upload to cloud image storage, push commits to GitHub, or deploy to Netlify. To publish locally generated assets, commit the generated PNGs and updated catalogue, then deploy the repository.
+- **Product accuracy:** the current catalogue contains category-search preview imagery, not necessarily exact supplier-SKU photos. AI may change product details. Review every generated image against the actual product before publishing or accepting orders.
+
+## Netlify admin studio
+
+The existing `public/admin-product-studio.html` and `netlify/functions/ai-product-views.js` provide a separate one-product-at-a-time browser studio. Configure these Netlify environment variables:
+
+- `OPENAI_API_KEY`
+- `JUNO_AI_STUDIO_TOKEN`
+- `OPENAI_IMAGE_MODEL` (optional; defaults to `gpt-image-1`)
+
+Redeploy after changing environment variables. Open `/admin-product-studio.html` and enter the studio token. The Netlify function returns candidate images for review; it does not write generated images into the catalogue or XLSX. Use the local Python workflow above for batch generation and database-file updates.
+
+Never place the API key in HTML, browser storage, or source control.
