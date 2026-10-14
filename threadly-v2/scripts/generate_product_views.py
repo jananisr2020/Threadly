@@ -235,34 +235,39 @@ def main() -> int:
                 print(f"  FAIL {view}: {error[:200]}")
             manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    # Apply generated URLs only for successful files; leave original values for failed views.
-    if args.update_catalog:
-        output_is_public = args.output.resolve().is_relative_to((ROOT / "public").resolve())
-        if not output_is_public:
-            raise ValueError("--update-catalog requires --output to be inside threadly-v2/public so paths work on the deployed site.")
-        for product in selected:
-            record = manifest["products"].get(safe_name(product.get("id")))
-            if not record:
-                continue
-            current = list(product.get("images", [])) if isinstance(product.get("images"), list) else []
-            while len(current) < 5:
-                current.append(product.get("img", ""))
-            for i, view in enumerate(VIEWS):
-                info = record.get("views", {}).get(view, {})
-                if info.get("status") == "done" and (args.output / info.get("file", "")).exists():
-                    rel = (args.output / info["file"]).resolve().relative_to((ROOT / "public").resolve()).as_posix()
+    # Build image references for selected products. Public-folder outputs become deployable site paths.
+    output_is_public = args.output.resolve().is_relative_to((ROOT / "public").resolve())
+    if args.update_catalog and not output_is_public:
+        raise ValueError("--update-catalog requires --output inside threadly-v2/public so paths work on the deployed site.")
+    for product in selected:
+        record = manifest["products"].get(safe_name(product.get("id")))
+        if not record:
+            continue
+        current = list(product.get("images", [])) if isinstance(product.get("images"), list) else []
+        while len(current) < 5:
+            current.append(product.get("img", ""))
+        for i, view in enumerate(VIEWS):
+            info = record.get("views", {}).get(view, {})
+            generated_file = args.output / info.get("file", "")
+            if info.get("status") == "done" and generated_file.is_file():
+                if output_is_public:
+                    rel = generated_file.resolve().relative_to((ROOT / "public").resolve()).as_posix()
                     current[i] = "/" + rel
-            product["images"] = current[:5]
-            if current and current[0]:
-                product["img"] = current[0]
+                else:
+                    current[i] = str(generated_file.resolve())
+        product["images"] = current[:5]
+        if current and current[0]:
+            product["img"] = current[0]
+
+    if args.update_catalog:
         catalog["source"] = "Juno catalogue with locally generated product gallery images; review generated images against the exact SKU before publishing."
         catalog["notice"] = "AI-generated candidate views. Verify every image matches the exact supplier SKU before accepting orders."
-        args.catalog.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        args.catalog.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
         print(f"Catalogue updated: {args.catalog}")
 
     if args.xlsx:
         xlsx_output = args.xlsx_output or args.xlsx.with_name(args.xlsx.stem + "_Updated" + args.xlsx.suffix)
-        update_workbook(args.xlsx, all_products, xlsx_output)
+        update_workbook(args.xlsx, selected, xlsx_output)
 
     manifest["summary"] = {
         "products_selected": len(selected),
