@@ -183,28 +183,36 @@ def main() -> int:
                 found = search_images(query, 50)
                 for item in found:
                     key = item.get("original_url") or item.get("url")
-                    if key and key not in seen_candidate_urls:
-                        candidates.append(item)
-                        seen_candidate_urls.add(key)
+                    if not key or key in seen_candidate_urls or key in used_urls:
+                        continue
+                    candidates.append(item)
+                    seen_candidate_urls.add(key)
                 if len(candidates) >= args.views:
                     break
             except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
                 print("  SEARCH WARNING: " + str(exc)[:180])
             time.sleep(max(args.sleep, 0))
 
-        slot = 0
-        for item in candidates:
-            if slot >= args.views:
-                break
-            source_key = item.get("original_url") or item.get("url")
-            if source_key in used_urls:
-                continue
-            view = VIEWS[slot]
-            path = folder / (view + item["extension"])
+        candidate_index = 0
+        for view in VIEWS[:args.views]:
             old = record["views"].get(view, {})
-            if path.exists() and path.stat().st_size > 0 and not args.force:
-                slot += 1
+            old_path = args.output / old.get("file", "")
+            if old.get("status") == "done" and old_path.is_file() and old_path.stat().st_size > 0 and not args.force:
                 continue
+
+            item = None
+            while candidate_index < len(candidates):
+                possible = candidates[candidate_index]
+                candidate_index += 1
+                source_key = possible.get("original_url") or possible.get("url")
+                if source_key and source_key not in used_urls:
+                    item = possible
+                    break
+            if item is None:
+                continue
+
+            source_key = item.get("original_url") or item.get("url")
+            path = folder / (view + item["extension"])
             try:
                 path.write_bytes(download_file(item["url"]))
                 record["views"][view] = {
@@ -219,12 +227,11 @@ def main() -> int:
                     "credit": item["credit"],
                     "attribution_required": item["attribution"],
                     "description": item["description"],
-                    "search_query": queries[0] if queries else category,
+                    "search_query": query if queries else category,
                     "bytes": path.stat().st_size,
                 }
                 used_urls.add(source_key)
                 print("  OK " + view + ": " + item["title"] + " [" + item["license"] + "]")
-                slot += 1
                 time.sleep(max(args.sleep, 0))
             except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
                 print("  DOWNLOAD WARNING: " + str(exc)[:180])
