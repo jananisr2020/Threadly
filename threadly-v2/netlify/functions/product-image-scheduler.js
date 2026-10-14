@@ -18,8 +18,8 @@ exports.handler = async () => {
     if (!process.env.SHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
         !process.env.GOOGLE_PRIVATE_KEY || !process.env.OPENAI_API_KEY ||
         !process.env.JUNO_IMAGE_WORKER_TOKEN || !process.env.URL) {
-      console.error('Juno image scheduler is missing one or more required environment variables.');
-      return response(500, { error: 'Image automation is not configured.' });
+      console.info('Juno image scheduler is idle until its required environment variables are configured.');
+      return response(200, { ok: true, configured: false, message: 'Image automation is not configured yet.' });
     }
 
     let rows = await sheets.read('Products');
