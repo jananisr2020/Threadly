@@ -19,6 +19,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import requests
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "public" / "catalog.json"
@@ -163,6 +164,7 @@ def main() -> int:
     parser.add_argument("--retry-failed", action="store_true", help="regenerate views already marked failed")
     args = parser.parse_args()
 
+    load_dotenv(ROOT / ".env")
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("ERROR: OPENAI_API_KEY is not set. Put it in threadly-v2/.env; never commit .env.", file=sys.stderr)
