@@ -12,7 +12,7 @@ From the repository's `threadly-v2` directory:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install requests python-dotenv openpyxl
+pip install -r requirements-image-generation.txt
 ```
 
 Create `.env` inside `threadly-v2`:
