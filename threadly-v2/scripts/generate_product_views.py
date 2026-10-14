@@ -121,7 +121,7 @@ def update_workbook(path: Path, catalog_products: list[dict[str, Any]], output: 
         image_cols: dict[int, int] = {}
         for col, cell in enumerate(sheet[1], start=1):
             key = str(cell.value or "").strip().lower()
-            match = re.search(r"(?:image|img|photo)[ _-]*(?:url[ _-]*)?([1-5])$", key)
+            match = re.search(r"(?:image|img|photo)[ _-]*(?:url[ _-]*)?([1-5])(?:[ _-]*url)?$", key)
             if match:
                 image_cols[int(match.group(1))] = col
         # If the workbook has no recognisable image columns, add five clearly named columns.
@@ -264,7 +264,7 @@ def main() -> int:
     if args.update_catalog:
         catalog["source"] = "Juno catalogue with locally generated product gallery images; review generated images against the exact SKU before publishing."
         catalog["notice"] = "AI-generated candidate views. Verify every image matches the exact supplier SKU before accepting orders."
-        args.catalog.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+        args.catalog.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"Catalogue updated: {args.catalog}")
 
     if args.xlsx:
