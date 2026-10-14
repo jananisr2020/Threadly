@@ -1,8 +1,8 @@
 {
-  "source": "Juno catalogue with five distinct category-search gallery URLs per product. Images are remotely hosted preview imagery and must be verified against exact supplier SKUs before orders are accepted.",
+  "source": "Juno product catalogue. Product image references have been removed because the previous imagery was not relevant to the listed products. Add only reviewed, product-matching photos.",
   "productCount": 604,
   "categoryCount": 23,
-  "notice": "Each product now has a five-image gallery. The images are category-matched preview results, not guaranteed exact-SKU or same-model pose photography; replace with supplier-approved product photos before launch.",
+  "notice": "Product images are intentionally blank across all 604 products until relevant product-specific images are reviewed and approved.",
   "categories": [
     "Hair Accessories",
     "Artificial Jewellery",
@@ -14550,5 +14550,5 @@
       "images": []
     }
   ],
-  "imageNotice": "Placeholder image URLs removed. Use only reviewed, product-matching images with permission before publishing."
+  "imageNotice": "All irrelevant product image references removed; product photos are intentionally empty pending relevant, reviewed images."
 }
