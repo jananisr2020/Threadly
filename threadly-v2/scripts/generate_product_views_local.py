@@ -66,7 +66,7 @@ def load_pipeline(cls, model, dtype):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--product-id", help="generate only one product, e.g. JN0001")
+    parser.add_argument("--product-id", action="append", help="product ID to generate; repeat this option to batch products, e.g. --product-id JN0001 --product-id JN0002")
     parser.add_argument("--limit", type=int, default=0, help="limit to first N products")
     parser.add_argument("--views", nargs="+", choices=list(VIEWS), default=list(VIEWS))
     parser.add_argument("--model", default=MODEL_DEFAULT)
@@ -106,10 +106,13 @@ def main():
     data = read_catalog(args.catalog)
     products = data["products"]
     if args.product_id:
-        products = [product for product in products if str(product.get("id")) == args.product_id]
-        if not products:
-            print(f"Product ID not found: {args.product_id}", file=sys.stderr)
+        requested = set(args.product_id)
+        found = {str(product.get("id")) for product in data["products"] if str(product.get("id")) in requested}
+        missing = sorted(requested - found)
+        if missing:
+            print("Product ID(s) not found: " + ", ".join(missing), file=sys.stderr)
             return 2
+        products = [product for product in products if str(product.get("id")) in requested]
     elif args.limit > 0:
         products = products[:args.limit]
 
