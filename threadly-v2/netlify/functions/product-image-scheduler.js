@@ -70,6 +70,8 @@ exports.handler = async () => {
       if (hasAllImages(row)) return false;
       const status = String(row[statusCol] || '').trim().toLowerCase();
       if (status === 'needs source image') return false;
+      const updatedAt = Date.parse(String(row[updatedCol] || ''));
+      if (status.startsWith('failed') && Number.isFinite(updatedAt) && Date.now() - updatedAt < 6 * 60 * 60 * 1000) return false;
       const source = String(row[imageCol] || '').trim();
       if (!/^https?:\/\//i.test(source)) return false;
       return true;
