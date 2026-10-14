@@ -260,7 +260,7 @@ async function getBundledProducts(){
   return bundledProductsCache;
 }
 const normProductText=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-const productImageUrls=p=>[]; // Product photos disabled until relevant images are approved.
+const productImageUrls=p=>[...new Set([...(Array.isArray(p.images)?p.images:[]),p.img,p.fallbackImg].filter(Boolean).map(u=>imgUrl(u)))];
 async function loadSheet(){
   if(!CFG.PRODUCTS_CSV){
     try{
@@ -295,7 +295,7 @@ $('#pin').value=pin();
 /* ---- store UI ---- */
 const arr=k=>{const v=ST.get(k);return Array.isArray(v)?v:[]};
 const S={cat:'All',cart:arr('tl_cart').filter(c=>c&&c.id&&c.n>0),wl:new Set(arr('tl_wl')),wv:false,later:arr('tl_later').filter(c=>c&&c.id),f:{min:0,max:99999,colors:[],sizes:[],brands:[],materials:[],styles:[],occasions:[],types:[],attrs:{},disc:0,rating:0,stock:false},shown:24,noAuto:false,coupon:String(ST.get('tl_coupon')||''),browseAll:false};
-const img=(p,eager)=>''; // Do not display placeholder illustrations or external product photos.
+const img=(p,eager)=>{const u=productImageUrls(p)[0];return u?`<img src="${esc(u)}" alt="${esc(p.name||'Juno product')}" loading="${eager?'eager':'lazy'}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0" onerror="this.style.display='none'">`:''};
 const bg=p=>`background:linear-gradient(160deg,${p.col}66,${p.col}22)`;
 const productGallery=p=>{const urls=productImageUrls(p);galleryIndex=Math.min(galleryIndex,Math.max(0,urls.length-1));return `<div class="product-gallery"><div class="im zm pg-main" style="${bg(p)};aspect-ratio:3/4;min-height:300px">${urls.length?`<img id="pimgmain" src="${esc(urls[galleryIndex])}" alt="${esc(p.name)} product photo ${galleryIndex+1}" onerror="this.style.display='none'">`:`${img(p)}`}</div>${urls.length>1?`<div class="pg-thumbs" aria-label="Product photos">${urls.map((u,i)=>`<button type="button" class="pg-thumb${i===galleryIndex?' on':''}" data-pimg="${i}" aria-label="View product photo ${i+1}"><img src="${esc(u)}" alt="${esc(p.name)} view ${i+1}" loading="lazy"></button>`).join('')}</div>`:''}</div>`};
 function card(p){return `<article class="p" data-id="${esc(p.id)}"><div class="im" style="${bg(p)}">${img(p)}<span class="tag">${p.off}% off</span><button class="wl${S.wl.has(p.id)?' on':''}" data-w="${esc(p.id)}" aria-label="Wishlist">${S.wl.has(p.id)?'♥':'♡'}</button><button class="sh" data-sh="${esc(p.id)}" aria-label="Share">⤴</button><button class="qa" data-qa="${esc(p.id)}" aria-label="Quick add">+ Add</button></div><div class="pi"><small>${esc(p.brand)}</small><h3>${esc(p.name)}</h3><div class="pr"><b>${inr(p.price)}</b><s>${inr(p.mrp)}</s><span>${p.off}% off</span></div>${p.rc?`<div class="rt">★ ${p.rr} (${p.rc})</div>`:''}${p.sz?`<div class="rt">Sizes: ${p.sizes.slice(0,4).map(esc).join(' · ')}</div>`:`<div class="dots">${p.sizes.slice(0,5).map(c=>`<i title="${esc(c)}" style="background:${CMAP[String(c).toLowerCase()]||'#ccc'}"></i>`).join('')}</div>`}${p.stock<=0?'<div class="low">Out of stock</div>':p.stock<=5?`<div class="low">Only ${p.stock} left</div>`:`<div class="dl">${p.price>=299?'Free delivery · ':''}by ${eta(pin()).split(' – ')[0]}</div>`}</div></article>`}
