@@ -129,3 +129,38 @@ Add your refund, shipping and privacy policy pages and contact details (Razorpay
 ## Limits to know about
 - Google Sheets allows roughly 60 reads per minute per account on this setup. That is fine for a small store with a few hundred visitors a day. If you grow beyond that, move to a real database and I can do it for you.
 - A customer who pays but closes the browser before the confirmation will not have an order row. Razorpay still shows the payment in its dashboard; adding a Razorpay webhook closes that gap.
+
+## Free-source product image workflow (no OpenAI API credits)
+
+The helper \`scripts/download_free_product_images.py\` searches Wikimedia Commons for openly licensed candidate photos, downloads them locally, and records the source title, file page, license, license URL, artist/credit and search query in \`public/free_product_images/manifest.json\`. It does not call an AI model and does not guarantee that a photo is the exact supplier SKU. Wikimedia Commons results may be editorial, illustrative, or unsuitable for a product listing; inspect each product's photos and the license/attribution fields before publishing.
+
+### Test first (recommended)
+
+Open PowerShell in the \`threadly-v2\` folder and run:
+
+\`\`\`powershell
+python scripts/download_free_product_images.py --limit 2 --views 5 --update-catalog
+\`\`\`
+
+Inspect \`public/free_product_images/\` and \`public/free_product_images/manifest.json\`, plus the two products in \`public/catalog.json\`. Check that each photo matches the actual product, that the images are distinct, and that required attribution can be shown. If the matches are not acceptable, do not run the full catalogue; use supplier-approved photos instead.
+
+### Process the full catalogue
+
+After approving the test results:
+
+\`\`\`powershell
+python scripts/download_free_product_images.py --views 5 --update-catalog
+\`\`\`
+
+The target is 604 products × 5 images (3,020 files), but the script only downloads images it can find and license metadata for. It records products with fewer than five suitable candidates as partial/no-match rather than fabricating extra photos. It avoids reusing the same Commons file across products where search results allow it. Re-running the same command resumes from successful downloads in the manifest.
+
+### Publish
+
+1. Review the downloaded images and manifest. Commons license terms and attribution requirements still apply; retain the manifest when publishing.
+2. Run \`npm run check\` from \`threadly-v2\`.
+3. Review the \`public/catalog.json\` diff before committing. This script updates the local catalogue only; it does not write to Google Sheets or Netlify environment variables.
+4. Commit the approved images, \`public/catalog.json\`, and manifest to GitHub. Netlify will deploy the committed static files if the site is connected to this repository.
+5. Open the live site and check product cards, galleries, mobile layout and broken images.
+
+The downloaded images are stored in the Git repository, so 3,020 image files can make the repository and deploy larger. Do not commit photos that have not been reviewed or whose license terms are unclear. If your suppliers provide exact SKU photos, those are preferable to free stock/reference imagery for a store that accepts orders.
+
