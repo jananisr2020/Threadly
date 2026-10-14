@@ -144,8 +144,12 @@ def run_once(session, sheet_id, tab, site_url):
     headers, _ = ensure_headers(session, sheet_id, tab, rows)
     idx = {key: col(headers, key) for key in ["id", "name", "category", "image", "image 2", "image 3", "image 4", "image 5", "status"]}
     data = json.loads(CATALOG.read_text(encoding="utf-8"))
-    generated_ids = []
-    pending_updates = []
+    pending = []
+    requested_ids = []
+    seen_ids = set()
+
+    # First sync product records from Sheets into catalog.json. Only products with
+    # incomplete galleries are queued, and the model is loaded once for the whole batch.
     for row_number, source_row in enumerate(rows[1:], start=2):
         row = list(source_row) + [""] * max(0, len(headers) - len(source_row))
         product_id, name = value(row, idx["id"]), value(row, idx["name"])
@@ -154,37 +158,62 @@ def run_once(session, sheet_id, tab, site_url):
         images = [value(row, idx[f"image{(' ' + str(i)) if i > 1 else ''}"]) for i in range(1, 6)]
         if all(url and "loremflickr.com" not in url.lower() for url in images):
             continue
+        if product_id in seen_ids:
+            print(f"Skipping duplicate product ID in sheet: {product_id}", file=sys.stderr)
+            continue
+        seen_ids.add(product_id)
         product = upsert_catalog_product(data, row, headers)
         if not product:
             continue
-        CATALOG.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"Generating five views for {product_id} — {name}", flush=True)
-        subprocess.run([sys.executable, str(GENERATOR), "--product-id", product_id], cwd=ROOT, check=True)
-        data = json.loads(CATALOG.read_text(encoding="utf-8"))
-        product = next(p for p in data["products"] if str(p.get("id")) == product_id)
+        pending.append({"row_number": row_number, "row": row, "id": product_id})
+        requested_ids.append(product_id)
+
+    if not requested_ids:
+        print("No products with missing gallery images found.")
+        return 0
+
+    CATALOG.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    command = [sys.executable, str(GENERATOR)]
+    for product_id in requested_ids:
+        command.extend(["--product-id", product_id])
+    print(f"Generating five gallery views for {len(requested_ids)} product(s) in one model session.", flush=True)
+    subprocess.run(command, cwd=ROOT, check=True)
+
+    # Read the final catalogue after generation and prepare absolute URLs. Publish files
+    # first; only after a successful Git push do we update the Sheet with public URLs.
+    data = json.loads(CATALOG.read_text(encoding="utf-8"))
+    products_by_id = {str(p.get("id")): p for p in data.get("products", [])}
+    updates = []
+    for item in pending:
+        product_id = item["id"]
+        product = products_by_id.get(product_id, {})
         local_images = product.get("images", [])
         public_urls = []
         for i, view in enumerate(VIEWS):
-            image_path = ROOT / "public" / "products" / "generated" / safe_id(product_id) / f"{view}.jpg"
+            image_path = PUBLIC / "products" / "generated" / safe_id(product_id) / f"{view}.jpg"
             if image_path.exists():
-                public_urls.append(site_url.rstrip("/") + "/" + image_path.relative_to(PUBLIC).as_posix())
+                public_urls.append(site_url + "/" + image_path.relative_to(PUBLIC).as_posix())
             else:
-                public_urls.append(local_images[i] if i < len(local_images) else "")
+                public_urls.append(local_images[i] if i < len(local_images) and str(local_images[i]).startswith("http") else "")
         if not all(public_urls):
             print(f"Some views missing for {product_id}; leaving it for a later retry.", file=sys.stderr)
             continue
+        row = item["row"]
         for i, key in enumerate(["image", "image 2", "image 3", "image 4", "image 5"]):
             row[idx[key]] = public_urls[i]
         if idx["status"] >= 0:
             row[idx["status"]] = "Generated locally; awaiting/published via Netlify Git deploy"
-        pending_updates.append((row_number, row))
-        generated_ids.append(product_id)
-    if generated_ids:
-        git_publish(generated_ids)
-        # Only publish URLs to Sheets after the assets have been pushed to the connected Git branch.
-        for row_number, updated_row in pending_updates:
-            update_row(session, sheet_id, tab, row_number, updated_row)
-    return len(generated_ids)
+        updates.append((item["row_number"], row, product_id))
+
+    if not updates:
+        print("No complete five-view galleries were produced; nothing was published.")
+        return 0
+
+    git_publish([item[2] for item in updates])
+    for row_number, updated_row, product_id in updates:
+        update_row(session, sheet_id, tab, row_number, updated_row)
+        print(f"Updated Google Sheets image URLs for {product_id}", flush=True)
+    return len(updates)
 
 def main():
     import argparse
