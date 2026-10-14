@@ -1,6 +1,6 @@
 // Scheduled Juno product-image worker. One missing gallery slot per run.
 // Required env: SHEET_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY,
-// OPENAI_API_KEY, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
+// HF_TOKEN, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
 const sheets = require('../lib/sheets');
 const crypto = require('crypto');
 const VIEWS = [
@@ -13,7 +13,7 @@ const VIEWS = [
 const norm=s=>String(s||'').trim().toLowerCase().replace(/\s*\(.*\)\s*$/,'').replace(/[_-]+/g,' ');
 const find=(h,ns)=>h.findIndex(x=>ns.includes(norm(x)));
 const cell=(r,i)=>i>=0?String(r[i]==null?'':r[i]).trim():'';
-function requireEnv(){const miss=['OPENAI_API_KEY','CLOUDINARY_CLOUD_NAME','CLOUDINARY_API_KEY','CLOUDINARY_API_SECRET'].filter(n=>!process.env[n]);if(miss.length)throw Error('Missing environment variables: '+miss.join(', '))}
+function requireEnv(){const miss=['HF_TOKEN','CLOUDINARY_CLOUD_NAME','CLOUDINARY_API_KEY','CLOUDINARY_API_SECRET'].filter(n=>!process.env[n]);if(miss.length)throw Error('Missing environment variables: '+miss.join(', '))}
 function sign(params,secret){return crypto.createHash('sha1').update(Object.keys(params).sort().map(k=>k+'='+params[k]).join('&')+secret).digest('hex')}
 async function upload(bytes,id){
  const cloud=process.env.CLOUDINARY_CLOUD_NAME,ts=String(Math.floor(Date.now()/1000)),p={folder:'juno/products',overwrite:'true',public_id:id,timestamp:ts},f=new FormData();
@@ -26,11 +26,17 @@ async function source(url){
  try{const r=await fetch(url,{signal:AbortSignal.timeout(10000)});if(!r.ok||!(r.headers.get('content-type')||'').startsWith('image/'))return null;const bytes=Buffer.from(await r.arrayBuffer());if(!bytes.length||bytes.length>20*1024*1024)return null;const type=r.headers.get('content-type')||'';return{bytes,type:type.includes('jpeg')?'image/jpeg':type.includes('webp')?'image/webp':'image/png'}}catch(e){return null}
 }
 async function generate(p,v,src){
- const prompt='Photorealistic ecommerce product photograph for Juno. Product: '+p.name+'. Category: '+p.category+'. Details: '+p.details+'. Variant: '+p.variants+'. View: '+v.prompt+' Preserve the named item plausibly. No text, logos, watermarks, collages or extra products. Portrait 2:3, clean soft studio lighting, pale neutral background, crisp focus. '+(src?'Use the supplied photo as identity reference; preserve exact visible design, shape, colour, material and distinctive details.':'No trustworthy SKU source photo is available; create an illustrative image based on the product name and category, not a verified supplier photo.');
- const f=new FormData();f.append('model',process.env.OPENAI_IMAGE_MODEL||'gpt-image-1');f.append('prompt',prompt);f.append('size','1024x1536');f.append('quality','medium');
- if(src)f.append('image',new Blob([src.bytes],{type:src.type}),'source.'+(src.type==='image/jpeg'?'jpg':src.type==='image/webp'?'webp':'png'));
- const r=await fetch('https://api.openai.com/v1/images/'+(src?'edits':'generations'),{method:'POST',headers:{Authorization:'Bearer '+process.env.OPENAI_API_KEY},body:f,signal:AbortSignal.timeout(110000)});
- const d=await r.json().catch(()=>({}));if(!r.ok||!d.data||!d.data[0]||!d.data[0].b64_json)throw Error(d.error&&d.error.message||'OpenAI image API HTTP '+r.status);return Buffer.from(d.data[0].b64_json,'base64')
+ // FLUX.1-schnell is open-weight and Apache-2.0 licensed. The Hugging Face
+ // Inference API hosts it; source images are not sent because this model path
+ // is text-to-image, not image editing.
+ const prompt='Photorealistic ecommerce product photograph for Juno. Product: '+p.name+'. Category: '+p.category+'. Details: '+p.details+'. Variant: '+p.variants+'. View: '+v.prompt+' Make this view visibly different from other gallery views. Preserve a coherent plausible design and colour across views. No text, logos, watermarks, collages or extra products. Portrait 2:3 composition, clean soft studio lighting, pale neutral background, crisp focus. '+(src?'A source photo exists but is not passed to the text-to-image model; treat this as an illustrative recreation, not an exact SKU match.':'No trustworthy SKU source photo is available; create an illustrative image based on the product name and category, not a verified supplier photo.');
+ const model=process.env.HF_IMAGE_MODEL||'black-forest-labs/FLUX.1-schnell';
+ const url='https://router.huggingface.co/hf-inference/models/'+model.split('/').map(encodeURIComponent).join('/');
+ const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+process.env.HF_TOKEN,'Content-Type':'application/json',Accept:'image/*'},body:JSON.stringify({inputs:prompt,parameters:{width:768,height:1152}}),signal:AbortSignal.timeout(110000)});
+ const type=r.headers.get('content-type')||'';
+ if(!r.ok){const detail=type.includes('json')?await r.json().catch(()=>({})):await r.text().catch(()=> '');const message=typeof detail==='string'?detail:(detail.error||JSON.stringify(detail));throw Error('Hugging Face image API HTTP '+r.status+': '+String(message).slice(0,220))}
+ if(!type.startsWith('image/')){const detail=await r.text().catch(()=> '');throw Error('Hugging Face returned a non-image response: '+detail.slice(0,220))}
+ const bytes=Buffer.from(await r.arrayBuffer());if(!bytes.length)throw Error('Hugging Face returned an empty image');return bytes
 }
 async function run(){
  requireEnv();const rows=await sheets.read('Products');if(!rows||rows.length<2)return{ok:true,processed:0,message:'No product rows found'};
