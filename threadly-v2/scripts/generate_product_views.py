@@ -100,6 +100,35 @@ def generate_image(api_key: str, image_bytes: bytes, extension: str,
     return base64.b64decode(encoded)
 
 
+
+def generate_image_from_prompt(api_key: str, product: dict[str, Any], view: str, model: str, timeout: int) -> bytes:
+    """Generate a fallback image from catalogue text when the remote reference image is unavailable."""
+    name = str(product.get("name") or product.get("id") or "product")
+    category = str(product.get("cat") or product.get("category") or "fashion accessory")
+    colour = str(product.get("col") or "")
+    prompt = (
+        f"Create one premium Juno ecommerce product photograph for: {name}. "
+        f"Category: {category}. Listed colour code: {colour or 'not specified'}. "
+        "Create a plausible, simple product concept based on the product name and category. "
+        "Use realistic proportions, clean neutral studio background, soft commercial lighting, "
+        "and a polished budget-fashion ecommerce style. Do not add logos, text, watermarks, "
+        "unlisted accessories, or extra products. This is a concept image because no reference "
+        "photo was available; do not claim it is an exact supplier SKU. "
+        f"Requested view: {VIEWS[view]}. One image only."
+    )
+    response = requests.post(
+        "https://api.openai.com/v1/images/generations",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={"model": model, "prompt": prompt, "size": "1024x1024", "n": 1},
+        timeout=timeout,
+    )
+    if response.status_code >= 400:
+        raise RuntimeError(f"OpenAI API {response.status_code}: {response.text[:1000]}")
+    encoded = response.json().get("data", [{}])[0].get("b64_json")
+    if not encoded:
+        raise RuntimeError("OpenAI response contained no image data")
+    return base64.b64decode(encoded)
+
 def update_workbook(path: Path, catalog_products: list[dict[str, Any]], output: Path) -> None:
     """Update workbook rows by product ID; preserve all existing columns and cell data."""
     try:
@@ -198,16 +227,19 @@ def main() -> int:
             "id": raw_id, "name": str(product.get("name") or product_id), "views": {}
         })
         print(f"\n[{index}/{len(selected)}] {raw_id} — {product.get('name', product_id)}")
+        source_bytes = None
+        extension = None
         try:
             url = source_url(product)
             source_bytes, extension = download_source(url)
             record["source_url"] = url
+            record.pop("source_error", None)
         except Exception as exc:
-            print(f"  SOURCE ERROR: {exc}")
-            for view in args.views:
-                record["views"][view] = {"status": "failed", "error": str(exc)}
-            manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
-            continue
+            # LoremFlickr or another remote source may be unavailable/unauthorized.
+            # Continue with text-to-image generation so the batch can proceed.
+            record["source_error"] = str(exc)
+            print(f"  SOURCE UNAVAILABLE: {exc}")
+            print("  Using text-only concept generation for this product; verify against the real SKU.")
 
         for view in args.views:
             output_file = product_dir / f"{view}.png"
@@ -219,7 +251,12 @@ def main() -> int:
             error = None
             for attempt in range(1, args.retries + 1):
                 try:
-                    output_file.write_bytes(generate_image(api_key, source_bytes, extension, product, view, args.model, args.timeout))
+                    image_bytes = (
+                        generate_image(api_key, source_bytes, extension, product, view, args.model, args.timeout)
+                        if source_bytes is not None and extension is not None
+                        else generate_image_from_prompt(api_key, product, view, args.model, args.timeout)
+                    )
+                    output_file.write_bytes(image_bytes)
                     record["views"][view] = {
                         "status": "done", "file": str(output_file.relative_to(args.output)).replace("\\", "/"),
                         "bytes": output_file.stat().st_size, "model": args.model
