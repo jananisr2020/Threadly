@@ -1,0 +1,8 @@
+# Local open-weight image generation; no model API key required
+torch>=2.2
+diffusers>=0.30
+transformers>=4.44
+accelerate>=0.33
+safetensors>=0.4
+Pillow>=10.0
+requests>=2.32
