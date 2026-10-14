@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate five AI gallery views per product in Juno's catalogue.
+"""Generate five product views and update Juno's local catalogue/workbook.
 
-Reads threadly-v2/public/catalog.json, uses each product's current image URL as
-a reference, and saves generated PNGs locally with a resumable manifest.
-It does not overwrite the production catalogue or upload images to a host.
+Run from threadly-v2. Generated images are written under public/generated_product_views
+so their paths are deployable when the files are committed with the site. The script
+never uploads images or changes the live Google Sheet/Netlify database.
 """
 from __future__ import annotations
 
@@ -22,18 +22,19 @@ import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "public" / "catalog.json"
-DEFAULT_OUTPUT = ROOT / "generated_product_views"
+DEFAULT_OUTPUT = ROOT / "public" / "generated_product_views"
 VIEWS = {
-    "front": "Create a clean front-facing hero product photograph.",
-    "side": "Create a clear side or alternate-angle product photograph.",
-    "back": "Create a clear rear, reverse, or underside view, whichever is meaningful for this item.",
-    "detail": "Create a close-up showing material, texture, finish, stitching, clasp, or other real product details.",
-    "model": "Create a tasteful ecommerce lifestyle photograph showing this exact item in use. For wearable items, show it on an adult model; for non-wearable items, show a suitable lifestyle or scale context.",
+    "front": "front-facing hero product photograph",
+    "side": "side or alternate three-quarter angle",
+    "back": "rear, reverse, or underside view when inferable; otherwise a conservative alternate angle",
+    "detail": "close-up of a real visible material, texture, finish, stitching, clasp, or print detail",
+    "model": "tasteful lifestyle photograph showing this same item worn or used; use a suitable context for non-wearable products",
 }
 
+
 def safe_name(value: Any) -> str:
-    text = re.sub(r"[^A-Za-z0-9._-]+", "-", str(value or "item")).strip("-._")
-    return text[:100] or "item"
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", str(value or "item")).strip("-._")[:100] or "item"
+
 
 def load_catalog(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -42,187 +43,242 @@ def load_catalog(path: Path) -> dict[str, Any]:
         raise ValueError(f"{path} does not contain a products list")
     return data
 
+
 def source_url(product: dict[str, Any]) -> str:
-    images = product.get("images")
-    candidates = list(images) if isinstance(images, list) else []
-    candidates.extend([product.get("img")])
+    candidates = list(product.get("images", [])) if isinstance(product.get("images"), list) else []
+    candidates.append(product.get("img"))
     for candidate in candidates:
         if isinstance(candidate, str) and candidate.startswith(("https://", "http://")):
             return candidate
     raise ValueError("no HTTP(S) source image URL")
 
+
 def download_source(url: str, timeout: int = 45) -> tuple[bytes, str]:
     response = requests.get(url, timeout=timeout, headers={"User-Agent": "JunoProductStudio/1.0"})
     response.raise_for_status()
-    content_type = response.headers.get("content-type", "").split(";")[0].lower()
-    extension = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" }.get(content_type)
+    mime = response.headers.get("content-type", "").split(";")[0].lower()
+    extension = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}.get(mime)
     if not extension:
         extension = Path(urlparse(response.url).path).suffix.lower()
     if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
-        raise ValueError(f"source URL did not return a supported image (content-type: {content_type or 'unknown'})")
+        raise ValueError(f"unsupported source image type: {mime or 'unknown'}")
     if len(response.content) > 20 * 1024 * 1024:
-        raise ValueError("source image is larger than 20 MB")
+        raise ValueError("source image exceeds 20 MB")
     return response.content, extension
 
-def generate_image(
-    api_key: str,
-    image_bytes: bytes,
-    extension: str,
-    product: dict[str, Any],
-    view: str,
-    model: str,
-    timeout: int,
-) -> bytes:
+
+def generate_image(api_key: str, image_bytes: bytes, extension: str,
+                   product: dict[str, Any], view: str, model: str, timeout: int) -> bytes:
     name = str(product.get("name") or product.get("id") or "product")
     category = str(product.get("cat") or product.get("category") or "fashion accessory")
-    color = str(product.get("col") or "")
+    colour = str(product.get("col") or "")
     prompt = (
-        f"Create one premium ecommerce product photograph for Juno. Product name: {name}. "
-        f"Category: {category}. Listed colour metadata: {color or 'not specified'}. "
+        f"Create one premium Juno ecommerce photograph. Product name: {name}. "
+        f"Category: {category}. Listed colour: {colour or 'not specified'}. "
         "Use the uploaded image as the primary visual reference. Preserve the same product identity, "
-        "recognisable shape, colour, pattern, material, hardware, and design. Do not add logos, text, "
-        "watermarks, extra products, or invented decorations. Use realistic lighting, a clean neutral "
-        "studio background, accurate proportions, and a sharp commercial product-photography finish. "
-        f"Requested view: {VIEWS[view]} If the reference is generic, unclear, or does not depict the "
-        "named product accurately, do not invent specific construction details; make the closest faithful "
-        "view possible. One image only."
+        "recognisable shape, colour, pattern, material, hardware, and included quantity. Do not add "
+        "logos, text, watermarks, extra products, or invented decorations. Use realistic lighting, "
+        "neutral studio styling, accurate proportions, and commercial product photography. "
+        f"Requested view: {VIEWS[view]}. If the source does not reliably show a detail, do not invent it. "
+        "One image only."
     )
     extension = ".jpg" if extension == ".jpeg" else extension
-    files = {"image": (f"reference{extension}", image_bytes, {
-        ".jpg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"
-    }[extension])}
+    mime = {".jpg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}[extension]
     response = requests.post(
         "https://api.openai.com/v1/images/edits",
         headers={"Authorization": f"Bearer {api_key}"},
         data={"model": model, "prompt": prompt, "size": "1024x1024", "n": "1"},
-        files=files,
+        files={"image": (f"reference{extension}", image_bytes, mime)},
         timeout=timeout,
     )
     if response.status_code >= 400:
-        raise RuntimeError(f"OpenAI API {response.status_code}: {response.text[:1200]}")
-    payload = response.json()
-    encoded = payload.get("data", [{}])[0].get("b64_json")
+        raise RuntimeError(f"OpenAI API {response.status_code}: {response.text[:1000]}")
+    encoded = response.json().get("data", [{}])[0].get("b64_json")
     if not encoded:
-        raise RuntimeError("OpenAI response did not contain data[0].b64_json")
+        raise RuntimeError("OpenAI response contained no image data")
     return base64.b64decode(encoded)
+
+
+def update_workbook(path: Path, catalog_products: list[dict[str, Any]], output: Path) -> None:
+    """Update workbook rows by product ID; preserve all existing columns and cell data."""
+    try:
+        from openpyxl import load_workbook
+    except ImportError as exc:
+        raise RuntimeError("Install openpyxl to update XLSX: python -m pip install openpyxl") from exc
+    if not path.exists():
+        raise FileNotFoundError(f"Workbook not found: {path}")
+    workbook = load_workbook(path)
+    updated = 0
+    product_map = {str(p.get("id")): p for p in catalog_products if p.get("id") is not None}
+    for sheet in workbook.worksheets:
+        if sheet.max_row < 2:
+            continue
+        headers = {str(cell.value or "").strip().lower(): cell.column for cell in sheet[1]}
+        id_col = next((headers[k] for k in ("id", "product id", "product_id", "sku", "product sku") if k in headers), None)
+        if not id_col:
+            continue
+        image_cols: dict[int, int] = {}
+        for col, cell in enumerate(sheet[1], start=1):
+            key = str(cell.value or "").strip().lower()
+            match = re.search(r"(?:image|img|photo)[ _-]*(?:url[ _-]*)?([1-5])$", key)
+            if match:
+                image_cols[int(match.group(1))] = col
+        # If the workbook has no recognisable image columns, add five clearly named columns.
+        if not image_cols:
+            next_col = sheet.max_column + 1
+            for n in range(1, 6):
+                sheet.cell(1, next_col + n - 1, f"Image {n} URL")
+                image_cols[n] = next_col + n - 1
+        for row in range(2, sheet.max_row + 1):
+            product = product_map.get(str(sheet.cell(row, id_col).value or "").strip())
+            if not product:
+                continue
+            images = product.get("images", [])
+            if not isinstance(images, list):
+                continue
+            for n, col in image_cols.items():
+                if n <= len(images):
+                    sheet.cell(row, col, images[n - 1])
+            updated += 1
+    if updated == 0:
+        raise ValueError("No workbook rows matched catalogue product IDs. No XLSX was saved.")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(output)
+    print(f"Workbook updated: {output} (matched rows: {updated})")
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--limit", type=int, default=0, help="process only the first N products (use 1 for a test)")
+    parser.add_argument("--limit", type=int, default=0, help="process first N products; use 1 for a test")
     parser.add_argument("--product-id", help="process one exact product ID, e.g. JN0001")
-    parser.add_argument("--views", nargs="+", choices=list(VIEWS), default=list(VIEWS), help="views to generate")
+    parser.add_argument("--views", nargs="+", choices=list(VIEWS), default=list(VIEWS))
     parser.add_argument("--model", default=os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1"))
     parser.add_argument("--retries", type=int, default=3)
     parser.add_argument("--timeout", type=int, default=240)
-    parser.add_argument("--retry-failed", action="store_true", help="retry views marked failed in the manifest")
+    parser.add_argument("--update-catalog", action="store_true", help="write generated image paths into catalog.json")
+    parser.add_argument("--xlsx", type=Path, help="existing workbook to update by product ID")
+    parser.add_argument("--xlsx-output", type=Path, help="output workbook path (defaults to <name>_Updated.xlsx)")
+    parser.add_argument("--retry-failed", action="store_true", help="regenerate views already marked failed")
     args = parser.parse_args()
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        print("ERROR: set OPENAI_API_KEY in your environment; do not put it in this script.", file=sys.stderr)
+        print("ERROR: OPENAI_API_KEY is not set. Put it in threadly-v2/.env; never commit .env.", file=sys.stderr)
         return 2
     catalog = load_catalog(args.catalog)
-    products = catalog["products"]
+    all_products = catalog["products"]
     if args.product_id:
-        products = [p for p in products if str(p.get("id")) == args.product_id]
-        if not products:
+        selected = [p for p in all_products if str(p.get("id")) == args.product_id]
+        if not selected:
             print(f"ERROR: product ID {args.product_id!r} was not found.", file=sys.stderr)
             return 2
     elif args.limit > 0:
-        products = products[:args.limit]
+        selected = all_products[:args.limit]
+    else:
+        selected = all_products
 
     args.output.mkdir(parents=True, exist_ok=True)
     manifest_path = args.output / "manifest.json"
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    else:
-        manifest = {"catalog": str(args.catalog), "model": args.model, "products": {}}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {
+        "catalog": str(args.catalog), "model": args.model, "products": {}
+    }
+    print(f"Products selected: {len(selected)} | views per product: {len(args.views)} | max new images: {len(selected)*len(args.views)}")
+    print(f"Images will be saved under: {args.output.resolve()} (each view is a paid API request)")
 
-    total = len(products) * len(args.views)
-    completed = 0
-    print(f"Products selected: {len(products)} | views per product: {len(args.views)} | max new images: {total}")
-    print(f"Output directory: {args.output.resolve()}")
-    print("Each view is a separate API request and may incur API charges.")
-
-    for index, product in enumerate(products, start=1):
-        product_id = safe_name(product.get("id") or f"product-{index}")
-        product_name = str(product.get("name") or product_id)
+    for index, product in enumerate(selected, start=1):
+        raw_id = str(product.get("id") or f"product-{index}")
+        product_id = safe_name(raw_id)
         product_dir = args.output / product_id
         product_dir.mkdir(parents=True, exist_ok=True)
         record = manifest["products"].setdefault(product_id, {
-            "id": product.get("id"), "name": product_name, "category": product.get("cat"),
-            "source_url": None, "views": {}
+            "id": raw_id, "name": str(product.get("name") or product_id), "views": {}
         })
-        print(f"\n[{index}/{len(products)}] {product_id} — {product_name}")
+        print(f"\n[{index}/{len(selected)}] {raw_id} — {product.get('name', product_id)}")
         try:
             url = source_url(product)
+            source_bytes, extension = download_source(url)
             record["source_url"] = url
-            source_bytes, extension = download_source(url, timeout=45)
         except Exception as exc:
             print(f"  SOURCE ERROR: {exc}")
             for view in args.views:
-                record["views"].setdefault(view, {"status": "failed", "error": f"source: {exc}"})
+                record["views"][view] = {"status": "failed", "error": str(exc)}
             manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
             continue
 
         for view in args.views:
             output_file = product_dir / f"{view}.png"
-            existing = record["views"].get(view, {})
+            old = record["views"].get(view, {})
             if output_file.exists() and output_file.stat().st_size > 0 and not args.retry_failed:
-                existing.update({"status": "done", "file": str(output_file.relative_to(args.output))})
-                record["views"][view] = existing
-                completed += 1
-                print(f"  SKIP {view}: already exists")
+                old.update({"status": "done", "file": str(output_file.relative_to(args.output)).replace("\\", "/")})
+                record["views"][view] = old
                 continue
-            if existing.get("status") == "failed" and not args.retry_failed and not output_file.exists():
-                # A failed view is retried by default so interrupted runs can recover.
-                pass
             error = None
             for attempt in range(1, args.retries + 1):
                 try:
-                    image_bytes = generate_image(
-                        api_key, source_bytes, extension, product, view, args.model, args.timeout
-                    )
-                    output_file.write_bytes(image_bytes)
+                    output_file.write_bytes(generate_image(api_key, source_bytes, extension, product, view, args.model, args.timeout))
                     record["views"][view] = {
-                        "status": "done", "file": str(output_file.relative_to(args.output)),
-                        "bytes": len(image_bytes), "model": args.model
+                        "status": "done", "file": str(output_file.relative_to(args.output)).replace("\\", "/"),
+                        "bytes": output_file.stat().st_size, "model": args.model
                     }
-                    print(f"  OK   {view}: {output_file}")
+                    print(f"  OK {view}: {output_file}")
                     error = None
                     break
                 except Exception as exc:
                     error = str(exc)
-                    print(f"  RETRY {view} ({attempt}/{args.retries}): {error[:240]}")
+                    print(f"  RETRY {view} ({attempt}/{args.retries}): {error[:200]}")
                     if attempt < args.retries:
                         time.sleep(min(2 ** attempt, 20))
             if error:
-                record["views"][view] = {"status": "failed", "error": error[:1500], "model": args.model}
-                print(f"  FAIL {view}: {error[:240]}")
-            completed += 1
+                record["views"][view] = {"status": "failed", "error": error[:1200], "model": args.model}
+                print(f"  FAIL {view}: {error[:200]}")
             manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
+    # Apply generated URLs only for successful files; leave original values for failed views.
+    if args.update_catalog:
+        output_is_public = args.output.resolve().is_relative_to((ROOT / "public").resolve())
+        if not output_is_public:
+            raise ValueError("--update-catalog requires --output to be inside threadly-v2/public so paths work on the deployed site.")
+        for product in selected:
+            record = manifest["products"].get(safe_name(product.get("id")))
+            if not record:
+                continue
+            current = list(product.get("images", [])) if isinstance(product.get("images"), list) else []
+            while len(current) < 5:
+                current.append(product.get("img", ""))
+            for i, view in enumerate(VIEWS):
+                info = record.get("views", {}).get(view, {})
+                if info.get("status") == "done" and (args.output / info.get("file", "")).exists():
+                    rel = (args.output / info["file"]).resolve().relative_to((ROOT / "public").resolve()).as_posix()
+                    current[i] = "/" + rel
+            product["images"] = current[:5]
+            if current and current[0]:
+                product["img"] = current[0]
+        catalog["source"] = "Juno catalogue with locally generated product gallery images; review generated images against the exact SKU before publishing."
+        catalog["notice"] = "AI-generated candidate views. Verify every image matches the exact supplier SKU before accepting orders."
+        args.catalog.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"Catalogue updated: {args.catalog}")
+
+    if args.xlsx:
+        xlsx_output = args.xlsx_output or args.xlsx.with_name(args.xlsx.stem + "_Updated" + args.xlsx.suffix)
+        update_workbook(args.xlsx, all_products, xlsx_output)
+
     manifest["summary"] = {
-        "products_selected": len(products),
+        "products_selected": len(selected),
         "views_requested_per_product": args.views,
         "finished_at_unix": int(time.time()),
-        "done_views": sum(
-            1 for p in manifest["products"].values()
-            for v in p.get("views", {}).values() if v.get("status") == "done"
-        ),
-        "failed_views": sum(
-            1 for p in manifest["products"].values()
-            for v in p.get("views", {}).values() if v.get("status") == "failed"
-        ),
+        "done_views": sum(1 for p in manifest["products"].values() for v in p.get("views", {}).values() if v.get("status") == "done"),
+        "failed_views": sum(1 for p in manifest["products"].values() for v in p.get("views", {}).values() if v.get("status") == "failed"),
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     print("\nRun summary:")
     print(json.dumps(manifest["summary"], indent=2))
     print(f"Manifest: {manifest_path.resolve()}")
-    print("Generated images are local files; they are not uploaded or published automatically.")
+    if not args.update_catalog and not args.xlsx:
+        print("Images generated locally; pass --update-catalog and/or --xlsx to write image references into databases.")
     return 0 if manifest["summary"]["failed_views"] == 0 else 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
