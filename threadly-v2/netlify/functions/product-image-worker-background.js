@@ -17,7 +17,7 @@ const json = (statusCode, body) => ({
 const safe = value => String(value || '').replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 100) || 'product';
 const normalizeImageUrl = value => {
   const url = String(value || '').trim();
-  const match = url.match(/drive\\.google\\.com\\/file\\/d\\/([^/]+)/) || url.match(/drive\\.google\\.com\\/open\\?id=([^&]+)/);
+  const match = url.match(/drive\.google\.com\/file\/d\/([^/]+)/) || url.match(/drive\.google\.com\/open\?id=([^&]+)/);
   return match ? 'https://drive.google.com/uc?export=download&id=' + match[1] : url;
 };
 
