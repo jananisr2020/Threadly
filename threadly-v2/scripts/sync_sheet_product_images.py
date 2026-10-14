@@ -172,7 +172,7 @@ def run_once(session, sheet_id, tab, site_url):
         print("No products with missing gallery images found.")
         return 0
 
-    CATALOG.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    CATALOG.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     command = [sys.executable, str(GENERATOR)]
     for product_id in requested_ids:
         command.extend(["--product-id", product_id])
