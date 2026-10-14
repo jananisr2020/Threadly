@@ -25,7 +25,7 @@ DEFAULT_OUTPUT = ROOT / "public" / "free_product_images"
 API_URL = "https://commons.wikimedia.org/w/api.php"
 USER_AGENT = "JunoCatalogImageFetcher/1.0 (free image catalogue workflow)"
 ALLOWED_MIME = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-VIEWS = ["front", "side", "back", "detail", "model"]
+VIEWS = ["image-1", "image-2", "image-3", "image-4", "image-5"]
 
 
 def safe_name(value: object) -> str:
