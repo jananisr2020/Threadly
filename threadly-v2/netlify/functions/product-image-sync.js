@@ -36,13 +36,13 @@ async function run(){
  requireEnv();const rows=await sheets.read('Products');if(!rows||rows.length<2)return{ok:true,processed:0,message:'No product rows found'};
  let h=(rows[0]||[]).map(x=>String(x||'').trim());const idI=find(h,['product id','id','sku']),nameI=find(h,['product name','name','title']),catI=find(h,['category','cat']),detailI=find(h,['details','description','product details']),variantI=find(h,['sizes/colours','sizes','colours','color','colour','variant']),showI=find(h,['show on site','published','active']);
  if(idI<0||nameI<0)throw Error('Products tab needs Product ID and Product Name columns.');
- let altered=false;for(const x of ['Image','Image 2','Image 3','Image 4','Image 5','Image Status','Image Updated'])if(find(h,[norm(x)])<0){h.push(x);altered=true}
+ let altered=false;for(const x of ['Image','Image 2','Image 3','Image 4','Image 5','Image Status','Image Updated'])if(find(h,[norm(x)])<0 && !(x==='Image' && find(h,['image url','image 1','product image','primary image'])>=0)){h.push(x);altered=true}
  if(altered)await sheets.update('Products',1,h);
- const ii=VIEWS.map(v=>find(h,[v.key])),si=find(h,['image status']),ui=find(h,['image updated']);
+ const ii=VIEWS.map((v,i)=>find(h,i===0?['image','image url','image 1','product image','primary image']:[v.key])),si=find(h,['image status']),ui=find(h,['image updated']);
  for(let ri=1;ri<rows.length;ri++){
   const row=[...(rows[ri]||[])];while(row.length<h.length)row.push('');
   const id=cell(row,idI),name=cell(row,nameI);if(!id||!name||(showI>=0&&/^(no|false|0)$/i.test(cell(row,showI))))continue;
-  const slot=ii.findIndex(i=>!cell(row,i));if(slot<0)continue;
+  const primary=cell(row,ii[0]);const badPreview=/loremflickr\\.com/i.test(primary);const slot=badPreview?0:ii.findIndex(i=>!cell(row,i));if(slot<0)continue;
   const p={id,name,category:cell(row,catI)||'Fashion accessories',details:cell(row,detailI)||'No additional details supplied',variants:cell(row,variantI)||'Default variant'};
   try{
    const src=await source(cell(row,ii[0]));const png=await generate(p,VIEWS[slot],src);
