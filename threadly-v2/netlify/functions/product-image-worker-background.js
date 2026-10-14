@@ -111,6 +111,13 @@ exports.handler = async event => {
     const productKey = safe(productId);
 
     for (let i = 0; i < views.length; i++) {
+      const key = 'products/' + productKey + '/' + views[i].key + '.png';
+      const existingBlob = await store.get(key, { type: 'blob' });
+      if (existingBlob) {
+        sheetRow.row[sheetRow.imageCols[i]] = '/api/product-image?productId=' + encodeURIComponent(productId) + '&view=' + (i + 1);
+        await sheets.update('Products', sheetRow.rowNumber, sheetRow.row);
+        continue;
+      }
       const png = await openAiEdit({
         apiKey: process.env.OPENAI_API_KEY,
         sourceBytes,
@@ -119,7 +126,6 @@ exports.handler = async event => {
         category: String(body.category || 'More'),
         view: views[i]
       });
-      const key = 'products/' + productKey + '/' + views[i].key + '.png';
       await store.set(key, png, { metadata: { contentType: 'image/png', productId, view: views[i].key } });
       sheetRow.row[sheetRow.imageCols[i]] = '/api/product-image?productId=' + encodeURIComponent(productId) + '&view=' + (i + 1);
       sheetRow.row[sheetRow.statusCol] = 'Processing';
