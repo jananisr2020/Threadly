@@ -1,6 +1,6 @@
 # Automatic Juno product image population
 
-The scheduled Netlify function product-image-sync checks the existing Google Sheets Products tab every five minutes. It selects the first published product with a missing gallery slot, generates one view, uploads it to Cloudinary, and writes the permanent HTTPS URL and status back into that product row. It resumes from saved sheet data and does not intentionally regenerate filled slots.
+The scheduled Netlify function product-image-sync checks the existing Google Sheets Products tab every five minutes and quickly dispatches work to product-image-sync-background. The background function selects the first published product with a missing gallery slot, generates one view, uploads it to Cloudinary, and writes the permanent HTTPS URL and status back into that product row. It resumes from saved sheet data and does not intentionally regenerate filled slots.
 
 ## One-time Netlify environment variables
 
@@ -8,9 +8,9 @@ Keep credentials in Netlify Site configuration → Environment variables. Never 
 
 Existing: SHEET_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY.
 
-Add: OPENAI_API_KEY, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
+Add: OPENAI_API_KEY, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, JUNO_IMAGE_SYNC_TOKEN (a long random secret shared by the scheduler and background worker).
 
-Optional: OPENAI_IMAGE_MODEL (defaults to gpt-image-1), JUNO_IMAGE_SYNC_TOKEN (for authenticated manual HTTP invocation).
+Optional: OPENAI_IMAGE_MODEL (defaults to gpt-image-1).
 
 The Google service account must have Editor access to the spreadsheet. Cloudinary credentials must permit uploads.
 
@@ -27,6 +27,6 @@ The worker processes one missing gallery image per five-minute run. Five views f
 ## Verify after deployment
 
 1. Add the required environment variables in Netlify and redeploy.
-2. Inspect Netlify Functions logs for product-image-sync.
+2. Inspect Netlify Functions logs for product-image-sync and product-image-sync-background.
 3. Check the Products sheet for image URLs and Image Status.
 4. Open product detail pages and verify the five gallery images.
