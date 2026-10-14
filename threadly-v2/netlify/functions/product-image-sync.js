@@ -42,7 +42,7 @@ async function run(){
  for(let ri=1;ri<rows.length;ri++){
   const row=[...(rows[ri]||[])];while(row.length<h.length)row.push('');
   const id=cell(row,idI),name=cell(row,nameI);if(!id||!name||(showI>=0&&/^(no|false|0)$/i.test(cell(row,showI))))continue;
-  const primary=cell(row,ii[0]);const badPreview=/loremflickr\\.com/i.test(primary);const slot=badPreview?0:ii.findIndex(i=>!cell(row,i));if(slot<0)continue;
+  const primary=cell(row,ii[0]);const badPreview=/loremflickr/i.test(primary);const slot=badPreview?0:ii.findIndex(i=>!cell(row,i));if(slot<0)continue;
   const p={id,name,category:cell(row,catI)||'Fashion accessories',details:cell(row,detailI)||'No additional details supplied',variants:cell(row,variantI)||'Default variant'};
   try{
    const src=await source(cell(row,ii[0]));const png=await generate(p,VIEWS[slot],src);
