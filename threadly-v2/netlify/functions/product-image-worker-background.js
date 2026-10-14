@@ -15,6 +15,11 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body)
 });
 const safe = value => String(value || '').replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 100) || 'product';
+const normalizeImageUrl = value => {
+  const url = String(value || '').trim();
+  const match = url.match(/drive\\.google\\.com\\/file\\/d\\/([^/]+)/) || url.match(/drive\\.google\\.com\\/open\\?id=([^&]+)/);
+  return match ? 'https://drive.google.com/uc?export=download&id=' + match[1] : url;
+};
 
 async function openAiEdit({ apiKey, sourceBytes, contentType, productName, category, view }) {
   const prompt = [
@@ -97,7 +102,7 @@ exports.handler = async event => {
     sheetRow.row[sheetRow.updatedCol] = new Date().toISOString();
     await sheets.update('Products', sheetRow.rowNumber, sheetRow.row);
 
-    const sourceUrl = String(body.sourceImage || '').trim();
+    const sourceUrl = normalizeImageUrl(body.sourceImage);
     if (!/^https?:\/\//i.test(sourceUrl)) throw new Error('This product has no valid source image URL.');
     const sourceResponse = await fetch(sourceUrl, { signal: AbortSignal.timeout(45000) });
     if (!sourceResponse.ok) throw new Error('Source image returned HTTP ' + sourceResponse.status);
