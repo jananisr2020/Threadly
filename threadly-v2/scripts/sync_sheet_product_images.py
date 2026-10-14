@@ -27,7 +27,7 @@ ALIASES = {
     "brand": ["brand", "brand name"],
     "price": ["selling price", "price", "sale price"],
     "mrp": ["mrp", "original price", "list price"],
-    "image": ["image", "image url", "image 1", "product image", "primary image"],
+    "image": ["image", "image url", "image 1", "ai image 1", "product image", "primary image"],
     "image 2": ["image 2", "ai image 2", "gallery image 2"],
     "image 3": ["image 3", "ai image 3", "gallery image 3"],
     "image 4": ["image 4", "ai image 4", "gallery image 4"],
@@ -145,6 +145,7 @@ def run_once(session, sheet_id, tab, site_url):
     idx = {key: col(headers, key) for key in ["id", "name", "category", "image", "image 2", "image 3", "image 4", "image 5", "status"]}
     data = json.loads(CATALOG.read_text(encoding="utf-8"))
     generated_ids = []
+    pending_updates = []
     for row_number, source_row in enumerate(rows[1:], start=2):
         row = list(source_row) + [""] * max(0, len(headers) - len(source_row))
         product_id, name = value(row, idx["id"]), value(row, idx["name"])
@@ -176,10 +177,13 @@ def run_once(session, sheet_id, tab, site_url):
             row[idx[key]] = public_urls[i]
         if idx["status"] >= 0:
             row[idx["status"]] = "Generated locally; awaiting/published via Netlify Git deploy"
-        update_row(session, sheet_id, tab, row_number, row)
+        pending_updates.append((row_number, row))
         generated_ids.append(product_id)
     if generated_ids:
         git_publish(generated_ids)
+        # Only publish URLs to Sheets after the assets have been pushed to the connected Git branch.
+        for row_number, updated_row in pending_updates:
+            update_row(session, sheet_id, tab, row_number, updated_row)
     return len(generated_ids)
 
 def main():
