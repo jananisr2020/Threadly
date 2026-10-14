@@ -6,3 +6,4 @@ accelerate>=0.33
 safetensors>=0.4
 Pillow>=10.0
 requests>=2.32
+google-auth>=2.35
