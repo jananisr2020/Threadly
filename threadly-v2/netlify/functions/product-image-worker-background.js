@@ -82,7 +82,7 @@ async function getProductRow(productId) {
 exports.handler = async event => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'POST only.' });
   if (!process.env.JUNO_IMAGE_WORKER_TOKEN ||
-      event.headers['x-juno-worker-token'] !== process.env.JUNO_IMAGE_WORKER_TOKEN) {
+      (event.headers || {})['x-juno-worker-token'] !== process.env.JUNO_IMAGE_WORKER_TOKEN) {
     return json(401, { error: 'Unauthorized.' });
   }
   const body = JSON.parse(event.body || '{}');
