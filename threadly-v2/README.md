@@ -130,3 +130,26 @@ Add your refund, shipping and privacy policy pages and contact details (Razorpay
 - Google Sheets allows roughly 60 reads per minute per account on this setup. That is fine for a small store with a few hundred visitors a day. If you grow beyond that, move to a real database and I can do it for you.
 - A customer who pays but closes the browser before the confirmation will not have an order row. Razorpay still shows the payment in its dashboard; adding a Razorpay webhook closes that gap.
 
+
+
+## Juno multi-seller marketplace (feature branch)
+
+The feature branch `feature/juno-marketplace-foundation` contains the first marketplace implementation. It adds the public `/sell-on-juno.html` application form, admin application review, seller activation/login, and a seller studio at `/seller-studio.html` for submitting accessory products for moderation.
+
+### Required Google Sheets setup
+- Keep the existing `Requests` tab with the 9 columns documented above.
+- Create a tab named exactly `Sellers` with these headers in row 1: `Seller ID, Application ID, Store Name, Email, Password Hash, City, Category, Status, Created, Last Login`.
+- The seller product endpoint appends `Seller ID` and `Approval Status` headers to the existing `Products` header row when needed. Existing catalogue rows remain Juno-owned/visible; seller-submitted products start hidden and pending approval.
+- Keep `BREVO_API_KEY` and `MAIL_FROM` configured for seller approval emails. When an admin changes a seller application to `Approved`, the API emails a 24-hour account activation link. The seller sets their own password through that link.
+- The seller API validates seller identity from a signed JWT and restricts product queries/creation to the authenticated seller. Sellers cannot approve or publish their own listings.
+- Admin > Seller products can approve or reject seller listings. Only approved products marked visible can appear in the public catalogue.
+
+### Important scope limitation
+This is an early marketplace slice. It supports seller application, seller account activation/login, and moderated product submission. It does **not** yet implement multi-seller cart/order splitting, seller fulfilment dashboards, marketplace payouts, seller ledger, refund allocation for multi-seller orders, or full transactional inventory locking. Do not enable external-seller checkout or advertise seller payouts until those phases are implemented and tested.
+
+### Setup and smoke tests
+1. Create the `Sellers` sheet tab and headers above.
+2. Verify `BREVO_API_KEY`, `MAIL_FROM`, `JWT_SECRET`, and Google Sheets service account permissions in Netlify.
+3. Deploy a preview of this branch, submit a seller application, approve it in Admin, open the activation email, and set a password.
+4. Log into `/seller-studio.html`, submit a product, verify it remains hidden, then approve it in Admin > Seller products and verify it appears on the storefront.
+5. Regression-test customer signup/login, cart, prepaid Razorpay checkout, order creation and refunds before merging.
