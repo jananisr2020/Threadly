@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#d9186c">
+<meta name="robots" content="index,follow">
+<title>Sell on Juno | Join the Accessories Marketplace</title>
+<meta name="description" content="Join Juno as an accessories seller. Apply for a free seller account and introduce your products to shoppers on Juno.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{color-scheme:light;--bg:#fff5f9;--card:#fff;--ink:#19172d;--muted:#6d687f;--line:#f0d9e5;--pink:#d9186c;--purple:#7b3fe4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:var(--pink)}.top{background:#19172d;color:white;padding:12px 5vw;display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-size:24px;font-weight:850;letter-spacing:-1px;text-decoration:none;color:white}.brand span{color:#ff7eb6}.top a:not(.brand){color:white}
+main{max-width:1080px;margin:auto;padding:32px 18px 64px}.hero{border-radius:26px;padding:clamp(26px,5vw,54px);background:linear-gradient(120deg,#ff7eb6,#d9186c 54%,#7b3fe4);color:white}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.15em;font-weight:800}.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.02;letter-spacing:-1.8px;max-width:750px;margin:12px 0}.hero p{max-width:660px;font-size:18px}.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.pills span{border:1px solid #ffffff80;background:#ffffff1f;padding:7px 12px;border-radius:99px;font-size:13px;font-weight:650}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.85fr);gap:22px;margin-top:22px;align-items:start}.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 8px 26px #31152b08}.panel h2{margin:0 0 6px;font-size:24px}.muted{color:var(--muted);font-size:14px}.benefit{display:flex;gap:12px;margin:20px 0}.icon{flex:0 0 42px;height:42px;border-radius:12px;background:#fde5ef;display:grid;place-items:center;font-size:21px}.benefit b{display:block}.benefit p{margin:3px 0 0;color:var(--muted);font-size:14px}
+form{display:grid;gap:13px;margin-top:18px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:5px}.field label{font-weight:700;font-size:13px}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);padding:12px;font:inherit;min-width:0}.field textarea{min-height:92px;resize:vertical}.field small{font-size:12px;color:var(--muted)}.consent{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--muted)}.consent input{margin-top:5px}.submit{border:0;border-radius:12px;padding:14px;background:var(--pink);color:white;font:inherit;font-weight:800;cursor:pointer}.submit:disabled{opacity:.6;cursor:wait}.status{display:none;border-radius:10px;padding:12px;font-size:14px}.status.show{display:block}.status.ok{background:#e6f7ed;color:#145b35}.status.err{background:#fff0f0;color:#9b1c1c}.smallprint{font-size:12px;color:var(--muted);margin-top:12px}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:18px}
+@media(max-width:780px){.layout{grid-template-columns:1fr}.two{grid-template-columns:1fr 1fr}}@media(max-width:460px){.two{grid-template-columns:1fr}.top{padding:12px 16px}main{padding:20px 12px 40px}.panel{padding:18px}}
+</style>
+</head>
+<body>
+<header class="top"><a class="brand" href="/">jun<span>o</span></a><a href="/">Shop Juno →</a></header>
+<main>
+<section class="hero">
+<div class="eyebrow">Juno marketplace · Accessories sellers</div>
+<h1>Your accessories deserve a bigger audience.</h1>
+<p>Bring your hair accessories, jewellery, bags and other accessories to Juno. Apply to join our seller community. Seller onboarding is free during the launch phase.</p>
+<div class="pills"><span>✓ Free application</span><span>✓ Accessories-focused launch</span><span>✓ Manage your own products</span></div>
+</section>
+<div class="layout">
+<section class="panel">
+<h2>Built for independent sellers</h2>
+<p class="muted">Juno is opening applications for independent accessory sellers and small brands.</p>
+<div class="benefit"><div class="icon">🛍️</div><div><b>One marketplace storefront</b><p>Introduce your products to shoppers browsing Juno.</p></div></div>
+<div class="benefit"><div class="icon">📦</div><div><b>Your products, your stock</b><p>Share accurate product details, prices and stock. Approved sellers will receive seller tools as marketplace features roll out.</p></div></div>
+<div class="benefit"><div class="icon">🆓</div><div><b>No onboarding fee during launch</b><p>Submitting an application is free. Any future fees or commission will be communicated before they take effect.</p></div></div>
+<div class="benefit"><div class="icon">🔎</div><div><b>Application review first</b><p>We review applications before enabling seller access. Submitting this form does not automatically create an active seller account or publish products.</p></div></div>
+<p class="smallprint">Please apply only if you sell genuine accessories and can fulfil customer orders reliably. Do not submit bank details, passwords or identity documents through this form.</p>
+</section>
+<section class="panel">
+<h2>Apply to sell on Juno</h2>
+<p class="muted">Tell us about your store. Fields marked * are required.</p>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<form id="seller-form">
+<div class="two">
+<div class="field"><label for="owner">Your name *</label><input id="owner" name="ownerName" autocomplete="name" required maxlength="100"></div>
+<div class="field"><label for="store">Store / brand name *</label><input id="store" name="storeName" required maxlength="100"></div>
+</div>
+<div class="two">
+<div class="field"><label for="email">Email *</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="160"></div>
+<div class="field"><label for="phone">Mobile number *</label><input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" pattern="[6-9][0-9]{9}" placeholder="10-digit Indian mobile" required maxlength="10"></div>
+</div>
+<div class="two">
+<div class="field"><label for="city">City / town *</label><input id="city" name="city" required maxlength="100" placeholder="e.g. Coimbatore"></div>
+<div class="field"><label for="category">Main accessory category *</label><select id="category" name="category" required><option value="">Choose category</option><option>Hair accessories</option><option>Jewellery</option><option>Bags and purses</option><option>Scarves and fashion accessories</option><option>Belts and wallets</option><option>Mixed accessories</option></select></div>
+</div>
+<div class="field"><label for="social">Instagram or store link</label><input id="social" name="social" type="url" placeholder="https://instagram.com/yourstore" maxlength="300"><small>Optional, but helpful for reviewing your store.</small></div>
+<div class="field"><label for="about">Tell us what you sell *</label><textarea id="about" name="about" required maxlength="1000" placeholder="Products, typical price range, dispatch location and how you fulfil orders"></textarea></div>
+<label class="consent"><input id="consent" name="consent" type="checkbox" required><span>I confirm these details are accurate and agree that Juno may contact me about this seller application and handle the information as described in its <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+<button class="submit" id="submit" type="submit">Submit seller application</button>
+</form>
+<p class="smallprint">Applications are reviewed manually. This form does not collect payment details or activate seller payouts.</p>
+</section>
+</div>
+</main>
+<footer>© Juno Marketplace · <a href="/">Shop Juno</a> · <a href="/terms.html">Terms</a> · <a href="/privacy-policy.html">Privacy</a></footer>
+<script>
+const form=document.getElementById('seller-form'),statusBox=document.getElementById('status'),submit=document.getElementById('submit');
+function status(message,kind){statusBox.textContent=message;statusBox.className='status show '+kind;}
+form.addEventListener('submit',async e=>{
+ e.preventDefault(); if(!form.reportValidity()) return;
+ const data=Object.fromEntries(new FormData(form).entries());data.consent=document.getElementById('consent').checked;
+ submit.disabled=true;submit.textContent='Submitting…';statusBox.className='status';
+ try{
+  const response=await fetch('/api/seller-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const result=await response.json().catch(()=>({error:'The server returned an invalid response.'}));
+  if(!response.ok)throw new Error(result.error||'Could not submit the application.');
+  form.reset();status('Application received! Your details have been sent to Juno for review. This is an application only; seller access is not active yet. Reference: '+result.applicationId,'ok');
+ }catch(err){status(err.message||'Could not submit. Please try again later.','err');}
+ finally{submit.disabled=false;submit.textContent='Submit seller application';}
+});
+</script>
+</body>
+</html>
