@@ -30,7 +30,7 @@ const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).re
 const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await productRows()) } });
 const productObjs = rows => { const k = (rows[0] || []).map(nk); return rows.slice(1).map((r, i) => { const o = { row: i + 2 }; k.forEach((n, j) => o[n] = r[j] == null ? '' : r[j]); return o }) };
 const num = v => +String(v || '').replace(/[^\d.]/g, '') || 0;
-async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no') m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row } }); return m }
+async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row } }); return m }
 async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
   const cat = await catalogue(); let sub = 0, count = 0; const lines = [], qty = [];
@@ -62,6 +62,66 @@ const sellerApply = async (b, e) => {
   const details = { ownerName, storeName, phone, city, category, social, about, consentAt: new Date().toISOString(), source: 'sell-on-juno-page' };
   await sheets.append('Requests', [id, now(), '', email, 'Seller application', storeName, JSON.stringify(details), 'Requested', '']);
   return { ok: true, applicationId: id, message: 'Application received for review.' };
+};
+
+
+/* ---------- marketplace: seller accounts and owned products ---------- */
+const sellerRows = async () => sheets.read('Sellers');
+const sellerByEmail = async email => {
+  const rows = await sellerRows();
+  for (let i = 1; i < rows.length; i++) if (String(rows[i][3] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] };
+  return null;
+};
+const sellerPublic = v => ({ id: v[0], storeName: v[2], email: v[3], city: v[5], category: v[6] });
+const sellerActivate = async (b, e) => {
+  limit('seller-activate:' + ip(e), 8, 36e5);
+  const password = String(b.password || ''); if (password.length < 8) throw new E('Use a password with at least 8 characters.');
+  let t; try { t = jwt.verify(String(b.token || ''), secret()) } catch (x) { throw new E('This activation link expired. Ask Juno to resend it.') }
+  if (t.purpose !== 'seller-activate' || !t.email || !t.applicationId) throw new E('Invalid seller activation link.');
+  const reqs = await sheets.read('Requests');
+  const req = reqs.find((r, i) => i > 0 && r[0] === t.applicationId && String(r[4] || '').toLowerCase() === 'seller application' && r[7] === 'Approved');
+  if (!req || String(req[3] || '').toLowerCase() !== t.email) throw new E('This seller application is not approved or no longer valid.');
+  if (await sellerByEmail(t.email)) throw new E('A seller account already exists. Please log in.');
+  let d = {}; try { d = JSON.parse(req[6] || '{}') } catch (x) {}
+  const id = 'JSR' + Date.now().toString(36).toUpperCase(), rows = await sellerRows();
+  if (!rows.length) throw new E('The Sellers sheet needs its header row. Ask the Juno administrator to finish setup.', 503);
+  await sheets.append('Sellers', [id, t.applicationId, clean(d.storeName || req[5]), t.email, await bcrypt.hash(password, 10), clean(d.city), clean(d.category), 'Active', now(), now()]);
+  const seller = { id, storeName: clean(d.storeName || req[5]), email: t.email, city: clean(d.city), category: clean(d.category) };
+  return { ok: true, seller, token: sign({ seller: true, sellerId: id, email: t.email }, '30d') };
+};
+const sellerLogin = async (b, e) => {
+  limit('seller-login:' + ip(e), 10, 9e5);
+  const email = clean(b.email).toLowerCase(), password = String(b.password || '');
+  if (!/^\\S+@\\S+\\.\\S+$/.test(email) || !password) throw new E('Enter your seller email and password.');
+  const f = await sellerByEmail(email);
+  if (!f || f.v[7] !== 'Active' || !(await bcrypt.compare(password, String(f.v[4] || '')))) throw new E('Seller login details are incorrect or the account is not active.', 401);
+  const row = f.v.slice(); row[9] = now(); await sheets.update('Sellers', f.row, row);
+  return { ok: true, seller: sellerPublic(row), token: sign({ seller: true, sellerId: row[0], email }, '30d') };
+};
+const sellerProducts = async (b, e) => {
+  const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
+  const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
+  if (b.action === 'profile') return { ok: true, seller: sellerPublic(sr.v) };
+  const rows = await productRows(true), headers = (rows[0] || []).map(nk);
+  const sidCol = headers.indexOf('seller id'), statusCol = headers.indexOf('approval status');
+  if (sidCol < 0 || statusCol < 0) throw new E('Marketplace product columns are not configured yet. Ask the Juno administrator to add Seller ID and Approval Status columns.', 503);
+  if (b.action === 'load') {
+    const list = productObjs(rows).filter(p => String(p['seller id']) === u.sellerId).map(p => ({ id: p['product id'], name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 0 : num(p.stock), status: p['approval status'] || 'Pending', visibility: String(p['show on site']).toLowerCase() === 'no' ? 'Hidden' : 'Live' }));
+    return { ok: true, seller: sellerPublic(sr.v), products: list };
+  }
+  if (b.action === 'save') {
+    const p = b.product || {}, name = clean(p.name), cat = clean(p.cat), priceValue = num(p.price), mrp = num(p.mrp) || priceValue, stock = Number(p.stock);
+    const categories = ['Hair accessories', 'Jewellery', 'Bags and purses', 'Scarves and fashion accessories', 'Belts and wallets', 'Mixed accessories'];
+    if (name.length < 2 || !categories.includes(cat) || !(priceValue > 0 && priceValue <= 50000) || !(stock >= 0 && Number.isInteger(stock))) throw new E('Check product name, category, price and stock.');
+    if (mrp < priceValue || mrp > 100000) throw new E('MRP must be at least the selling price.');
+    const image = String(p.image || '').trim(); try { const im = new URL(image); if (!['http:', 'https:'].includes(im.protocol)) throw new Error(); } catch (x) { throw new E('Enter a valid https:// or http:// product image URL.'); }
+    if (clean(p.details).length < 3) throw new E('Add a short product description.');
+    const id = 'JS' + Date.now().toString(36).toUpperCase();
+    const row = [id, name, cat, 'Unisex', mrp, priceValue, clean(p.details), clean(p.sizes), image.slice(0, 500), stock, 'No', 0, 'No', u.sellerId, 'Pending'];
+    await sheets.append('Products', row); invalidate();
+    return { ok: true, id, status: 'Pending' };
+  }
+  throw new E('Unknown seller action.');
 };
 
 const signup = async (b, e) => {
@@ -310,6 +370,14 @@ const admin = async (b, e) => {
     const ST = ['Requested', 'Approved', 'Rejected', 'Pickup scheduled', 'Refunded', 'Closed']; if (!ST.includes(b.status)) throw new E('Bad status.');
     const rows = await sheets.read('Requests'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Request not found.', 404);
     const row = Array.from({ length: 9 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[7] = b.status; row[8] = clean(b.notes); await sheets.update('Requests', i + 1, row);
+    if (String(row[4] || '').toLowerCase() === 'seller application' && b.status === 'Approved' && String(rows[i][7] || '') !== 'Approved') {
+      if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM) throw new E('Application saved as Approved, but email is not configured. Set BREVO_API_KEY and MAIL_FROM, then contact the seller with a fresh activation link.', 500);
+      let details = {}; try { details = JSON.parse(row[6] || '{}') } catch (x) {}
+      const activation = sign({ purpose: 'seller-activate', email: String(row[3]).toLowerCase(), applicationId: row[0] }, '24h');
+      const base = process.env.URL || ('https://' + ((e.headers || {}).host || ''));
+      const link = base + '/seller-studio.html?activate=' + encodeURIComponent(activation);
+      await mail(String(row[3]), 'Your Juno seller application is approved', '<p>Hi ' + clean(details.ownerName || details.storeName || 'there') + ',</p><p>Your seller application for <b>' + clean(details.storeName || row[5]) + '</b> has been approved.</p><p><a href="' + link + '" style="background:#d9186c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Activate seller account</a></p><p>This secure link expires in 24 hours. If it expires, contact Juno support. Do not share it.</p>');
+    }
     const want = row[4] === 'Cancel' && b.status === 'Approved' ? 'Cancelled' : row[4] === 'Return' && b.status === 'Refunded' ? 'Returned' : '';
     if (want) { const o = await sheets.read('Orders'), k = o.findIndex((r, n) => n > 0 && r[0] === row[2]); if (k > 0) { const orow = padOrder(o[k]); orow[OIDX.status] = want; await sheets.update('Orders', k + 1, orow) } }
     return { ok: true };
@@ -330,16 +398,27 @@ const admin = async (b, e) => {
     let emailed = false; if (changed && row[4]) emailed = await tryMail(row[4], `Update on your ticket ${row[0]}: ${b.status}`, `<p>Hi ${clean(row[3])},</p><p>Your ticket <b>${row[0]}</b> is now <b>${b.status}</b>.</p>${reply ? '<p><b>Our reply:</b><br>' + brk(reply) + '</p>' : ''}<p>Need more help? Call ${PHONE()} or reply to this email.</p>`);
     return { ok: true, emailed };
   }
+  if (b.action === 'setSellerProductStatus') {
+    const status = ['Approved', 'Rejected', 'Pending'].includes(b.status) ? b.status : '';
+    if (!status) throw new E('Bad product review status.');
+    const rows = await productRows(true), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id);
+    if (i < 0) throw new E('Product not found.', 404);
+    const row = rows[i].slice(); while (row.length < 15) row.push('');
+    if (!row[13]) throw new E('This is not a seller-submitted product.');
+    row[14] = status; row[12] = status === 'Approved' ? 'Yes' : 'No';
+    await sheets.update('Products', i + 1, row); invalidate(); return { ok: true };
+  }
   if (b.action === 'saveProduct') {
     const p = b.product || {}, rows = await productRows(true); let id = clean(p.id);
     const name = clean(p.name), sp = num(p.price), mrp = num(p.mrp) || sp;
     if (!name || !sp) throw new E('Name and selling price are required.');
     if (!id) { const mx = rows.slice(1).reduce((m, r) => Math.max(m, +String(r[0] || '').replace(/\D/g, '') || 0), 0); id = 'TL' + String(mx + 1).padStart(3, '0') }
-    const row = [id, name, clean(p.cat) || 'More', clean(p.g) || 'Unisex', mrp, sp, clean(p.details), clean(p.sizes), String(p.image || '').trim().slice(0, 500), p.stock === '' || p.stock == null ? '' : num(p.stock), /^y/i.test(p.sale) ? 'Yes' : 'No', num(p.rating) || 4.2, /^n/i.test(p.show) ? 'No' : 'Yes'];
     const i = rows.findIndex((r, k) => k > 0 && r[0] === id);
-    if (i > 0) await sheets.update('Products', i + 1, row); else await sheets.append('Products', row);
+    const row = [id, name, clean(p.cat) || 'More', clean(p.g) || 'Unisex', mrp, sp, clean(p.details), clean(p.sizes), String(p.image || '').trim().slice(0, 500), p.stock === '' || p.stock == null ? '' : num(p.stock), /^y/i.test(p.sale) ? 'Yes' : 'No', num(p.rating) || 4.2, /^n/i.test(p.show) ? 'No' : 'Yes'];
+    if (i > 0) { const existing = rows[i]; while (row.length < existing.length) row.push(existing[row.length] == null ? '' : existing[row.length]); if (existing[13]) row[13] = existing[13]; if (existing[13] && existing[14] === 'Pending') row[12] = 'No'; await sheets.update('Products', i + 1, row); }
+    else await sheets.append('Products', [...row, '', 'Approved']);
     invalidate(); return { ok: true, id };
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
