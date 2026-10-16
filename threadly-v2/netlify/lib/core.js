@@ -30,13 +30,14 @@ const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).re
 const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await productRows()) } });
 const productObjs = rows => { const k = (rows[0] || []).map(nk); return rows.slice(1).map((r, i) => { const o = { row: i + 2 }; k.forEach((n, j) => o[n] = r[j] == null ? '' : r[j]); return o }) };
 const num = v => +String(v || '').replace(/[^\d.]/g, '') || 0;
-async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row } }); return m }
+async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
 async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
   const cat = await catalogue(); let sub = 0, count = 0; const lines = [], qty = [];
   for (const it of items) { const p = cat[it.id], n = Math.floor(+it.n); if (!p || !(n >= 1 && n <= 20)) throw new E('A product in your cart is no longer available.'); if (p.stock < n) throw new E(p.name + ' has only ' + p.stock + ' left.'); sub += p.price * n; count += n; lines.push(p.name + ' (' + clean(it.s) + ') x' + n); qty.push([it.id, n]) }
   const disc = ['JUNO10', 'THREAD10'].includes(String(coupon || '').toUpperCase()) ? Math.round(sub * .1) : 0, ship = sub - disc < 299 ? 39 : 0;
-  return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty };
+  const itemDetails = qty.map(([id, n]) => { const p = cat[id]; return { productId: id, name: p.name, category: p.category || '', unitPrice: p.price, quantity: n, sellerId: p.sellerId || '' }; });
+  return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty, itemDetails };
 }
 /* ---------- users ---------- */
 const findUser = async email => { const rows = await sheets.read('Users'); for (let i = 1; i < rows.length; i++) if (String(rows[i][1] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] }; return null };
@@ -97,6 +98,26 @@ const sellerLogin = async (b, e) => {
   if (!f || f.v[7] !== 'Active' || !(await bcrypt.compare(password, String(f.v[4] || '')))) throw new E('Seller login details are incorrect or the account is not active.', 401);
   const row = f.v.slice(); row[9] = now(); await sheets.update('Sellers', f.row, row);
   return { ok: true, seller: sellerPublic(row), token: sign({ seller: true, sellerId: row[0], email }, '30d') };
+};
+const sellerOrders = async (b, e) => {
+  const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
+  const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
+  let rows; try { rows = await sheets.read('SellerOrders'); } catch (x) { throw new E('SellerOrders sheet is not set up yet. Ask the Juno administrator to add it.', 503); }
+  if (b.action === 'load') return { ok: true, orders: rows.slice(1).filter(r => String(r[3]) === u.sellerId).reverse().map(r => ({ id:r[0], parentOrderId:r[1], date:r[2], storeName:r[4], customerName:r[5], phone:r[7], address:r[8], pincode:r[9], items:(()=>{try{return JSON.parse(r[10]||'[]')}catch(x){return []}})(), itemCount:+r[11]||0, subtotal:+r[12]||0, paymentStatus:r[15], status:r[16]||'New', tracking:r[17]||'' })) };
+  if (b.action === 'update') {
+    const allowed = ['New','Accepted','Packed','Shipped','Delivered','Cancelled'];
+    if (!allowed.includes(b.status)) throw new E('Choose a valid fulfilment status.');
+    const i = rows.findIndex((r,k)=>k>0 && r[0]===b.id && String(r[3])===u.sellerId);
+    if (i < 0) throw new E('Seller order not found.',404);
+    const row=rows[i].slice(); while(row.length<20) row.push('');
+    const old=String(row[16]||'New');
+    const transitions={New:['Accepted','Cancelled'],Accepted:['Packed','Cancelled'],Packed:['Shipped','Cancelled'],Shipped:['Delivered'],Delivered:[],Cancelled:[]};
+    if (b.status !== old && !(transitions[old]||[]).includes(b.status)) throw new E('That fulfilment status change is not allowed.');
+    row[16]=b.status; if (b.tracking != null) row[17]=clean(b.tracking); row[18]=now();
+    await sheets.update('SellerOrders',i+1,row);
+    return {ok:true};
+  }
+  throw new E('Unknown seller order action.');
 };
 const sellerProducts = async (b, e) => {
   const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
@@ -168,7 +189,37 @@ const createOrder = async (b, e, u) => {
   return { id: r.id, amount: r.amount, key: process.env.RAZORPAY_KEY_ID, orderId: o.id, orderToken: sign({ o, rzp: r.id }, '2h') };
 };
 async function markPending(id, status) { try { const rows = await sheets.read('Pending'), i = rows.findIndex((r, k) => k > 0 && r[0] === id); if (i > 0) { const r = rows[i].slice(); while (r.length < 4) r.push(''); r[3] = status; await sheets.update('Pending', i + 1, r) } } catch (x) { console.error('pending mark failed', x) } }
-async function recordPaid(o, payId, rzpId) { const rows = await sheets.read('Orders'); if (rows.some(r => r[15] === payId)) { await markPending(rzpId, 'recorded'); return false } await record(o, 'Paid', payId); await markPending(rzpId, 'recorded'); return true }
+async function ensureSellerOrders(o, payId) {
+  if (!Array.isArray(o.itemDetails) || !o.itemDetails.length) return;
+  let rows;
+  try { rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab missing; seller fulfilment records were not created for', o.id); return; }
+  const existing = new Set(rows.slice(1).map(r => String(r[1] || '') + '|' + String(r[3] || '')));
+  const sellers = new Map();
+  for (const it of o.itemDetails) {
+    const sellerId = String(it.sellerId || '').trim();
+    if (!sellerId) continue; // Blank seller ID means the original Juno-owned catalogue.
+    if (!sellers.has(sellerId)) sellers.set(sellerId, []);
+    sellers.get(sellerId).push(it);
+  }
+  const sellerRowsData = await sellerRows();
+  for (const [sellerId, items] of sellers) {
+    if (existing.has(String(o.id) + '|' + sellerId)) continue;
+    const sr = sellerRowsData.find((r, i) => i > 0 && String(r[0]) === sellerId);
+    if (!sr || sr[7] !== 'Active') { console.error('Seller missing/inactive during order split', sellerId, o.id); continue; }
+    const subtotal = items.reduce((sum, it) => sum + (+it.unitPrice || 0) * (+it.quantity || 0), 0);
+    const itemCount = items.reduce((sum, it) => sum + (+it.quantity || 0), 0);
+    const sid = 'SO' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+    await sheets.append('SellerOrders', [sid, o.id, now(), sellerId, sr[2] || '', o.addr.name, o.email, o.addr.phone, o.addr.line, o.addr.pin, JSON.stringify(items), itemCount, subtotal, 0, subtotal, 'Paid', 'New', '', now(), payId || '']);
+    existing.add(String(o.id) + '|' + sellerId);
+  }
+}
+async function recordPaid(o, payId, rzpId) {
+  const rows = await sheets.read('Orders');
+  if (!rows.some(r => r[15] === payId)) await record(o, 'Paid', payId);
+  try { await ensureSellerOrders(o, payId); } catch (x) { console.error('seller fulfilment split needs retry for', o.id, x && x.message); }
+  await markPending(rzpId, 'recorded');
+  return true;
+}
 const verifyPayment = async (b, e, u) => {
   const { razorpay_order_id: oi, razorpay_payment_id: pi, razorpay_signature: sg, orderToken } = b;
   if (!oi || !pi || !sg || !orderToken) throw new E('Missing payment details.');
@@ -426,4 +477,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
