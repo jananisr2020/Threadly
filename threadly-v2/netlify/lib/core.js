@@ -41,6 +41,29 @@ async function price(items, coupon) {
 /* ---------- users ---------- */
 const findUser = async email => { const rows = await sheets.read('Users'); for (let i = 1; i < rows.length; i++) if (String(rows[i][1] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] }; return null };
 const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.password || ''); return { email, pw, name: clean(b.name) } };
+
+/* ---------- marketplace: seller applications ---------- */
+const sellerApply = async (b, e) => {
+  limit('seller-apply:' + ip(e), 5, 36e5);
+  const ownerName = clean(b.ownerName), storeName = clean(b.storeName);
+  const email = clean(b.email).toLowerCase(), phone = String(b.phone || '').replace(/\D/g, '');
+  const city = clean(b.city), category = clean(b.category), social = clean(b.social), about = String(b.about || '').replace(/[<>]/g, '').trim().slice(0, 1000);
+  const allowed = ['Hair accessories', 'Jewellery', 'Bags and purses', 'Scarves and fashion accessories', 'Belts and wallets', 'Mixed accessories'];
+  if (ownerName.length < 2 || storeName.length < 2) throw new E('Enter your name and store name.');
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new E('Enter a valid email address.');
+  if (!/^[6-9]\d{9}$/.test(phone)) throw new E('Enter a valid 10-digit Indian mobile number.');
+  if (!city || !allowed.includes(category) || about.length < 10) throw new E('Complete the city, category and store description.');
+  if (b.consent !== true && String(b.consent) !== 'true' && String(b.consent) !== 'on') throw new E('Please confirm the application consent.');
+  if (social) { try { const u = new URL(social); if (!['http:', 'https:'].includes(u.protocol)) throw new Error('protocol'); } catch (x) { throw new E('Enter a valid Instagram or store URL.'); } }
+  const rows = await sheets.read('Requests');
+  const duplicate = rows.slice(1).find(r => String(r[3] || '').toLowerCase() === email && String(r[4] || '').toLowerCase() === 'seller application' && !['Rejected', 'Closed'].includes(String(r[7] || '')));
+  if (duplicate) throw new E('We already have an active application for this email. Juno will review it shortly.', 409);
+  const id = 'JS' + Date.now().toString(36).toUpperCase();
+  const details = { ownerName, storeName, phone, city, category, social, about, consentAt: new Date().toISOString(), source: 'sell-on-juno-page' };
+  await sheets.append('Requests', [id, now(), '', email, 'Seller application', storeName, JSON.stringify(details), 'Requested', '']);
+  return { ok: true, applicationId: id, message: 'Application received for review.' };
+};
+
 const signup = async (b, e) => {
   limit('su:' + ip(e), 10, 36e5);
   const { email, pw, name } = cred(b); if (!/^\S+@\S+\.\S+$/.test(email) || pw.length < 6) throw new E('Enter a valid email and a 6+ character password.');
@@ -319,4 +342,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
