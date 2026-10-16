@@ -36,10 +36,10 @@ The existing spreadsheet must have a `Requests` tab with these headers: `Request
 - Keep seller-submitted products pending until approved by an admin.
 
 ### Phase 4 — Multi-seller orders and inventory
-- Snapshot seller ID, product name, SKU, quantity and unit price into each order item.
-- Split customer orders into seller-specific fulfilment orders.
-- Add safe inventory reservation and rollback for failed/expired payments.
-- Define shipping, cancellations, returns and refund allocation for mixed-seller carts.
+- **Foundation added on this branch:** checkout order snapshots now carry product/seller IDs and item prices; paid orders can create seller-specific fulfilment records in `SellerOrders`; Seller Studio lets each seller see and update only their own fulfilment orders; Admin > Seller orders provides oversight.
+- Create the `SellerOrders` sheet using the exact header list in `README.md` before preview testing.
+- Still needed: safe inventory reservation and rollback for failed/expired payments; robust retry/reconciliation for partial Sheets writes; shipping, cancellations, returns and refund allocation for mixed-seller carts.
+- This phase does not split payments or pay sellers.
 
 ### Phase 5 — Marketplace payments
 - Keep Razorpay's current standard checkout for the single-seller flow until marketplace payment-provider approval is complete.
