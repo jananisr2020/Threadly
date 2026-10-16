@@ -92,7 +92,7 @@ const sellerActivate = async (b, e) => {
 const sellerLogin = async (b, e) => {
   limit('seller-login:' + ip(e), 10, 9e5);
   const email = clean(b.email).toLowerCase(), password = String(b.password || '');
-  if (!/^\\S+@\\S+\\.\\S+$/.test(email) || !password) throw new E('Enter your seller email and password.');
+  if (!/^\S+@\S+\.\S+$/.test(email) || !password) throw new E('Enter your seller email and password.');
   const f = await sellerByEmail(email);
   if (!f || f.v[7] !== 'Active' || !(await bcrypt.compare(password, String(f.v[4] || '')))) throw new E('Seller login details are incorrect or the account is not active.', 401);
   const row = f.v.slice(); row[9] = now(); await sheets.update('Sellers', f.row, row);
