@@ -103,6 +103,7 @@ const sellerOrders = async (b, e) => {
   const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
   const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
   let rows; try { rows = await sheets.read('SellerOrders'); } catch (x) { throw new E('SellerOrders sheet is not set up yet. Ask the Juno administrator to add it.', 503); }
+  if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') throw new E('SellerOrders sheet headers are not set up yet. Ask the Juno administrator to follow the README.', 503);
   if (b.action === 'load') return { ok: true, orders: rows.slice(1).filter(r => String(r[3]) === u.sellerId).reverse().map(r => ({ id:r[0], parentOrderId:r[1], date:r[2], storeName:r[4], customerName:r[5], phone:r[7], address:r[8], pincode:r[9], items:(()=>{try{return JSON.parse(r[10]||'[]')}catch(x){return []}})(), itemCount:+r[11]||0, subtotal:+r[12]||0, paymentStatus:r[15], status:r[16]||'New', tracking:r[17]||'' })) };
   if (b.action === 'update') {
     const allowed = ['New','Accepted','Packed','Shipped','Delivered','Cancelled'];
@@ -193,6 +194,7 @@ async function ensureSellerOrders(o, payId) {
   if (!Array.isArray(o.itemDetails) || !o.itemDetails.length) return;
   let rows;
   try { rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab missing; seller fulfilment records were not created for', o.id); return; }
+  if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') { console.error('SellerOrders header row missing; seller fulfilment records were not created for', o.id); return; }
   const existing = new Set(rows.slice(1).map(r => String(r[1] || '') + '|' + String(r[3] || '')));
   const sellers = new Map();
   for (const it of o.itemDetails) {
@@ -409,8 +411,8 @@ const admin = async (b, e) => {
   if (b.action === 'login') return adminLogin(b, e);
   const u = bearer(e); if (!u || !u.admin) throw new E('Session expired. Log in again.', 401);
   if (b.action === 'load') {
-    const [o, p, us, rv, rq, tk] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => [])]);
-    return { orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
+    const [o, p, us, rv, rq, tk, so] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => [])]);
+    return { sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
   }
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
