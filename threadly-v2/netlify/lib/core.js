@@ -102,9 +102,14 @@ const sellerProducts = async (b, e) => {
   const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
   const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
   if (b.action === 'profile') return { ok: true, seller: sellerPublic(sr.v) };
-  const rows = await productRows(true), headers = (rows[0] || []).map(nk);
+  let rows = await productRows(true), headers = (rows[0] || []).map(nk);
+  if (!headers.includes('seller id') || !headers.includes('approval status')) {
+    const h = (rows[0] || []).slice(); while (h.length < 13) h.push('');
+    if (!headers.includes('seller id')) h[13] = 'Seller ID';
+    if (!headers.includes('approval status')) h[14] = 'Approval Status';
+    await sheets.update('Products', 1, h); invalidate(); rows = await productRows(true); headers = (rows[0] || []).map(nk);
+  }
   const sidCol = headers.indexOf('seller id'), statusCol = headers.indexOf('approval status');
-  if (sidCol < 0 || statusCol < 0) throw new E('Marketplace product columns are not configured yet. Ask the Juno administrator to add Seller ID and Approval Status columns.', 503);
   if (b.action === 'load') {
     const list = productObjs(rows).filter(p => String(p['seller id']) === u.sellerId).map(p => ({ id: p['product id'], name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 0 : num(p.stock), status: p['approval status'] || 'Pending', visibility: String(p['show on site']).toLowerCase() === 'no' ? 'Hidden' : 'Live' }));
     return { ok: true, seller: sellerPublic(sr.v), products: list };
