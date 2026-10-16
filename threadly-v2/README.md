@@ -153,3 +153,18 @@ This is an early marketplace slice. It supports seller application, seller accou
 3. Deploy a preview of this branch, submit a seller application, approve it in Admin, open the activation email, and set a password.
 4. Log into `/seller-studio.html`, submit a product, verify it remains hidden, then approve it in Admin > Seller products and verify it appears on the storefront.
 5. Regression-test customer signup/login, cart, prepaid Razorpay checkout, order creation and refunds before merging.
+
+
+### Seller fulfilment orders (marketplace phase 2)
+Create a Google Sheets tab named exactly `SellerOrders` with these headers in row 1, in this order:
+
+`Seller Order ID, Parent Order ID, Date, Seller ID, Seller Store Name, Customer Name, Customer Email, Customer Phone, Shipping Address, Pincode, Items JSON, Item Count, Seller Subtotal, Shipping Allocation, Seller Order Total, Payment Status, Fulfilment Status, Tracking, Updated, Payment ID`
+
+When a customer payment is confirmed, the backend creates a seller fulfilment sub-order for each active seller represented in the paid order. The original customer order remains in `Orders`; the seller-specific records live in `SellerOrders`. Seller Studio > Your orders shows only the authenticated seller's records and lets that seller update permitted fulfilment states and tracking details. Admin > Seller orders provides an oversight view.
+
+Important boundaries:
+- The original Juno-owned products have a blank Seller ID and do not create external seller sub-orders.
+- Seller sub-orders are for fulfilment only. The customer still pays through the existing Juno Razorpay checkout; **payment splitting, commission collection, seller balance accounting and payouts are not enabled**.
+- Seller subtotal is the sum of that seller's item prices before allocating order-level discounts/shipping. Shipping allocation is currently zero and must not be treated as a seller payout calculation.
+- The fulfilment split is best-effort after payment is recorded. If the SellerOrders tab/header is missing or a Sheets write fails, the main paid order is preserved and an error is logged; repair the sheet and reconcile that order before fulfilment. Do not claim all seller orders are reconciled until preview testing confirms it.
+- Test one Juno-only order and one cart containing products from two distinct approved sellers in Razorpay Test Mode. Verify parent order/payment records, seller order rows, seller isolation, status transitions and duplicate webhook retries.
