@@ -59,9 +59,16 @@ const safeMailText = value => String(value == null ? '' : value).replace(/&/g,'&
 const DEVICE_HEADERS = ['Token ID','User Email','Platform','FCM Token','Active','Created','Last Seen','Updated'];
 const registerDeviceToken = async (b, e, u) => {
   const token = String(b.token || '').trim(), platform = String(b.platform || 'android').toLowerCase();
-  if (token.length < 40 || token.length > 4096 || !/^[a-z0-9_-]+$/.test(platform)) throw new E('Invalid device registration.');
+  if (token.length < 40 || token.length > 4096) throw new E('Invalid device registration.');
   await sheets.ensureTab('DeviceTokens', DEVICE_HEADERS);
   const rows = await sheets.read('DeviceTokens'), i = rows.findIndex((r,k)=>k>0 && String(r[3] || '') === token);
+  if (b.action === 'unregister') {
+    if (i>0 && String(rows[i][1] || '').toLowerCase() === u.email.toLowerCase()) {
+      const row=rows[i].slice(); while(row.length<8) row.push(''); row[4]='No'; row[7]=now(); await sheets.update('DeviceTokens',i+1,row);
+    }
+    return { ok: true };
+  }
+  if (!/^[a-z0-9_-]+$/.test(platform)) throw new E('Invalid device platform.');
   const row = ['DT' + crypto.createHash('sha256').update(token).digest('hex').slice(0,18), u.email, platform, token, 'Yes', i>0 ? (rows[i][5] || now()) : now(), now(), now()];
   if (i>0) await sheets.update('DeviceTokens',i+1,row); else await sheets.append('DeviceTokens',row);
   return { ok: true };
@@ -268,6 +275,17 @@ const login = async (b, e) => {
     await sheets.append('OTPChallenges', [id, email, hash, expires, 0, 'pending', now()]);
     try {
       await mail(email, 'Your Juno login code', '<p>Hi ' + safeMailText(f.v[0] || 'there') + ',</p><p>Your Juno login verification code is <b style="font-size:24px;letter-spacing:4px">' + code + '</b>.</p><p>It expires in 5 minutes. Do not share this code with anyone.</p><p>If you did not try to log in, you can ignore this email.</p>');
+      if (process.env.MSG91_OTP_TEMPLATE_ID) {
+        try {
+          let phone = String(f.v[3] || '').replace(/\\D/g, '').slice(-10);
+          if (!/^[6-9]\\d{9}$/.test(phone)) {
+            const orders = await sheets.read('Orders');
+            const previous = orders.slice(1).reverse().find(r => String(r[3] || '').toLowerCase() === email && /^[6-9]\\d{9}$/.test(String(r[4] || '')));
+            if (previous) phone = String(previous[4]);
+          }
+          if (phone) await sendSms(phone, { VAR1: code, VAR2: '5' }, process.env.MSG91_OTP_TEMPLATE_ID);
+        } catch (smsError) { console.error('optional login OTP SMS could not be sent'); }
+      }
     } catch (x) {
       const rows = await sheets.read('OTPChallenges'), i = rows.findIndex((r,k)=>k>0 && r[0]===id);
       if (i>0) { const row=rows[i].slice(); row[5]='send_failed'; await sheets.update('OTPChallenges',i+1,row); }
