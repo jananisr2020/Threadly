@@ -643,7 +643,7 @@ const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new T
 const ubtn=()=>$('#ub').textContent=user?'Hi, '+user.name.split(' ')[0]:'Login';
 async function registerJunoPush(){
   try{
-    const cap=window.Capacitor, push=cap&&cap.Plugins&&cap.Plugins.PushNotifications;
+    const cap=window.Capacitor, push=cap&&(cap.Plugins&&cap.Plugins.PushNotifications||(cap.registerPlugin&&cap.registerPlugin('PushNotifications')));
     if(!push||!user||!user.token)return;
     if(ST.get('juno_push_prompted')!=='yes'){
       if(!confirm('Enable Juno notifications for order and delivery updates on this device?')){ST.set('juno_push_prompted','yes');return}
