@@ -224,14 +224,16 @@ async function ensureSellerLedger(parentOrderId) {
     console.error('SellerOrders/SellerLedger headers missing; ledger reconciliation skipped for', parentOrderId); return;
   }
   const rawBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
-  const configured = rawBps !== undefined && String(rawBps).trim() !== '' && /^\\d+$/.test(String(rawBps).trim());
-  const bps = configured ? Number(rawBps) : null;
+  const hasBps = rawBps !== undefined && String(rawBps).trim() !== '';
+  if (hasBps && !/^\d+$/.test(String(rawBps).trim())) throw new E('JUNO_MARKETPLACE_COMMISSION_BPS must be an integer from 0 to 5000.', 500);
+  const configured = hasBps, bps = configured ? Number(String(rawBps).trim()) : null;
   if (configured && (!Number.isSafeInteger(bps) || bps < 0 || bps > 5000)) throw new E('JUNO_MARKETPLACE_COMMISSION_BPS must be an integer from 0 to 5000.', 500);
   const sellerOrders = orders.slice(1).filter(r => String(r[1] || '') === String(parentOrderId));
+  const parentRows = await sheets.read('Orders');
+  const parent = parentRows.find((r, i) => i > 0 && String(r[0] || '') === String(parentOrderId));
   for (const so of sellerOrders) {
     const id = String(so[0] || ''), existingIndex = ledger.findIndex((r, i) => i > 0 && String(r[1] || '') === id);
     const gross = Math.max(0, num(so[12]));
-    const parent = (await sheets.read('Orders')).find((r, i) => i > 0 && String(r[0] || '') === String(parentOrderId));
     const orderSubtotal = parent ? Math.max(0, num(parent[9])) : 0;
     const discount = parent ? Math.max(0, num(parent[10])) : 0;
     const allocatedDiscount = orderSubtotal > 0 ? Math.min(gross, Math.round(discount * gross / orderSubtotal)) : 0;
