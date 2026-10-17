@@ -182,3 +182,49 @@ The backend also creates `SellerLedger` with these headers automatically if it i
 - **No seller payout is sent.** Razorpay Route / linked seller accounts, KYC/bank onboarding, transfers, payout idempotency, disputes, refund allocation and accounting review are not implemented. Do not pay sellers solely from these estimates; implement and test the provider-specific payout flow first.
 - The fulfilment split is best-effort after payment is recorded. If the SellerOrders tab/header is missing or a Sheets write fails, the main paid order is preserved and an error is logged; repair the sheet and reconcile that order before fulfilment. Do not claim all seller orders are reconciled until preview testing confirms it.
 - Test one Juno-only order and one cart containing products from two distinct approved sellers in Razorpay Test Mode. Verify parent order/payment records, seller order rows, seller isolation, status transitions and duplicate webhook retries.
+
+
+## Customer OTP, order notifications and Android push (implementation branch)
+
+The branch `feature/juno-messaging-otp` adds backend/frontend code for email OTP login, paid-order email confirmations, order-status emails, optional MSG91 SMS templates, and authenticated FCM device-token registration/push sending. These changes are not live until reviewed, merged and deployed; provider setup is also required.
+
+### Email OTP login
+
+- When both `BREVO_API_KEY` and `MAIL_FROM` are configured, password login sends a six-digit OTP by email and waits for `POST /api/verify-login-otp` before issuing a customer session.
+- OTPs expire after five minutes, are stored as keyed hashes in the `OTPChallenges` sheet, are single-use, and lock after five incorrect attempts.
+- If transactional email is not configured, the current compatibility behaviour allows password login without OTP. Configure and test Brevo before production so OTP is actually enforced.
+- Keep `JWT_SECRET` set to a strong random secret. Never log or send OTPs through push notifications.
+
+### Order notifications
+
+- Once Razorpay confirms a captured payment and Juno records the order, the backend attempts a transactional email with the actual order ID, items, quantities and total.
+- When an administrator changes the order status or tracking information, Juno attempts an email update.
+- Notification errors do not reverse or block a verified order. Provider delivery is not guaranteed; check the provider dashboard and Netlify function logs.
+- Optional SMS uses MSG91 Flow templates. Configure an approved template whose variables match the values passed by the backend. Do not use an unapproved or mismatched DLT template.
+
+### Optional Netlify environment variables
+
+| Variable | Purpose |
+|---|---|
+| `MSG91_AUTH_KEY` | MSG91 API authentication key |
+| `MSG91_SENDER_ID` | Approved sender ID required by your MSG91 setup |
+| `MSG91_ORDER_TEMPLATE_ID` | Approved order-confirmation Flow template; receives `VAR1` = order ID and `VAR2` = order total |
+| `MSG91_STATUS_TEMPLATE_ID` | Approved order-status Flow template; receives `VAR1` = order ID and `VAR2` = status |
+| `MSG91_OTP_TEMPLATE_ID` | Optional approved login OTP Flow template; receives `VAR1` = OTP and `VAR2` = expiry minutes |
+| `MSG91_TEMPLATE_ID` | Optional fallback status template for compatibility |
+| `FCM_PROJECT_ID` | Firebase project ID for Android push |
+| `FCM_SERVICE_ACCOUNT_EMAIL` | Firebase service-account email with permission to send FCM messages |
+| `FCM_PRIVATE_KEY` | Firebase service-account private key, server-side only |
+
+The backend creates `OTPChallenges`, `DeviceTokens`, `NotificationPreferences` and `CartRecovery` tabs when first needed. Share the Google spreadsheet with the service account as Editor. SMS is skipped if its required settings/template are absent. Push is skipped unless all FCM settings are configured. Customers can manage marketing email/SMS and push preferences from the account panel. Marketing preferences default to off.
+
+### Firebase Android setup
+
+1. In Firebase Console, create/register an Android app with package ID `com.junofashion.app` (must match `threadly-android/capacitor.config.json`).
+2. Enable Firebase Cloud Messaging and create a server-side service account with FCM send permission. Store its credentials only in Netlify variables; never place the private key in the website or Git.
+3. Download the Firebase Android configuration file and add it locally as `threadly-android/android/app/google-services.json`. Do not commit this file if your security policy treats it as private; follow Firebase's current Android setup instructions for Gradle plugin configuration.
+4. Build the Android app with the `@capacitor/push-notifications` plugin installed. Test permission prompts and token registration on a real Android device; web browsers do not register Android FCM tokens through this code path.
+5. Sign in to Juno inside the app and allow notifications. The authenticated endpoint `POST /api/register-device-token` stores the token in `DeviceTokens`. Order confirmation and status events then attempt an FCM push to active tokens for that email.
+6. Test foreground/background/killed app behaviour, token refresh, logout, deep links, and invalid token cleanup before release. Push permission denial must not prevent shopping.
+
+Cart activity is synced for logged-in customers only. The hourly `abandoned-cart-reminders` scheduled function waits at least two hours, requires explicit marketing-email opt-in, limits reminders to two with a seven-day cooldown, and marks a cart converted after a verified purchase. It includes current cart items and same-category recommendations from the live catalogue. The account screen lets customers opt out of marketing email/SMS and disable push. Test scheduled functions on a Netlify deploy preview before production; no marketing messages should be considered live until the provider configuration and opt-in flows are verified.

@@ -6,8 +6,11 @@ on:
     branches:
       - main
       - feat/threadly-android-app
+      - feature/juno-messaging-otp
     paths:
       - "threadly-android/**"
+      - "threadly-v2/public/index.html"
+      - "threadly-v2/netlify/**"
       - "threadly-v2/public/favicon.svg"
       - "threadly-v2/public/manifest.webmanifest"
       - ".github/workflows/build-threadly-android.yml"

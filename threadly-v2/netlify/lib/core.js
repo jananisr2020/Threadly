@@ -43,6 +43,84 @@ async function price(items, coupon) {
 const findUser = async email => { const rows = await sheets.read('Users'); for (let i = 1; i < rows.length; i++) if (String(rows[i][1] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] }; return null };
 const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.password || ''); return { email, pw, name: clean(b.name) } };
 
+const OTP_HEADERS = ['Challenge ID','Email','OTP Hash','Expires At','Attempts','Status','Created'];
+const otpDigest = (id, code) => crypto.createHmac('sha256', secret()).update(id + ':' + code).digest('hex');
+const sendSms = async (phone, templateVars, templateOverride) => {
+  const auth = process.env.MSG91_AUTH_KEY, template = templateOverride || process.env.MSG91_STATUS_TEMPLATE_ID || process.env.MSG91_TEMPLATE_ID, sender = process.env.MSG91_SENDER_ID;
+  if (!auth || !template || !sender || !phone) return false;
+  const recipients = [{ mobiles: '91' + String(phone).replace(/\D/g, '').slice(-10), ...templateVars }];
+  const res = await fetch('https://control.msg91.com/api/v5/flow/', { method: 'POST', headers: { authkey: auth, 'content-type': 'application/json' }, body: JSON.stringify({ template_id: template, sender, short_url: '0', recipients }) });
+  if (!res.ok) { console.error('SMS provider rejected notification:', res.status); return false; }
+  return true;
+};
+const safeMailText = value => String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').slice(0,500);
+
+
+const DEVICE_HEADERS = ['Token ID','User Email','Platform','FCM Token','Active','Created','Last Seen','Updated'];
+const registerDeviceToken = async (b, e, u) => {
+  const token = String(b.token || '').trim(), platform = String(b.platform || 'android').toLowerCase();
+  if (token.length < 40 || token.length > 4096) throw new E('Invalid device registration.');
+  await sheets.ensureTab('DeviceTokens', DEVICE_HEADERS);
+  const rows = await sheets.read('DeviceTokens'), i = rows.findIndex((r,k)=>k>0 && String(r[3] || '') === token);
+  if (b.action === 'unregister') {
+    if (i>0 && String(rows[i][1] || '').toLowerCase() === u.email.toLowerCase()) {
+      const row=rows[i].slice(); while(row.length<8) row.push(''); row[4]='No'; row[7]=now(); await sheets.update('DeviceTokens',i+1,row);
+    }
+    return { ok: true };
+  }
+  if (!/^[a-z0-9_-]+$/.test(platform)) throw new E('Invalid device platform.');
+  const row = ['DT' + crypto.createHash('sha256').update(token).digest('hex').slice(0,18), u.email, platform, token, 'Yes', i>0 ? (rows[i][5] || now()) : now(), now(), now()];
+  if (i>0) await sheets.update('DeviceTokens',i+1,row); else await sheets.append('DeviceTokens',row);
+  return { ok: true };
+};
+const sendPush = async (email, title, body, link) => {
+  const project = process.env.FCM_PROJECT_ID, account = process.env.FCM_SERVICE_ACCOUNT_EMAIL, key = process.env.FCM_PRIVATE_KEY;
+  if (!project || !account || !key) return false;
+  const prefs = await sheets.read('NotificationPreferences').catch(()=>[]), pref = prefs.slice(1).find(r=>String(r[0]||'').toLowerCase()===String(email||'').toLowerCase());
+  if (pref && String(pref[3] || 'Yes') === 'No') return true;
+  const rows = await sheets.read('DeviceTokens');
+  const tokens = rows.slice(1).filter(r => String(r[1] || '').toLowerCase() === String(email || '').toLowerCase() && String(r[4] || '').toLowerCase() === 'yes').map(r => String(r[3] || '')).filter(Boolean);
+  if (!tokens.length) return true;
+  const { JWT } = require('google-auth-library');
+  const client = new JWT({ email: account, key: key.replace(/\\n/g,'\n'), scopes: ['https://www.googleapis.com/auth/firebase.messaging'] });
+  const access = await client.getAccessToken();
+  if (!access || !access.token) throw new Error('FCM authentication failed');
+  for (const token of tokens) {
+    const response = await fetch('https://fcm.googleapis.com/v1/projects/' + encodeURIComponent(project) + '/messages:send', {
+      method: 'POST', headers: { authorization: 'Bearer ' + access.token, 'content-type': 'application/json' },
+      body: JSON.stringify({ message: { token, notification: { title: String(title).slice(0,100), body: String(body).slice(0,240) }, data: { url: String(link || '/').slice(0,300) }, android: { priority: 'HIGH' } } })
+    });
+    if (!response.ok) {
+      const errorText = await response.text().catch(()=> '');
+      console.error('FCM push failed:', response.status, errorText.slice(0,160));
+      if (response.status === 404 || response.status === 400) {
+        const ix = rows.findIndex((r,k)=>k>0 && r[3]===token);
+        if (ix>0) { const dead=rows[ix].slice(); dead[4]='No'; dead[7]=now(); await sheets.update('DeviceTokens',ix+1,dead).catch(()=>{}); }
+      }
+    }
+  }
+  return true;
+};
+const notifyOrderStatus = async (order, status, tracking) => {
+  const labels = { New: 'confirmed', Accepted: 'accepted', Packed: 'packed', Shipped: 'shipped', Delivered: 'delivered', Cancelled: 'cancelled', Returned: 'returned' };
+  const word = labels[String(status)] || String(status || 'updated').toLowerCase();
+  const track = tracking ? '<p><b>Tracking:</b> ' + safeMailText(tracking) + '</p>' : '';
+  try {
+    if (order[3]) await mail(String(order[3]), 'Juno order update — ' + safeMailText(order[0]), '<p>Hi ' + safeMailText(order[2] || 'there') + ',</p><p>Your Juno order <b>' + safeMailText(order[0]) + '</b> is now <b>' + safeMailText(word) + '</b>.</p>' + track + '<p>For the latest details, check My Orders on Juno.</p><p>Team Juno</p>');
+  } catch (x) { console.error('order status email could not be sent for', order[0]); }
+  if (order[4]) { try { await sendSms(order[4], { VAR1: String(order[0]).slice(0,30), VAR2: String(word).slice(0,30) }, process.env.MSG91_STATUS_TEMPLATE_ID || process.env.MSG91_TEMPLATE_ID); } catch (x) { console.error('order status SMS could not be sent for', order[0]); } }
+  try { await sendPush(String(order[3] || ''), 'Juno order update', 'Order ' + String(order[0]) + ' is now ' + word + '.', '/?orders=1'); } catch (x) { console.error('order status push could not be sent for', order[0]); }
+};
+const notifyOrder = async (o, payId) => {
+  const subject = 'Juno order confirmed — ' + o.id;
+  const items = (o.itemDetails || []).map(it => '<li>' + safeMailText(it.name) + ' × ' + (+it.quantity || 1) + ' — ₹' + ((+it.unitPrice || 0) * (+it.quantity || 1)).toFixed(2) + '</li>').join('');
+  const html = '<p>Hi ' + safeMailText(o.addr && o.addr.name || 'there') + ',</p><p>Thanks for shopping with Juno. Your payment has been verified and your order is confirmed.</p><p><b>Order:</b> ' + safeMailText(o.id) + '<br><b>Items:</b></p><ul>' + items + '</ul><p><b>Total paid:</b> ₹' + (+o.total || 0).toFixed(2) + '<br><b>Payment reference:</b> ' + safeMailText(payId || '') + '</p><p>You can check the latest status in My Orders on Juno.</p><p>Team Juno</p>';
+  try { await mail(o.email, subject, html); } catch (x) { console.error('order confirmation email could not be sent for', o.id); }
+  try { await sendSms(o.addr && o.addr.phone, { VAR1: String(o.id).slice(0,30), VAR2: String((+o.total || 0).toFixed(2)) }, process.env.MSG91_ORDER_TEMPLATE_ID); } catch (x) { console.error('order confirmation SMS could not be sent for', o.id); }
+  try { await sendPush(o.email, 'Juno order confirmed', 'Order ' + o.id + ' is confirmed. Total: ₹' + (+o.total || 0).toFixed(2), '/?orders=1'); } catch (x) { console.error('order confirmation push could not be sent for', o.id); }
+};
+
+
 /* ---------- marketplace: seller applications ---------- */
 const sellerApply = async (b, e) => {
   limit('seller-apply:' + ip(e), 5, 36e5);
@@ -190,7 +268,54 @@ const signup = async (b, e) => {
 const login = async (b, e) => {
   const { email, pw } = cred(b); limit('li:' + ip(e) + email, 8, 9e5); const f = await findUser(email);
   if (!f || !(await bcrypt.compare(pw, String(f.v[2] || '')))) throw new E('Wrong email or password.');
+  // Require email OTP whenever transactional email is configured. If email is not
+  // configured, keep login available and report setup through /api/health.
+  if (process.env.BREVO_API_KEY && process.env.MAIL_FROM) {
+    await sheets.ensureTab('OTPChallenges', OTP_HEADERS);
+    const id = crypto.randomBytes(16).toString('hex'), code = String(crypto.randomInt(100000, 1000000));
+    const hash = otpDigest(id, code), expires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    await sheets.append('OTPChallenges', [id, email, hash, expires, 0, 'pending', now()]);
+    try {
+      await mail(email, 'Your Juno login code', '<p>Hi ' + safeMailText(f.v[0] || 'there') + ',</p><p>Your Juno login verification code is <b style="font-size:24px;letter-spacing:4px">' + code + '</b>.</p><p>It expires in 5 minutes. Do not share this code with anyone.</p><p>If you did not try to log in, you can ignore this email.</p>');
+      if (process.env.MSG91_OTP_TEMPLATE_ID) {
+        try {
+          let phone = String(f.v[3] || '').replace(/\\D/g, '').slice(-10);
+          if (!/^[6-9]\\d{9}$/.test(phone)) {
+            const orders = await sheets.read('Orders');
+            const previous = orders.slice(1).reverse().find(r => String(r[3] || '').toLowerCase() === email && /^[6-9]\\d{9}$/.test(String(r[4] || '')));
+            if (previous) phone = String(previous[4]);
+          }
+          if (phone) await sendSms(phone, { VAR1: code, VAR2: '5' }, process.env.MSG91_OTP_TEMPLATE_ID);
+        } catch (smsError) { console.error('optional login OTP SMS could not be sent'); }
+      }
+    } catch (x) {
+      const rows = await sheets.read('OTPChallenges'), i = rows.findIndex((r,k)=>k>0 && r[0]===id);
+      if (i>0) { const row=rows[i].slice(); row[5]='send_failed'; await sheets.update('OTPChallenges',i+1,row); }
+      throw new E('We could not send your login code. Please try again later.', 503);
+    }
+    return { otpRequired: true, challengeId: id, email };
+  }
   const v = [f.v[0] || '', f.v[1], f.v[2], f.v[3] || '', f.v[4] || '', now(), (+f.v[6] || 0) + 1]; try { await sheets.update('Users', f.row, v) } catch (x) { console.error(x) }
+  const u = { name: v[0], email }; return { user: u, token: sign(u, '30d') };
+};
+const verifyLoginOtp = async (b, e) => {
+  limit('otp-verify:' + ip(e), 10, 15 * 60 * 1000);
+  const id = String(b.challengeId || '').trim(), code = String(b.code || '').trim();
+  if (!/^[a-f0-9]{32}$/.test(id) || !/^\d{6}$/.test(code)) throw new E('Enter the 6-digit code from your email.');
+  await sheets.ensureTab('OTPChallenges', OTP_HEADERS);
+  const rows = await sheets.read('OTPChallenges'), i = rows.findIndex((r,k)=>k>0 && r[0]===id);
+  if (i < 1) throw new E('That login code is invalid or expired. Please log in again.', 401);
+  const row = rows[i].slice(); while(row.length<7) row.push('');
+  if (row[5] !== 'pending' || !row[3] || Date.now() > Date.parse(row[3])) { row[5] = row[5] === 'pending' ? 'expired' : row[5]; await sheets.update('OTPChallenges',i+1,row); throw new E('That login code has expired. Please log in again.', 401); }
+  const attempts = (+row[4] || 0) + 1; row[4] = attempts;
+  const expected = String(row[2] || ''), actual = otpDigest(id, code);
+  const good = expected.length === actual.length && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
+  if (!good) { if (attempts >= 5) row[5] = 'locked'; await sheets.update('OTPChallenges',i+1,row); throw new E(attempts >= 5 ? 'Too many incorrect codes. Please log in again.' : 'That code is incorrect.', 401); }
+  row[5] = 'used'; await sheets.update('OTPChallenges',i+1,row);
+  const email = String(row[1] || '').toLowerCase(), f = await findUser(email);
+  if (!f) throw new E('Account not found. Please log in again.', 401);
+  const v = [f.v[0] || '', f.v[1], f.v[2], f.v[3] || '', f.v[4] || '', now(), (+f.v[6] || 0) + 1];
+  try { await sheets.update('Users', f.row, v); } catch (x) { console.error('login count update failed'); }
   const u = { name: v[0], email }; return { user: u, token: sign(u, '30d') };
 };
 /* ---------- orders ---------- */
@@ -278,9 +403,81 @@ async function ensureSellerLedger(parentOrderId) {
     else { await sheets.append('SellerLedger', row); ledger.push(row); }
   }
 }
+
+const PREF_HEADERS = ['User Email','Marketing Email','Marketing SMS','Push Enabled','Consent Source','Consent At','Updated'];
+const CART_HEADERS = ['User Email','User Name','Items JSON','Subtotal','Cart Updated ISO','Last Reminder ISO','Status','Reminder Count'];
+const notificationPreferences = async (b, e, u) => {
+  await sheets.ensureTab('NotificationPreferences', PREF_HEADERS);
+  const rows = await sheets.read('NotificationPreferences'), i = rows.findIndex((r,k)=>k>0 && String(r[0]||'').toLowerCase()===u.email.toLowerCase());
+  const current = i>0 ? rows[i] : [];
+  if (b.action === 'load') return { ok:true, marketingEmail:String(current[1]||'No')==='Yes', marketingSms:String(current[2]||'No')==='Yes', pushEnabled:String(current[3]||'Yes')!=='No' };
+  if (b.action !== 'update') throw new E('Unknown notification preference action.');
+  const emailOpt = b.marketingEmail === true, smsOpt = b.marketingSms === true, pushOpt = b.pushEnabled !== false;
+  const row = [u.email, emailOpt?'Yes':'No', smsOpt?'Yes':'No', pushOpt?'Yes':'No', 'account-settings', (emailOpt||smsOpt)?now():(current[5]||''), now()];
+  if (i>0) await sheets.update('NotificationPreferences',i+1,row); else await sheets.append('NotificationPreferences',row);
+  return { ok:true, marketingEmail:emailOpt, marketingSms:smsOpt, pushEnabled:pushOpt };
+};
+const cartActivity = async (b, e, u) => {
+  limit('cart-activity:' + u.email, 120, 36e5);
+  await sheets.ensureTab('CartRecovery', CART_HEADERS);
+  const rows = await sheets.read('CartRecovery'), i = rows.findIndex((r,k)=>k>0 && String(r[0]||'').toLowerCase()===u.email.toLowerCase());
+  const items = Array.isArray(b.items) ? b.items.slice(0,50) : [];
+  let details = [], subtotal = 0;
+  if (items.length) {
+    const priced = await price(items, '');
+    details = priced.itemDetails;
+    subtotal = priced.sub;
+  }
+  const current = i>0 ? rows[i] : [];
+  const empty = details.length === 0;
+  const row = [u.email, clean(b.name || u.name || u.email.split('@')[0]), JSON.stringify(details), subtotal, new Date().toISOString(), current[5]||'', empty?'empty':'active', +current[7]||0];
+  if (i>0) await sheets.update('CartRecovery',i+1,row); else await sheets.append('CartRecovery',row);
+  return { ok:true, itemCount:details.reduce((n,it)=>n+(+it.quantity||0),0) };
+};
+const markCartConverted = async email => {
+  try {
+    await sheets.ensureTab('CartRecovery', CART_HEADERS);
+    const rows = await sheets.read('CartRecovery'), i = rows.findIndex((r,k)=>k>0 && String(r[0]||'').toLowerCase()===String(email||'').toLowerCase());
+    if (i>0) { const row=rows[i].slice(); while(row.length<8)row.push(''); row[6]='converted'; await sheets.update('CartRecovery',i+1,row); }
+  } catch (x) { console.error('cart conversion update failed'); }
+};
+const sendAbandonedCartReminders = async () => {
+  if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM || !process.env.SHEET_ID) return { skipped:true, reason:'email or sheet not configured' };
+  await sheets.ensureTab('CartRecovery', CART_HEADERS);
+  await sheets.ensureTab('NotificationPreferences', PREF_HEADERS);
+  const [carts,prefs,productsRows,orders] = await Promise.all([sheets.read('CartRecovery'),sheets.read('NotificationPreferences'),productRows(true),sheets.read('Orders').catch(()=>[])]);
+  const prefByEmail = new Map(prefs.slice(1).map(r=>[String(r[0]||'').toLowerCase(),r]));
+  const cat = await catalogue(), base = process.env.URL || 'https://threadly-fashion.netlify.app', nowMs = Date.now();
+  let sent=0, skipped=0;
+  for(let i=1;i<carts.length;i++){
+    const r=carts[i], email=String(r[0]||'').toLowerCase(), updated=Date.parse(r[4]||''), last=Date.parse(r[5]||'');
+    if(!email || r[6]!=='active' || !updated || nowMs-updated<2*60*60*1000 || (+r[7]||0)>=2 || (last && nowMs-last<7*864e5)){skipped++;continue}
+    const pref=prefByEmail.get(email); if(!pref || String(pref[1]||'No')!=='Yes'){skipped++;continue}
+    let items=[]; try{items=JSON.parse(r[2]||'[]')}catch(x){}
+    items=items.filter(it=>cat[it.productId] && cat[it.productId].stock>0);
+    if(!items.length){const row=r.slice();row[6]='empty';await sheets.update('CartRecovery',i+1,row);skipped++;continue}
+    const inCart=new Set(items.map(it=>String(it.productId)));
+    const categories=items.map(it=>String(it.category||'')).filter(Boolean), focus=categories[0]||'';
+    const recs=productObjs(productsRows).filter(p=>p['product id'] && !inCart.has(String(p['product id'])) && num(p['selling price'])>0 && String(p['show on site']).toLowerCase()!=='no' && (!focus || String(p.category||'')===focus) && num(p.stock)>0).slice(0,3);
+    const itemHtml=items.map(it=>'<li>'+safeMailText(it.name)+' × '+(+it.quantity||1)+' — ₹'+((+it.unitPrice||0)*(+it.quantity||1)).toFixed(2)+'</li>').join('');
+    const recHtml=recs.map(p=>'<li>'+safeMailText(p['product name'])+' — ₹'+num(p['selling price']).toFixed(2)+'</li>').join('');
+    const link=base+'/?cart=1';
+    try{
+      await mail(email,'Your Juno cart is still waiting', '<p>Hi '+safeMailText(r[1]||'there')+',</p><p>You still have these items in your Juno cart:</p><ul>'+itemHtml+'</ul><p><b>Cart subtotal:</b> ₹'+num(r[3]).toFixed(2)+'</p>'+(recHtml?'<p>More styles you may like:</p><ul>'+recHtml+'</ul>':'')+'<p><a href="'+link+'">Return to your cart</a></p><p>You received this reminder because you opted in to Juno email updates. You can turn off promotional emails in your notification preferences.</p><p>Team Juno</p>');
+      const row=r.slice();while(row.length<8)row.push('');row[5]=new Date().toISOString();row[7]=(+row[7]||0)+1;await sheets.update('CartRecovery',i+1,row);sent++;
+    }catch(x){console.error('abandoned cart email failed for a customer');}
+  }
+  return {ok:true,sent,skipped};
+};
 async function recordPaid(o, payId, rzpId) {
   const rows = await sheets.read('Orders');
-  if (!rows.some(r => r[15] === payId)) await record(o, 'Paid', payId);
+  const isNew = !rows.some(r => r[15] === payId);
+  if (isNew) {
+    await record(o, 'Paid', payId);
+    // Notification failures must never undo a confirmed payment/order.
+    try { await notifyOrder(o, payId); } catch (x) { console.error('order notification failed for', o.id); }
+    await markCartConverted(o.email);
+  }
   try {
     await ensureSellerOrders(o, payId);
     await ensureSellerLedger(o.id);
@@ -500,8 +697,13 @@ const admin = async (b, e) => {
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
     const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
+    const previousStatus = String(row[OIDX.status] || 'New'), previousTracking = String(row[OIDX.track] || '');
     if (b.status != null) row[OIDX.status] = clean(b.status); if (b.tracking != null) row[OIDX.track] = clean(b.tracking); if (b.pay != null) row[OIDX.pay] = clean(b.pay); if (b.notes != null) row[OIDX.notes] = clean(b.notes);
-    await sheets.update('Orders', i + 1, row); return { ok: true };
+    await sheets.update('Orders', i + 1, row);
+    if (String(row[OIDX.status] || '') !== previousStatus || String(row[OIDX.track] || '') !== previousTracking) {
+      try { await notifyOrderStatus(row, row[OIDX.status], row[OIDX.track]); } catch (x) { console.error('order update notification failed for', row[OIDX.id]); }
+    }
+    return { ok: true };
   }
   if (b.action === 'setReview') {
     const rows = await sheets.read('Reviews'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Review not found.', 404);
@@ -562,4 +764,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, verifyLoginOtp, registerDeviceToken, notificationPreferences, cartActivity, sendAbandonedCartReminders, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
