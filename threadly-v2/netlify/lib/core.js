@@ -54,6 +54,16 @@ const sendSms = async (phone, templateVars) => {
   return true;
 };
 const safeMailText = value => String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').slice(0,500);
+
+const notifyOrderStatus = async (order, status, tracking) => {
+  const labels = { New: 'confirmed', Accepted: 'accepted', Packed: 'packed', Shipped: 'shipped', Delivered: 'delivered', Cancelled: 'cancelled', Returned: 'returned' };
+  const word = labels[String(status)] || String(status || 'updated').toLowerCase();
+  const track = tracking ? '<p><b>Tracking:</b> ' + safeMailText(tracking) + '</p>' : '';
+  try {
+    if (order[3]) await mail(String(order[3]), 'Juno order update — ' + safeMailText(order[0]), '<p>Hi ' + safeMailText(order[2] || 'there') + ',</p><p>Your Juno order <b>' + safeMailText(order[0]) + '</b> is now <b>' + safeMailText(word) + '</b>.</p>' + track + '<p>For the latest details, check My Orders on Juno.</p><p>Team Juno</p>');
+  } catch (x) { console.error('order status email could not be sent for', order[0]); }
+  if (order[4]) { try { await sendSms(order[4], { VAR1: String(order[0]).slice(0,30), VAR2: String(word).slice(0,30) }); } catch (x) { console.error('order status SMS could not be sent for', order[0]); } }
+};
 const notifyOrder = async (o, payId) => {
   const subject = 'Juno order confirmed — ' + o.id;
   const items = (o.itemDetails || []).map(it => '<li>' + safeMailText(it.name) + ' × ' + (+it.quantity || 1) + ' — ₹' + ((+it.unitPrice || 0) * (+it.quantity || 1)).toFixed(2) + '</li>').join('');
@@ -561,8 +571,13 @@ const admin = async (b, e) => {
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
     const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
+    const previousStatus = String(row[OIDX.status] || 'New'), previousTracking = String(row[OIDX.track] || '');
     if (b.status != null) row[OIDX.status] = clean(b.status); if (b.tracking != null) row[OIDX.track] = clean(b.tracking); if (b.pay != null) row[OIDX.pay] = clean(b.pay); if (b.notes != null) row[OIDX.notes] = clean(b.notes);
-    await sheets.update('Orders', i + 1, row); return { ok: true };
+    await sheets.update('Orders', i + 1, row);
+    if (String(row[OIDX.status] || '') !== previousStatus || String(row[OIDX.track] || '') !== previousTracking) {
+      try { await notifyOrderStatus(row, row[OIDX.status], row[OIDX.track]); } catch (x) { console.error('order update notification failed for', row[OIDX.id]); }
+    }
+    return { ok: true };
   }
   if (b.action === 'setReview') {
     const rows = await sheets.read('Reviews'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Review not found.', 404);
