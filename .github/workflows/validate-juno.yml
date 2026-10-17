@@ -69,5 +69,33 @@ jobs:
           }
           console.log('Juno branding, online-only storefront, PWA icon and Netlify paths verified');
           NODE
+      - name: Check marketplace payment and ledger safeguards
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const core = fs.readFileSync('threadly-v2/netlify/lib/core.js', 'utf8');
+          const admin = fs.readFileSync('threadly-v2/public/admin.html', 'utf8');
+          const readme = fs.readFileSync('threadly-v2/README.md', 'utf8');
+          const required = [
+            ['Razorpay payment fetch', /payments\.fetch\(pi\)/],
+            ['captured payment status validation', /payment\.status !== 'captured'/],
+            ['webhook amount validation', /Number\(confirmed\.amount\) !== Number\(o\.total\) \* 100/],
+            ['seller order idempotency', /existing\.has\(String\(o\.id\) \+ '\\|' \+ sellerId\)/],
+            ['seller ledger', /ensureSellerLedger/],
+            ['configurable commission rate', /JUNO_MARKETPLACE_COMMISSION_BPS/],
+            ['refund review state', /REFUND_REVIEW/],
+            ['COD remains disabled', /Cash on delivery is not available/]
+          ];
+          for (const [label, pattern] of required) {
+            if (!pattern.test(core)) throw new Error('Missing safeguard: ' + label);
+          }
+          if (!admin.includes('data-t="sellerledger"') || !admin.includes('function sellerledger()')) {
+            throw new Error('Admin seller ledger view is missing');
+          }
+          if (!readme.includes('SellerLedger') || !readme.includes('JUNO_MARKETPLACE_COMMISSION_BPS')) {
+            throw new Error('Seller ledger setup instructions are missing');
+          }
+          console.log('Marketplace payment validation, seller ledger, refund review and COD invariants verified');
+          NODE
       - name: Check Netlify function syntax
         run: find threadly-v2/netlify -name '*.js' -print0 | xargs -0 -n1 node --check
