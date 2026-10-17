@@ -139,7 +139,7 @@ const sellerProducts = async (b, e) => {
   if (b.action === 'save') {
     const p = b.product || {}, name = clean(p.name), cat = clean(p.cat), priceValue = num(p.price), mrp = num(p.mrp) || priceValue, stock = Number(p.stock);
     const categories = ['Hair accessories', 'Jewellery', 'Bags and purses', 'Scarves and fashion accessories', 'Belts and wallets', 'Mixed accessories'];
-    if (name.length < 2 || !categories.includes(cat) || !(priceValue > 0 && priceValue <= 50000) || !(stock >= 0 && Number.isInteger(stock))) throw new E('Check product name, category, price and stock.');
+    if (name.length < 2 || !categories.includes(cat) || !(priceValue > 0 && priceValue <= 500) || !(stock >= 0 && Number.isInteger(stock))) throw new E('Check product name, category, price and stock.');
     if (mrp < priceValue || mrp > 100000) throw new E('MRP must be at least the selling price.');
     const image = String(p.image || '').trim(); try { const im = new URL(image); if (!['http:', 'https:'].includes(im.protocol)) throw new Error(); } catch (x) { throw new E('Enter a valid https:// or http:// product image URL.'); }
     if (clean(p.details).length < 3) throw new E('Add a short product description.');
