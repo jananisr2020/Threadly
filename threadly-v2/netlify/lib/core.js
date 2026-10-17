@@ -239,7 +239,7 @@ async function ensureSellerLedger(parentOrderId) {
     const commission = configured ? Math.round(commissionBase * bps / 10000) : '';
     const net = configured ? commissionBase - commission : '';
     const current = existingIndex > 0 ? ledger[existingIndex].slice() : [];
-    if (existingIndex > 0 && String(current[13] || '').trim()) continue; // Never rewrite a row carrying a payout reference.
+    if (existingIndex > 0 && (String(current[13] || '').trim() || String(current[12] || '') === 'REFUND_REVIEW')) continue; // Never rewrite a paid-out or refund-review row.
     const lid = existingIndex > 0 ? current[0] : 'JL' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
     const status = configured ? 'READY_FOR_REVIEW' : 'CONFIG_REQUIRED';
     const row = [lid, id, String(so[1] || ''), String(so[19] || ''), String(so[3] || ''), String(so[4] || ''), gross, allocatedDiscount, configured ? bps : '', commission, net, 'INR', status, '', existingIndex > 0 ? (current[14] || now()) : now(), now(), configured ? 'Calculation only; payout not sent.' : 'Set JUNO_MARKETPLACE_COMMISSION_BPS before reviewing seller payable amounts.'];
