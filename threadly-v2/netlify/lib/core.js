@@ -48,7 +48,7 @@ const otpDigest = (id, code) => crypto.createHmac('sha256', secret()).update(id 
 const sendSms = async (phone, templateVars, templateOverride) => {
   const auth = process.env.MSG91_AUTH_KEY, template = templateOverride || process.env.MSG91_STATUS_TEMPLATE_ID || process.env.MSG91_TEMPLATE_ID, sender = process.env.MSG91_SENDER_ID;
   if (!auth || !template || !sender || !phone) return false;
-  const recipients = [{ mobiles: '91' + String(phone).replace(/\\D/g, '').slice(-10), ...templateVars }];
+  const recipients = [{ mobiles: '91' + String(phone).replace(/\D/g, '').slice(-10), ...templateVars }];
   const res = await fetch('https://control.msg91.com/api/v5/flow/', { method: 'POST', headers: { authkey: auth, 'content-type': 'application/json' }, body: JSON.stringify({ template_id: template, sender, short_url: '0', recipients }) });
   if (!res.ok) { console.error('SMS provider rejected notification:', res.status); return false; }
   return true;
@@ -281,7 +281,7 @@ const login = async (b, e) => {
 const verifyLoginOtp = async (b, e) => {
   limit('otp-verify:' + ip(e), 10, 15 * 60 * 1000);
   const id = String(b.challengeId || '').trim(), code = String(b.code || '').trim();
-  if (!/^[a-f0-9]{32}$/.test(id) || !/^\\d{6}$/.test(code)) throw new E('Enter the 6-digit code from your email.');
+  if (!/^[a-f0-9]{32}$/.test(id) || !/^\d{6}$/.test(code)) throw new E('Enter the 6-digit code from your email.');
   await sheets.ensureTab('OTPChallenges', OTP_HEADERS);
   const rows = await sheets.read('OTPChallenges'), i = rows.findIndex((r,k)=>k>0 && r[0]===id);
   if (i < 1) throw new E('That login code is invalid or expired. Please log in again.', 401);
