@@ -28,7 +28,7 @@ const writeActivity = async (e, fn, b, user, outcome, status) => {
     await activityTabReady;
     const tokenUser = user || bearer(e) || {};
     const email = clean(tokenUser.email || b.email || '').toLowerCase();
-    const role = tokenUser.admin ? 'admin' : tokenUser.seller ? 'seller' : email ? 'customer' : 'anonymous';
+    const role = tokenUser.admin || fn.name === 'admin' ? 'admin' : tokenUser.seller || fn.name === 'sellerLogin' || fn.name === 'sellerActivate' || fn.name === 'sellerProducts' || fn.name === 'sellerOrders' ? 'seller' : email ? 'customer' : 'anonymous';
     const label = fn.name === 'admin' && b.action ? 'admin.' + clean(b.action) : (fn.name || 'api') + (b.action ? '.' + clean(b.action) : '');
     const path = String(e.path || e.rawUrl || '').split('?')[0].slice(0, 250);
     const headers = e.headers || {};
