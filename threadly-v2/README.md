@@ -151,7 +151,7 @@ The feature branch `feature/juno-marketplace-foundation` contains the first mark
 This is an early marketplace slice. It supports seller application, seller account activation/login, and moderated product submission. It does **not** yet implement multi-seller cart/order splitting, seller fulfilment dashboards, marketplace payouts, seller ledger, refund allocation for multi-seller orders, or full transactional inventory locking. Do not enable external-seller checkout or advertise seller payouts until those phases are implemented and tested.
 
 ### Setup and smoke tests
-1. Create the `Sellers` sheet tab and headers above.
+1. On first seller application or Admin load, the backend attempts to create `Sellers`, `SellerOrders` and `SellerLedger` tabs with headers automatically. The Google service account must have Editor access and `SHEET_ID` must be correct. If the tabs still do not appear, check Netlify function logs and verify those permissions. Existing non-empty tabs are preserved; incorrect existing headers must be fixed manually.
 2. Verify `BREVO_API_KEY`, `MAIL_FROM`, `JWT_SECRET`, and Google Sheets service account permissions in Netlify.
 3. Deploy a preview of this branch, submit a seller application, approve it in Admin, open the activation email, and set a password.
 4. Log into `/seller-studio.html`, submit a product, verify it remains hidden, then approve it in Admin > Seller products and verify it appears on the storefront.
@@ -159,7 +159,7 @@ This is an early marketplace slice. It supports seller application, seller accou
 
 
 ### Seller fulfilment orders (marketplace phase 2)
-Create a Google Sheets tab named exactly `SellerOrders` with these headers in row 1, in this order:
+The backend now creates the `SellerOrders` tab and its headers automatically on first seller application/admin load, if the tab is missing. If you prefer to create it manually, use these headers in row 1, in this order:
 
 `Seller Order ID, Parent Order ID, Date, Seller ID, Seller Store Name, Customer Name, Customer Email, Customer Phone, Shipping Address, Pincode, Items JSON, Item Count, Seller Subtotal, Shipping Allocation, Seller Order Total, Payment Status, Fulfilment Status, Tracking, Updated, Payment ID`
 
@@ -171,7 +171,7 @@ Important boundaries:
 - Seller subtotal is the sum of that seller's item prices before allocating order-level discounts/shipping. Shipping allocation is currently zero and must not be treated as a seller payout calculation.
 
 ### Seller ledger and settlement review
-Create a second Google Sheets tab named exactly `SellerLedger` with these headers in row 1:
+The backend also creates `SellerLedger` with these headers automatically if it is missing. For manual setup, use these headers in row 1:
 
 `Ledger ID, Seller Order ID, Parent Order ID, Payment ID, Seller ID, Store Name, Gross Item Subtotal, Allocated Discount, Commission BPS, Commission Amount, Net Seller Amount, Currency, Ledger Status, Payout Reference, Created, Updated, Notes`
 
