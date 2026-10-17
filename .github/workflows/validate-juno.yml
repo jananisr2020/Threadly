@@ -80,7 +80,7 @@ jobs:
             ['Razorpay payment fetch', /payments\.fetch\(pi\)/],
             ['captured payment status validation', /payment\.status !== 'captured'/],
             ['webhook amount validation', /Number\(confirmed\.amount\) !== Number\(o\.total\) \* 100/],
-            ['seller order idempotency', /existing\\.has/],
+            ['seller order idempotency', /existing\.has/],
             ['seller ledger', /ensureSellerLedger/],
             ['configurable commission rate', /JUNO_MARKETPLACE_COMMISSION_BPS/],
             ['refund review state', /REFUND_REVIEW/],
