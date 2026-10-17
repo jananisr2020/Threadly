@@ -76,6 +76,8 @@ const registerDeviceToken = async (b, e, u) => {
 const sendPush = async (email, title, body, link) => {
   const project = process.env.FCM_PROJECT_ID, account = process.env.FCM_SERVICE_ACCOUNT_EMAIL, key = process.env.FCM_PRIVATE_KEY;
   if (!project || !account || !key) return false;
+  const prefs = await sheets.read('NotificationPreferences').catch(()=>[]), pref = prefs.slice(1).find(r=>String(r[0]||'').toLowerCase()===String(email||'').toLowerCase());
+  if (pref && String(pref[3] || 'Yes') === 'No') return true;
   const rows = await sheets.read('DeviceTokens');
   const tokens = rows.slice(1).filter(r => String(r[1] || '').toLowerCase() === String(email || '').toLowerCase() && String(r[4] || '').toLowerCase() === 'yes').map(r => String(r[3] || '')).filter(Boolean);
   if (!tokens.length) return true;
