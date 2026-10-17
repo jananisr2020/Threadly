@@ -17,7 +17,7 @@ exports.update = (tab, rowNum, row) => c().request({ url: `${base()}/values/${en
 exports.ensureTab = async (tab, headers) => {
   if (!process.env.SHEET_ID) throw new Error('SHEET_ID is not configured');
   const meta = async () => (await c().request({
-    url: `${base()}?fields=sheets.properties.title`
+    url: `${base()}?fields=sheets(properties(title))`
   })).data.sheets || [];
   let names = (await meta()).map(s => s.properties && s.properties.title).filter(Boolean);
   if (!names.includes(tab)) {
