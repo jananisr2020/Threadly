@@ -266,6 +266,10 @@ const verifyPayment = async (b, e, u) => {
   if (good.length !== String(sg).length || !crypto.timingSafeEqual(Buffer.from(good), Buffer.from(String(sg)))) throw new E('Payment could not be verified.');
   let t; try { t = jwt.verify(orderToken, secret()) } catch (x) { throw new E('Order session expired. Contact support with your payment ID ' + pi + '.') }
   if (t.rzp !== oi || t.o.email !== u.email) throw new E('Order mismatch.');
+  let payment;
+  try { payment = await rz().payments.fetch(pi); } catch (x) { throw new E('Payment signature is valid, but Razorpay could not confirm the payment status. Do not pay again; check My Orders or contact support with payment ID ' + pi + '.', 503); }
+  if (!payment || payment.order_id !== oi || Number(payment.amount) !== Number(t.o.total) * 100 || String(payment.currency || '') !== 'INR') throw new E('Razorpay payment details do not match this order. Do not retry payment; contact support with payment ID ' + pi + '.', 400);
+  if (payment.status !== 'captured') throw new E('Payment is not captured yet. Do not pay again; Juno will confirm the order after Razorpay reports capture. Keep payment ID ' + pi + ' for reference.', 409);
   await recordPaid(t.o, pi, oi); return { ok: true, orderId: t.o.id };
 };
 /* Razorpay webhook: records paid orders even if the customer closed the page, and marks refunds */
