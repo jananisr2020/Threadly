@@ -285,12 +285,21 @@ const webhook = async (b, e) => {
       await sleep(process.env.WEBHOOK_DELAY_MS !== undefined ? +process.env.WEBHOOK_DELAY_MS : 4000);
       const row = (await sheets.read('Pending')).find((r, k) => k > 0 && r[0] === oid);
       if (!row) console.error('webhook: no pending order for', oid);
-      else { const o = JSON.parse(row[1]); if (Number(pay.amount) !== Number(o.total) * 100 || String(pay.currency || 'INR') !== 'INR') { console.error('webhook: amount/currency mismatch; refusing to record paid order', oid); throw new E('Payment amount or currency mismatch.', 400); } else await recordPaid(o, pid, oid) }
+      else {
+        const o = JSON.parse(row[1]);
+        let confirmed;
+        try { confirmed = await rz().payments.fetch(pid); } catch (x) { throw new E('Razorpay could not verify the webhook payment. Retry webhook delivery.', 503); }
+        if (!confirmed || confirmed.order_id !== oid || Number(confirmed.amount) !== Number(o.total) * 100 || String(confirmed.currency || '') !== 'INR' || confirmed.status !== 'captured') {
+          console.error('webhook: payment details mismatch; refusing to record paid order', oid);
+          throw new E('Payment amount, currency or capture status mismatch.', 400);
+        }
+        await recordPaid(o, pid, oid);
+      }
     }
   } else if (ev.event === 'refund.processed' || ev.event === 'refund.created') {
     const pid = pl.refund && pl.refund.entity && pl.refund.entity.payment_id, rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[15] === pid);
     if (i > 0) {
-      const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = 'Refunded'; await sheets.update('Orders', i + 1, row);
+      const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = ev.event === 'refund.processed' ? 'Refunded' : 'Refund pending'; await sheets.update('Orders', i + 1, row);
       try { const ledger = await sheets.read('SellerLedger'); for (let k = 1; k < ledger.length; k++) if (String(ledger[k][2] || '') === String(rows[i][0] || '')) { const lr = ledger[k].slice(); while (lr.length < 17) lr.push(''); lr[12] = 'REFUND_REVIEW'; lr[15] = now(); lr[16] = 'Refund event received; reconcile refund allocation and any payout manually before settlement.'; await sheets.update('SellerLedger', k + 1, lr); } } catch (x) { console.error('refund received but seller ledger review update failed', rows[i][0], x && x.message); }
     }
   } else if (ev.event === 'payment.failed') console.error('payment failed', JSON.stringify(((pl.payment || {}).entity || {}).error_description || ''));
