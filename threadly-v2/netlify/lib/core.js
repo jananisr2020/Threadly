@@ -46,7 +46,10 @@ const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.pa
 /* ---------- marketplace: seller applications ---------- */
 const sellerApply = async (b, e) => {
   limit('seller-apply:' + ip(e), 5, 36e5);
-  await ensureMarketplaceTabs();
+  // A seller application only needs the existing Requests tab. Do not make
+  // first-time marketplace tab creation a prerequisite for submitting the form.
+  if (!process.env.SHEET_ID) throw new E('Seller applications are temporarily unavailable: SHEET_ID is not configured in Netlify.', 503);
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) throw new E('Seller applications are temporarily unavailable: Google Sheets service-account credentials are missing in Netlify.', 503);
   const ownerName = clean(b.ownerName), storeName = clean(b.storeName);
   const email = clean(b.email).toLowerCase(), phone = String(b.phone || '').replace(/\D/g, '');
   const city = clean(b.city), category = clean(b.category), social = clean(b.social), about = String(b.about || '').replace(/[<>]/g, '').trim().slice(0, 1000);
@@ -57,12 +60,29 @@ const sellerApply = async (b, e) => {
   if (!city || !allowed.includes(category) || about.length < 10) throw new E('Complete the city, category and store description.');
   if (b.consent !== true && String(b.consent) !== 'true' && String(b.consent) !== 'on') throw new E('Please confirm the application consent.');
   if (social) { try { const u = new URL(social); if (!['http:', 'https:'].includes(u.protocol)) throw new Error('protocol'); } catch (x) { throw new E('Enter a valid Instagram or store URL.'); } }
-  const rows = await sheets.read('Requests');
+  let rows;
+  try {
+    rows = await sheets.read('Requests');
+  } catch (x) {
+    console.error('Seller application could not read Requests sheet:', x && (x.response && x.response.data || x.message || x));
+    const status = x && x.response && x.response.status;
+    if (status === 403) throw new E('Juno cannot access the Google Sheet. Share the Juno spreadsheet with the configured service-account email as an Editor, then try again.', 503);
+    if (status === 404) throw new E('Juno could not find the configured Google Sheet. Check SHEET_ID in Netlify environment variables.', 503);
+    throw new E('Juno could not read the Requests tab in Google Sheets. Check the SHEET_ID, service-account credentials and that the Requests tab exists.', 503);
+  }
   const duplicate = rows.slice(1).find(r => String(r[3] || '').toLowerCase() === email && String(r[4] || '').toLowerCase() === 'seller application' && !['Rejected', 'Closed'].includes(String(r[7] || '')));
   if (duplicate) throw new E('We already have an active application for this email. Juno will review it shortly.', 409);
   const id = 'JS' + Date.now().toString(36).toUpperCase();
   const details = { ownerName, storeName, phone, city, category, social, about, consentAt: new Date().toISOString(), source: 'sell-on-juno-page' };
-  await sheets.append('Requests', [id, now(), '', email, 'Seller application', storeName, JSON.stringify(details), 'Requested', '']);
+  try {
+    await sheets.append('Requests', [id, now(), '', email, 'Seller application', storeName, JSON.stringify(details), 'Requested', '']);
+  } catch (x) {
+    console.error('Seller application could not append Requests sheet:', x && (x.response && x.response.data || x.message || x));
+    const status = x && x.response && x.response.status;
+    if (status === 403) throw new E('Juno can read the Google Sheet but cannot write to it. Share the spreadsheet with the configured service-account email as an Editor.', 503);
+    if (status === 404) throw new E('Juno could not find the Requests tab or configured Google Sheet. Check SHEET_ID and the Requests tab name.', 503);
+    throw new E('Juno could not save your application to Google Sheets. Check the Requests tab headers and service-account Editor access, then try again.', 503);
+  }
   return { ok: true, applicationId: id, message: 'Application received for review.' };
 };
 
