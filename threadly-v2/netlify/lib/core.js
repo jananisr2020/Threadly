@@ -30,17 +30,127 @@ const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).re
 const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await productRows()) } });
 const productObjs = rows => { const k = (rows[0] || []).map(nk); return rows.slice(1).map((r, i) => { const o = { row: i + 2 }; k.forEach((n, j) => o[n] = r[j] == null ? '' : r[j]); return o }) };
 const num = v => +String(v || '').replace(/[^\d.]/g, '') || 0;
-async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no') m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row } }); return m }
+async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
 async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
   const cat = await catalogue(); let sub = 0, count = 0; const lines = [], qty = [];
   for (const it of items) { const p = cat[it.id], n = Math.floor(+it.n); if (!p || !(n >= 1 && n <= 20)) throw new E('A product in your cart is no longer available.'); if (p.stock < n) throw new E(p.name + ' has only ' + p.stock + ' left.'); sub += p.price * n; count += n; lines.push(p.name + ' (' + clean(it.s) + ') x' + n); qty.push([it.id, n]) }
   const disc = ['JUNO10', 'THREAD10'].includes(String(coupon || '').toUpperCase()) ? Math.round(sub * .1) : 0, ship = sub - disc < 299 ? 39 : 0;
-  return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty };
+  const itemDetails = qty.map(([id, n]) => { const p = cat[id]; return { productId: id, name: p.name, category: p.category || '', unitPrice: p.price, quantity: n, sellerId: p.sellerId || '' }; });
+  return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty, itemDetails };
 }
 /* ---------- users ---------- */
 const findUser = async email => { const rows = await sheets.read('Users'); for (let i = 1; i < rows.length; i++) if (String(rows[i][1] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] }; return null };
 const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.password || ''); return { email, pw, name: clean(b.name) } };
+
+/* ---------- marketplace: seller applications ---------- */
+const sellerApply = async (b, e) => {
+  limit('seller-apply:' + ip(e), 5, 36e5);
+  const ownerName = clean(b.ownerName), storeName = clean(b.storeName);
+  const email = clean(b.email).toLowerCase(), phone = String(b.phone || '').replace(/\D/g, '');
+  const city = clean(b.city), category = clean(b.category), social = clean(b.social), about = String(b.about || '').replace(/[<>]/g, '').trim().slice(0, 1000);
+  const allowed = ['Hair accessories', 'Jewellery', 'Bags and purses', 'Scarves and fashion accessories', 'Belts and wallets', 'Mixed accessories'];
+  if (ownerName.length < 2 || storeName.length < 2) throw new E('Enter your name and store name.');
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new E('Enter a valid email address.');
+  if (!/^[6-9]\d{9}$/.test(phone)) throw new E('Enter a valid 10-digit Indian mobile number.');
+  if (!city || !allowed.includes(category) || about.length < 10) throw new E('Complete the city, category and store description.');
+  if (b.consent !== true && String(b.consent) !== 'true' && String(b.consent) !== 'on') throw new E('Please confirm the application consent.');
+  if (social) { try { const u = new URL(social); if (!['http:', 'https:'].includes(u.protocol)) throw new Error('protocol'); } catch (x) { throw new E('Enter a valid Instagram or store URL.'); } }
+  const rows = await sheets.read('Requests');
+  const duplicate = rows.slice(1).find(r => String(r[3] || '').toLowerCase() === email && String(r[4] || '').toLowerCase() === 'seller application' && !['Rejected', 'Closed'].includes(String(r[7] || '')));
+  if (duplicate) throw new E('We already have an active application for this email. Juno will review it shortly.', 409);
+  const id = 'JS' + Date.now().toString(36).toUpperCase();
+  const details = { ownerName, storeName, phone, city, category, social, about, consentAt: new Date().toISOString(), source: 'sell-on-juno-page' };
+  await sheets.append('Requests', [id, now(), '', email, 'Seller application', storeName, JSON.stringify(details), 'Requested', '']);
+  return { ok: true, applicationId: id, message: 'Application received for review.' };
+};
+
+
+/* ---------- marketplace: seller accounts and owned products ---------- */
+const sellerRows = async () => sheets.read('Sellers');
+const sellerByEmail = async email => {
+  const rows = await sellerRows();
+  for (let i = 1; i < rows.length; i++) if (String(rows[i][3] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] };
+  return null;
+};
+const sellerPublic = v => ({ id: v[0], storeName: v[2], email: v[3], city: v[5], category: v[6] });
+const sellerActivate = async (b, e) => {
+  limit('seller-activate:' + ip(e), 8, 36e5);
+  const password = String(b.password || ''); if (password.length < 8) throw new E('Use a password with at least 8 characters.');
+  let t; try { t = jwt.verify(String(b.token || ''), secret()) } catch (x) { throw new E('This activation link expired. Ask Juno to resend it.') }
+  if (t.purpose !== 'seller-activate' || !t.email || !t.applicationId) throw new E('Invalid seller activation link.');
+  const reqs = await sheets.read('Requests');
+  const req = reqs.find((r, i) => i > 0 && r[0] === t.applicationId && String(r[4] || '').toLowerCase() === 'seller application' && r[7] === 'Approved');
+  if (!req || String(req[3] || '').toLowerCase() !== t.email) throw new E('This seller application is not approved or no longer valid.');
+  if (await sellerByEmail(t.email)) throw new E('A seller account already exists. Please log in.');
+  let d = {}; try { d = JSON.parse(req[6] || '{}') } catch (x) {}
+  const id = 'JSR' + Date.now().toString(36).toUpperCase(), rows = await sellerRows();
+  if (!rows.length) throw new E('The Sellers sheet needs its header row. Ask the Juno administrator to finish setup.', 503);
+  await sheets.append('Sellers', [id, t.applicationId, clean(d.storeName || req[5]), t.email, await bcrypt.hash(password, 10), clean(d.city), clean(d.category), 'Active', now(), now()]);
+  const seller = { id, storeName: clean(d.storeName || req[5]), email: t.email, city: clean(d.city), category: clean(d.category) };
+  return { ok: true, seller, token: sign({ seller: true, sellerId: id, email: t.email }, '30d') };
+};
+const sellerLogin = async (b, e) => {
+  limit('seller-login:' + ip(e), 10, 9e5);
+  const email = clean(b.email).toLowerCase(), password = String(b.password || '');
+  if (!/^\S+@\S+\.\S+$/.test(email) || !password) throw new E('Enter your seller email and password.');
+  const f = await sellerByEmail(email);
+  if (!f || f.v[7] !== 'Active' || !(await bcrypt.compare(password, String(f.v[4] || '')))) throw new E('Seller login details are incorrect or the account is not active.', 401);
+  const row = f.v.slice(); row[9] = now(); await sheets.update('Sellers', f.row, row);
+  return { ok: true, seller: sellerPublic(row), token: sign({ seller: true, sellerId: row[0], email }, '30d') };
+};
+const sellerOrders = async (b, e) => {
+  const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
+  const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
+  let rows; try { rows = await sheets.read('SellerOrders'); } catch (x) { throw new E('SellerOrders sheet is not set up yet. Ask the Juno administrator to add it.', 503); }
+  if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') throw new E('SellerOrders sheet headers are not set up yet. Ask the Juno administrator to follow the README.', 503);
+  if (b.action === 'load') return { ok: true, orders: rows.slice(1).filter(r => String(r[3]) === u.sellerId).reverse().map(r => ({ id:r[0], parentOrderId:r[1], date:r[2], storeName:r[4], customerName:r[5], phone:r[7], address:r[8], pincode:r[9], items:(()=>{try{return JSON.parse(r[10]||'[]')}catch(x){return []}})(), itemCount:+r[11]||0, subtotal:+r[12]||0, paymentStatus:r[15], status:r[16]||'New', tracking:r[17]||'' })) };
+  if (b.action === 'update') {
+    const allowed = ['New','Accepted','Packed','Shipped','Delivered','Cancelled'];
+    if (!allowed.includes(b.status)) throw new E('Choose a valid fulfilment status.');
+    const i = rows.findIndex((r,k)=>k>0 && r[0]===b.id && String(r[3])===u.sellerId);
+    if (i < 0) throw new E('Seller order not found.',404);
+    const row=rows[i].slice(); while(row.length<20) row.push('');
+    const old=String(row[16]||'New');
+    const transitions={New:['Accepted','Cancelled'],Accepted:['Packed','Cancelled'],Packed:['Shipped','Cancelled'],Shipped:['Delivered'],Delivered:[],Cancelled:[]};
+    if (b.status !== old && !(transitions[old]||[]).includes(b.status)) throw new E('That fulfilment status change is not allowed.');
+    row[16]=b.status; if (b.tracking != null) row[17]=clean(b.tracking); row[18]=now();
+    await sheets.update('SellerOrders',i+1,row);
+    return {ok:true};
+  }
+  throw new E('Unknown seller order action.');
+};
+const sellerProducts = async (b, e) => {
+  const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
+  const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
+  if (b.action === 'profile') return { ok: true, seller: sellerPublic(sr.v) };
+  let rows = await productRows(true), headers = (rows[0] || []).map(nk);
+  if (!headers.includes('seller id') || !headers.includes('approval status')) {
+    const h = (rows[0] || []).slice(); while (h.length < 13) h.push('');
+    if (!headers.includes('seller id')) h[13] = 'Seller ID';
+    if (!headers.includes('approval status')) h[14] = 'Approval Status';
+    await sheets.update('Products', 1, h); invalidate(); rows = await productRows(true); headers = (rows[0] || []).map(nk);
+  }
+  const sidCol = headers.indexOf('seller id'), statusCol = headers.indexOf('approval status');
+  if (b.action === 'load') {
+    const list = productObjs(rows).filter(p => String(p['seller id']) === u.sellerId).map(p => ({ id: p['product id'], name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 0 : num(p.stock), status: p['approval status'] || 'Pending', visibility: String(p['show on site']).toLowerCase() === 'no' ? 'Hidden' : 'Live' }));
+    return { ok: true, seller: sellerPublic(sr.v), products: list };
+  }
+  if (b.action === 'save') {
+    const p = b.product || {}, name = clean(p.name), cat = clean(p.cat), priceValue = num(p.price), mrp = num(p.mrp) || priceValue, stock = Number(p.stock);
+    const categories = ['Hair accessories', 'Jewellery', 'Bags and purses', 'Scarves and fashion accessories', 'Belts and wallets', 'Mixed accessories'];
+    if (name.length < 2 || !categories.includes(cat) || !(priceValue > 0 && priceValue <= 500) || !(stock >= 0 && Number.isInteger(stock))) throw new E('Check product name, category, price and stock.');
+    if (mrp < priceValue || mrp > 100000) throw new E('MRP must be at least the selling price.');
+    const image = String(p.image || '').trim(); try { const im = new URL(image); if (!['http:', 'https:'].includes(im.protocol)) throw new Error(); } catch (x) { throw new E('Enter a valid https:// or http:// product image URL.'); }
+    if (clean(p.details).length < 3) throw new E('Add a short product description.');
+    const id = 'JS' + Date.now().toString(36).toUpperCase();
+    const row = [id, name, cat, 'Unisex', mrp, priceValue, clean(p.details), clean(p.sizes), image.slice(0, 500), stock, 'No', 0, 'No', u.sellerId, 'Pending'];
+    await sheets.append('Products', row); invalidate();
+    return { ok: true, id, status: 'Pending' };
+  }
+  throw new E('Unknown seller action.');
+};
+
 const signup = async (b, e) => {
   limit('su:' + ip(e), 10, 36e5);
   const { email, pw, name } = cred(b); if (!/^\S+@\S+\.\S+$/.test(email) || pw.length < 6) throw new E('Enter a valid email and a 6+ character password.');
@@ -80,7 +190,75 @@ const createOrder = async (b, e, u) => {
   return { id: r.id, amount: r.amount, key: process.env.RAZORPAY_KEY_ID, orderId: o.id, orderToken: sign({ o, rzp: r.id }, '2h') };
 };
 async function markPending(id, status) { try { const rows = await sheets.read('Pending'), i = rows.findIndex((r, k) => k > 0 && r[0] === id); if (i > 0) { const r = rows[i].slice(); while (r.length < 4) r.push(''); r[3] = status; await sheets.update('Pending', i + 1, r) } } catch (x) { console.error('pending mark failed', x) } }
-async function recordPaid(o, payId, rzpId) { const rows = await sheets.read('Orders'); if (rows.some(r => r[15] === payId)) { await markPending(rzpId, 'recorded'); return false } await record(o, 'Paid', payId); await markPending(rzpId, 'recorded'); return true }
+async function ensureSellerOrders(o, payId) {
+  if (!Array.isArray(o.itemDetails) || !o.itemDetails.length) return;
+  let rows;
+  try { rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab missing; seller fulfilment records were not created for', o.id); return; }
+  if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') { console.error('SellerOrders header row missing; seller fulfilment records were not created for', o.id); return; }
+  const existing = new Set(rows.slice(1).map(r => String(r[1] || '') + '|' + String(r[3] || '')));
+  const sellers = new Map();
+  for (const it of o.itemDetails) {
+    const sellerId = String(it.sellerId || '').trim();
+    if (!sellerId) continue; // Blank seller ID means the original Juno-owned catalogue.
+    if (!sellers.has(sellerId)) sellers.set(sellerId, []);
+    sellers.get(sellerId).push(it);
+  }
+  const sellerRowsData = await sellerRows();
+  for (const [sellerId, items] of sellers) {
+    if (existing.has(String(o.id) + '|' + sellerId)) continue;
+    const sr = sellerRowsData.find((r, i) => i > 0 && String(r[0]) === sellerId);
+    if (!sr || sr[7] !== 'Active') { console.error('Seller missing/inactive during order split', sellerId, o.id); continue; }
+    const subtotal = items.reduce((sum, it) => sum + (+it.unitPrice || 0) * (+it.quantity || 0), 0);
+    const itemCount = items.reduce((sum, it) => sum + (+it.quantity || 0), 0);
+    const sid = 'SO' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+    await sheets.append('SellerOrders', [sid, o.id, now(), sellerId, sr[2] || '', o.addr.name, o.email, o.addr.phone, o.addr.line, o.addr.pin, JSON.stringify(items), itemCount, subtotal, 0, subtotal, 'Paid', 'New', '', now(), payId || '']);
+    existing.add(String(o.id) + '|' + sellerId);
+  }
+}
+async function ensureSellerLedger(parentOrderId) {
+  let orders, ledger;
+  try { orders = await sheets.read('SellerOrders'); ledger = await sheets.read('SellerLedger'); }
+  catch (x) { console.error('SellerLedger sheet missing; seller amounts are not reconciled for', parentOrderId); return; }
+  if (!orders.length || String(orders[0][0] || '').trim() !== 'Seller Order ID' ||
+      !ledger.length || String(ledger[0][0] || '').trim() !== 'Ledger ID') {
+    console.error('SellerOrders/SellerLedger headers missing; ledger reconciliation skipped for', parentOrderId); return;
+  }
+  const rawBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+  const hasBps = rawBps !== undefined && String(rawBps).trim() !== '';
+  if (hasBps && !/^\d+$/.test(String(rawBps).trim())) throw new E('JUNO_MARKETPLACE_COMMISSION_BPS must be an integer from 0 to 5000.', 500);
+  const configured = hasBps, bps = configured ? Number(String(rawBps).trim()) : null;
+  if (configured && (!Number.isSafeInteger(bps) || bps < 0 || bps > 5000)) throw new E('JUNO_MARKETPLACE_COMMISSION_BPS must be an integer from 0 to 5000.', 500);
+  const sellerOrders = orders.slice(1).filter(r => String(r[1] || '') === String(parentOrderId));
+  const parentRows = await sheets.read('Orders');
+  const parent = parentRows.find((r, i) => i > 0 && String(r[0] || '') === String(parentOrderId));
+  for (const so of sellerOrders) {
+    const id = String(so[0] || ''), existingIndex = ledger.findIndex((r, i) => i > 0 && String(r[1] || '') === id);
+    const gross = Math.max(0, num(so[12]));
+    const orderSubtotal = parent ? Math.max(0, num(parent[9])) : 0;
+    const discount = parent ? Math.max(0, num(parent[10])) : 0;
+    const allocatedDiscount = orderSubtotal > 0 ? Math.min(gross, Math.round(discount * gross / orderSubtotal)) : 0;
+    const commissionBase = Math.max(0, gross - allocatedDiscount);
+    const commission = configured ? Math.round(commissionBase * bps / 10000) : '';
+    const net = configured ? commissionBase - commission : '';
+    const current = existingIndex > 0 ? ledger[existingIndex].slice() : [];
+    if (existingIndex > 0 && (String(current[13] || '').trim() || String(current[12] || '') === 'REFUND_REVIEW')) continue; // Never rewrite a paid-out or refund-review row.
+    const lid = existingIndex > 0 ? current[0] : 'JL' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const status = configured ? 'READY_FOR_REVIEW' : 'CONFIG_REQUIRED';
+    const row = [lid, id, String(so[1] || ''), String(so[19] || ''), String(so[3] || ''), String(so[4] || ''), gross, allocatedDiscount, configured ? bps : '', commission, net, 'INR', status, '', existingIndex > 0 ? (current[14] || now()) : now(), now(), configured ? 'Calculation only; payout not sent.' : 'Set JUNO_MARKETPLACE_COMMISSION_BPS before reviewing seller payable amounts.'];
+    if (existingIndex > 0) await sheets.update('SellerLedger', existingIndex + 1, row);
+    else { await sheets.append('SellerLedger', row); ledger.push(row); }
+  }
+}
+async function recordPaid(o, payId, rzpId) {
+  const rows = await sheets.read('Orders');
+  if (!rows.some(r => r[15] === payId)) await record(o, 'Paid', payId);
+  try {
+    await ensureSellerOrders(o, payId);
+    await ensureSellerLedger(o.id);
+  } catch (x) { console.error('seller order/ledger reconciliation needs retry for', o.id, x && x.message); }
+  await markPending(rzpId, 'recorded');
+  return true;
+}
 const verifyPayment = async (b, e, u) => {
   const { razorpay_order_id: oi, razorpay_payment_id: pi, razorpay_signature: sg, orderToken } = b;
   if (!oi || !pi || !sg || !orderToken) throw new E('Missing payment details.');
@@ -88,6 +266,10 @@ const verifyPayment = async (b, e, u) => {
   if (good.length !== String(sg).length || !crypto.timingSafeEqual(Buffer.from(good), Buffer.from(String(sg)))) throw new E('Payment could not be verified.');
   let t; try { t = jwt.verify(orderToken, secret()) } catch (x) { throw new E('Order session expired. Contact support with your payment ID ' + pi + '.') }
   if (t.rzp !== oi || t.o.email !== u.email) throw new E('Order mismatch.');
+  let payment;
+  try { payment = await rz().payments.fetch(pi); } catch (x) { throw new E('Payment signature is valid, but Razorpay could not confirm the payment status. Do not pay again; check My Orders or contact support with payment ID ' + pi + '.', 503); }
+  if (!payment || payment.order_id !== oi || Number(payment.amount) !== Number(t.o.total) * 100 || String(payment.currency || '') !== 'INR') throw new E('Razorpay payment details do not match this order. Do not retry payment; contact support with payment ID ' + pi + '.', 400);
+  if (payment.status !== 'captured') throw new E('Payment is not captured yet. Do not pay again; Juno will confirm the order after Razorpay reports capture. Keep payment ID ' + pi + ' for reference.', 409);
   await recordPaid(t.o, pi, oi); return { ok: true, orderId: t.o.id };
 };
 /* Razorpay webhook: records paid orders even if the customer closed the page, and marks refunds */
@@ -103,11 +285,23 @@ const webhook = async (b, e) => {
       await sleep(process.env.WEBHOOK_DELAY_MS !== undefined ? +process.env.WEBHOOK_DELAY_MS : 4000);
       const row = (await sheets.read('Pending')).find((r, k) => k > 0 && r[0] === oid);
       if (!row) console.error('webhook: no pending order for', oid);
-      else { const o = JSON.parse(row[1]); if (pay.amount && pay.amount !== o.total * 100) console.error('webhook: amount mismatch', oid); else await recordPaid(o, pid, oid) }
+      else {
+        const o = JSON.parse(row[1]);
+        let confirmed;
+        try { confirmed = await rz().payments.fetch(pid); } catch (x) { throw new E('Razorpay could not verify the webhook payment. Retry webhook delivery.', 503); }
+        if (!confirmed || confirmed.order_id !== oid || Number(confirmed.amount) !== Number(o.total) * 100 || String(confirmed.currency || '') !== 'INR' || confirmed.status !== 'captured') {
+          console.error('webhook: payment details mismatch; refusing to record paid order', oid);
+          throw new E('Payment amount, currency or capture status mismatch.', 400);
+        }
+        await recordPaid(o, pid, oid);
+      }
     }
   } else if (ev.event === 'refund.processed' || ev.event === 'refund.created') {
     const pid = pl.refund && pl.refund.entity && pl.refund.entity.payment_id, rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[15] === pid);
-    if (i > 0) { const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = 'Refunded'; await sheets.update('Orders', i + 1, row) }
+    if (i > 0) {
+      const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = ev.event === 'refund.processed' ? 'Refunded' : 'Refund pending'; await sheets.update('Orders', i + 1, row);
+      try { const ledger = await sheets.read('SellerLedger'); for (let k = 1; k < ledger.length; k++) if (String(ledger[k][2] || '') === String(rows[i][0] || '')) { const lr = ledger[k].slice(); while (lr.length < 17) lr.push(''); lr[12] = 'REFUND_REVIEW'; lr[15] = now(); lr[16] = 'Refund event received; reconcile refund allocation and any payout manually before settlement.'; await sheets.update('SellerLedger', k + 1, lr); } } catch (x) { console.error('refund received but seller ledger review update failed', rows[i][0], x && x.message); }
+    }
   } else if (ev.event === 'payment.failed') console.error('payment failed', JSON.stringify(((pl.payment || {}).entity || {}).error_description || ''));
   return { ok: true };
 };
@@ -270,8 +464,8 @@ const admin = async (b, e) => {
   if (b.action === 'login') return adminLogin(b, e);
   const u = bearer(e); if (!u || !u.admin) throw new E('Session expired. Log in again.', 401);
   if (b.action === 'load') {
-    const [o, p, us, rv, rq, tk] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => [])]);
-    return { orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
+    const [o, p, us, rv, rq, tk, so, sl] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => [])]);
+    return { sellerLedger: sl.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 17 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
   }
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
@@ -287,6 +481,14 @@ const admin = async (b, e) => {
     const ST = ['Requested', 'Approved', 'Rejected', 'Pickup scheduled', 'Refunded', 'Closed']; if (!ST.includes(b.status)) throw new E('Bad status.');
     const rows = await sheets.read('Requests'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Request not found.', 404);
     const row = Array.from({ length: 9 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[7] = b.status; row[8] = clean(b.notes); await sheets.update('Requests', i + 1, row);
+    if (String(row[4] || '').toLowerCase() === 'seller application' && b.status === 'Approved' && String(rows[i][7] || '') !== 'Approved') {
+      if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM) throw new E('Application saved as Approved, but email is not configured. Set BREVO_API_KEY and MAIL_FROM, then contact the seller with a fresh activation link.', 500);
+      let details = {}; try { details = JSON.parse(row[6] || '{}') } catch (x) {}
+      const activation = sign({ purpose: 'seller-activate', email: String(row[3]).toLowerCase(), applicationId: row[0] }, '24h');
+      const base = process.env.URL || ('https://' + ((e.headers || {}).host || ''));
+      const link = base + '/seller-studio.html?activate=' + encodeURIComponent(activation);
+      await mail(String(row[3]), 'Your Juno seller application is approved', '<p>Hi ' + clean(details.ownerName || details.storeName || 'there') + ',</p><p>Your seller application for <b>' + clean(details.storeName || row[5]) + '</b> has been approved.</p><p><a href="' + link + '" style="background:#d9186c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Activate seller account</a></p><p>This secure link expires in 24 hours. If it expires, contact Juno support. Do not share it.</p>');
+    }
     const want = row[4] === 'Cancel' && b.status === 'Approved' ? 'Cancelled' : row[4] === 'Return' && b.status === 'Refunded' ? 'Returned' : '';
     if (want) { const o = await sheets.read('Orders'), k = o.findIndex((r, n) => n > 0 && r[0] === row[2]); if (k > 0) { const orow = padOrder(o[k]); orow[OIDX.status] = want; await sheets.update('Orders', k + 1, orow) } }
     return { ok: true };
@@ -307,16 +509,27 @@ const admin = async (b, e) => {
     let emailed = false; if (changed && row[4]) emailed = await tryMail(row[4], `Update on your ticket ${row[0]}: ${b.status}`, `<p>Hi ${clean(row[3])},</p><p>Your ticket <b>${row[0]}</b> is now <b>${b.status}</b>.</p>${reply ? '<p><b>Our reply:</b><br>' + brk(reply) + '</p>' : ''}<p>Need more help? Call ${PHONE()} or reply to this email.</p>`);
     return { ok: true, emailed };
   }
+  if (b.action === 'setSellerProductStatus') {
+    const status = ['Approved', 'Rejected', 'Pending'].includes(b.status) ? b.status : '';
+    if (!status) throw new E('Bad product review status.');
+    const rows = await productRows(true), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id);
+    if (i < 0) throw new E('Product not found.', 404);
+    const row = rows[i].slice(); while (row.length < 15) row.push('');
+    if (!row[13]) throw new E('This is not a seller-submitted product.');
+    row[14] = status; row[12] = status === 'Approved' ? 'Yes' : 'No';
+    await sheets.update('Products', i + 1, row); invalidate(); return { ok: true };
+  }
   if (b.action === 'saveProduct') {
     const p = b.product || {}, rows = await productRows(true); let id = clean(p.id);
     const name = clean(p.name), sp = num(p.price), mrp = num(p.mrp) || sp;
     if (!name || !sp) throw new E('Name and selling price are required.');
     if (!id) { const mx = rows.slice(1).reduce((m, r) => Math.max(m, +String(r[0] || '').replace(/\D/g, '') || 0), 0); id = 'TL' + String(mx + 1).padStart(3, '0') }
-    const row = [id, name, clean(p.cat) || 'More', clean(p.g) || 'Unisex', mrp, sp, clean(p.details), clean(p.sizes), String(p.image || '').trim().slice(0, 500), p.stock === '' || p.stock == null ? '' : num(p.stock), /^y/i.test(p.sale) ? 'Yes' : 'No', num(p.rating) || 4.2, /^n/i.test(p.show) ? 'No' : 'Yes'];
     const i = rows.findIndex((r, k) => k > 0 && r[0] === id);
-    if (i > 0) await sheets.update('Products', i + 1, row); else await sheets.append('Products', row);
+    const row = [id, name, clean(p.cat) || 'More', clean(p.g) || 'Unisex', mrp, sp, clean(p.details), clean(p.sizes), String(p.image || '').trim().slice(0, 500), p.stock === '' || p.stock == null ? '' : num(p.stock), /^y/i.test(p.sale) ? 'Yes' : 'No', num(p.rating) || 4.2, /^n/i.test(p.show) ? 'No' : 'Yes'];
+    if (i > 0) { const existing = rows[i]; while (row.length < existing.length) row.push(existing[row.length] == null ? '' : existing[row.length]); if (existing[13]) row[13] = existing[13]; if (existing[13] && existing[14] === 'Pending') row[12] = 'No'; await sheets.update('Products', i + 1, row); }
+    else await sheets.append('Products', [...row, '', 'Approved']);
     invalidate(); return { ok: true, id };
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };

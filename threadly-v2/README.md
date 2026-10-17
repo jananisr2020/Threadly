@@ -52,6 +52,9 @@ Netlify's drag-and-drop upload does not run the order and login functions, so de
 3. SMTP & API > API Keys > Generate a new API key. That is `BREVO_API_KEY`.
 4. Add both in Netlify and trigger a deploy. "Forgot password?" on the login box then emails a link that works for 30 minutes, once.
 
+## Marketplace seller price rule
+- Seller-submitted accessories must have a selling price of **₹500 or less**. The API enforces this limit even if a seller bypasses the browser form. MRP must be at least the selling price; the selling price is the value capped at ₹500.
+
 ## Chat assistant
 The 💬 button is a free, built-in assistant (no key or subscription needed). It answers delivery, returns, payment, coupon, size and gift questions, and finds products from sentences like "black earrings under ₹199" using your live product sheet. To change its answers, edit the `botRules` function in `public/index.html`.
 
@@ -130,3 +133,52 @@ Add your refund, shipping and privacy policy pages and contact details (Razorpay
 - Google Sheets allows roughly 60 reads per minute per account on this setup. That is fine for a small store with a few hundred visitors a day. If you grow beyond that, move to a real database and I can do it for you.
 - A customer who pays but closes the browser before the confirmation will not have an order row. Razorpay still shows the payment in its dashboard; adding a Razorpay webhook closes that gap.
 
+
+
+## Juno multi-seller marketplace (feature branch)
+
+The feature branch `feature/juno-marketplace-foundation` contains the first marketplace implementation. It adds the public `/sell-on-juno.html` application form, admin application review, seller activation/login, and a seller studio at `/seller-studio.html` for submitting accessory products for moderation.
+
+### Required Google Sheets setup
+- Keep the existing `Requests` tab with the 9 columns documented above.
+- Create a tab named exactly `Sellers` with these headers in row 1: `Seller ID, Application ID, Store Name, Email, Password Hash, City, Category, Status, Created, Last Login`.
+- The seller product endpoint appends `Seller ID` and `Approval Status` headers to the existing `Products` header row when needed. Existing catalogue rows remain Juno-owned/visible; seller-submitted products start hidden and pending approval.
+- Keep `BREVO_API_KEY` and `MAIL_FROM` configured for seller approval emails. When an admin changes a seller application to `Approved`, the API emails a 24-hour account activation link. The seller sets their own password through that link.
+- The seller API validates seller identity from a signed JWT and restricts product queries/creation to the authenticated seller. Sellers cannot approve or publish their own listings.
+- Admin > Seller products can approve or reject seller listings. Only approved products marked visible can appear in the public catalogue.
+
+### Important scope limitation
+This is an early marketplace slice. It supports seller application, seller account activation/login, and moderated product submission. It does **not** yet implement multi-seller cart/order splitting, seller fulfilment dashboards, marketplace payouts, seller ledger, refund allocation for multi-seller orders, or full transactional inventory locking. Do not enable external-seller checkout or advertise seller payouts until those phases are implemented and tested.
+
+### Setup and smoke tests
+1. Create the `Sellers` sheet tab and headers above.
+2. Verify `BREVO_API_KEY`, `MAIL_FROM`, `JWT_SECRET`, and Google Sheets service account permissions in Netlify.
+3. Deploy a preview of this branch, submit a seller application, approve it in Admin, open the activation email, and set a password.
+4. Log into `/seller-studio.html`, submit a product, verify it remains hidden, then approve it in Admin > Seller products and verify it appears on the storefront.
+5. Regression-test customer signup/login, cart, prepaid Razorpay checkout, order creation and refunds before merging.
+
+
+### Seller fulfilment orders (marketplace phase 2)
+Create a Google Sheets tab named exactly `SellerOrders` with these headers in row 1, in this order:
+
+`Seller Order ID, Parent Order ID, Date, Seller ID, Seller Store Name, Customer Name, Customer Email, Customer Phone, Shipping Address, Pincode, Items JSON, Item Count, Seller Subtotal, Shipping Allocation, Seller Order Total, Payment Status, Fulfilment Status, Tracking, Updated, Payment ID`
+
+When a customer payment is confirmed, the backend creates a seller fulfilment sub-order for each active seller represented in the paid order. The original customer order remains in `Orders`; the seller-specific records live in `SellerOrders`. Seller Studio > Your orders shows only the authenticated seller's records and lets that seller update permitted fulfilment states and tracking details. Admin > Seller orders provides an oversight view.
+
+Important boundaries:
+- The original Juno-owned products have a blank Seller ID and do not create external seller sub-orders.
+- Seller sub-orders are for fulfilment only. The customer still pays through the existing Juno Razorpay checkout; **payment splitting, commission collection, seller balance accounting and payouts are not enabled**.
+- Seller subtotal is the sum of that seller's item prices before allocating order-level discounts/shipping. Shipping allocation is currently zero and must not be treated as a seller payout calculation.
+
+### Seller ledger and settlement review
+Create a second Google Sheets tab named exactly `SellerLedger` with these headers in row 1:
+
+`Ledger ID, Seller Order ID, Parent Order ID, Payment ID, Seller ID, Store Name, Gross Item Subtotal, Allocated Discount, Commission BPS, Commission Amount, Net Seller Amount, Currency, Ledger Status, Payout Reference, Created, Updated, Notes`
+
+- The paid-order path creates/reconciles a ledger row per seller fulfilment order, keyed idempotently by Seller Order ID.
+- Set Netlify environment variable `JUNO_MARKETPLACE_COMMISSION_BPS` only after deciding the seller commission policy. It is basis points: `1000` = 10%, `500` = 5%, `0` = no commission. Allowed range is 0–5000 (0–50%). If it is unset, payable fields stay blank and the row is `CONFIG_REQUIRED`; it is intentionally not guessed.
+- When configured, the backend allocates the order discount proportionally to the seller item subtotal, then calculates an estimated net amount after commission. Shipping is excluded from seller payable calculations for now. These figures are reconciliation estimates, not payment instructions.
+- Admin > Seller ledger shows the ledger and refund-review flags. A refund event flags matching seller ledger entries as `REFUND_REVIEW`; it does not automatically allocate partial refunds or reverse transfers.
+- **No seller payout is sent.** Razorpay Route / linked seller accounts, KYC/bank onboarding, transfers, payout idempotency, disputes, refund allocation and accounting review are not implemented. Do not pay sellers solely from these estimates; implement and test the provider-specific payout flow first.
+- The fulfilment split is best-effort after payment is recorded. If the SellerOrders tab/header is missing or a Sheets write fails, the main paid order is preserved and an error is logged; repair the sheet and reconcile that order before fulfilment. Do not claim all seller orders are reconciled until preview testing confirms it.
+- Test one Juno-only order and one cart containing products from two distinct approved sellers in Razorpay Test Mode. Verify parent order/payment records, seller order rows, seller isolation, status transitions and duplicate webhook retries.
