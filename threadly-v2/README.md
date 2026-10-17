@@ -166,5 +166,16 @@ Important boundaries:
 - The original Juno-owned products have a blank Seller ID and do not create external seller sub-orders.
 - Seller sub-orders are for fulfilment only. The customer still pays through the existing Juno Razorpay checkout; **payment splitting, commission collection, seller balance accounting and payouts are not enabled**.
 - Seller subtotal is the sum of that seller's item prices before allocating order-level discounts/shipping. Shipping allocation is currently zero and must not be treated as a seller payout calculation.
+
+### Seller ledger and settlement review
+Create a second Google Sheets tab named exactly `SellerLedger` with these headers in row 1:
+
+`Ledger ID, Seller Order ID, Parent Order ID, Payment ID, Seller ID, Store Name, Gross Item Subtotal, Allocated Discount, Commission BPS, Commission Amount, Net Seller Amount, Currency, Ledger Status, Payout Reference, Created, Updated, Notes`
+
+- The paid-order path creates/reconciles a ledger row per seller fulfilment order, keyed idempotently by Seller Order ID.
+- Set Netlify environment variable `JUNO_MARKETPLACE_COMMISSION_BPS` only after deciding the seller commission policy. It is basis points: `1000` = 10%, `500` = 5%, `0` = no commission. Allowed range is 0–5000 (0–50%). If it is unset, payable fields stay blank and the row is `CONFIG_REQUIRED`; it is intentionally not guessed.
+- When configured, the backend allocates the order discount proportionally to the seller item subtotal, then calculates an estimated net amount after commission. Shipping is excluded from seller payable calculations for now. These figures are reconciliation estimates, not payment instructions.
+- Admin > Seller ledger shows the ledger and refund-review flags. A refund event flags matching seller ledger entries as `REFUND_REVIEW`; it does not automatically allocate partial refunds or reverse transfers.
+- **No seller payout is sent.** Razorpay Route / linked seller accounts, KYC/bank onboarding, transfers, payout idempotency, disputes, refund allocation and accounting review are not implemented. Do not pay sellers solely from these estimates; implement and test the provider-specific payout flow first.
 - The fulfilment split is best-effort after payment is recorded. If the SellerOrders tab/header is missing or a Sheets write fails, the main paid order is preserved and an error is logged; repair the sheet and reconcile that order before fulfilment. Do not claim all seller orders are reconciled until preview testing confirms it.
 - Test one Juno-only order and one cart containing products from two distinct approved sellers in Razorpay Test Mode. Verify parent order/payment records, seller order rows, seller isolation, status transitions and duplicate webhook retries.
