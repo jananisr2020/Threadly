@@ -39,7 +39,8 @@ The existing spreadsheet must have a `Requests` tab with these headers: `Request
 - **Foundation added on this branch:** checkout order snapshots now carry product/seller IDs and item prices; paid orders can create seller-specific fulfilment records in `SellerOrders`; Seller Studio lets each seller see and update only their own fulfilment orders; Admin > Seller orders provides oversight.
 - Create the `SellerOrders` sheet using the exact header list in `README.md` before preview testing.
 - Still needed: safe inventory reservation and rollback for failed/expired payments; robust retry/reconciliation for partial Sheets writes; shipping, cancellations, returns and refund allocation for mixed-seller carts.
-- This phase does not split payments or pay sellers.
+- **Ledger foundation added on this branch:** per-seller order ledger, configurable commission basis points, proportional discount allocation estimate, admin reconciliation view, and refund-review flags.
+- Still required before money can move: confirm Juno's commission policy; implement Razorpay Route/linked seller account onboarding, KYC/bank details, transfer creation and idempotency, payout reconciliation, refund/dispute allocation and audit logs. This phase does not send transfers or pay sellers.
 
 ### Phase 5 — Marketplace payments
 - Keep Razorpay's current standard checkout for the single-seller flow until marketplace payment-provider approval is complete.
