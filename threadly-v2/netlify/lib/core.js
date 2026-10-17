@@ -12,14 +12,55 @@ const now = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' 
 const secret = () => { if (!process.env.JWT_SECRET) throw new E('Server is not set up yet (JWT_SECRET missing).', 500); return process.env.JWT_SECRET };
 const sign = (p, exp) => jwt.sign(p, secret(), { expiresIn: exp });
 const bearer = e => { try { return jwt.verify(String((e.headers || {}).authorization || (e.headers || {}).Authorization || '').replace('Bearer ', ''), secret()) } catch (x) { return null } };
-const wrap = (method, fn, auth) => async e => {
-  if (e.httpMethod !== method) return json(405, { error: method + ' only' });
+const ACTIVITY_HEADERS = ['Event ID', 'Timestamp (IST)', 'Event', 'Actor Email', 'Role', 'Outcome', 'HTTP Method', 'Endpoint', 'IP Address', 'User Agent', 'Safe Details'];
+let activityTabReady = null;
+const safeActivityDetails = b => {
+  const out = {};
+  for (const k of ['action', 'status', 'id', 'orderId', 'applicationId', 'productId', 'type']) {
+    if (b && b[k] != null && String(b[k]).length <= 100) out[k] = String(b[k]);
+  }
+  return JSON.stringify(out);
+};
+const writeActivity = async (e, fn, b, user, outcome, status) => {
   try {
-    let u = null;
+    if (!process.env.SHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) return;
+    if (!activityTabReady) activityTabReady = sheets.ensureTab('ActivityLog', ACTIVITY_HEADERS).catch(err => { activityTabReady = null; throw err; });
+    await activityTabReady;
+    const tokenUser = user || bearer(e) || {};
+    const email = clean(tokenUser.email || b.email || '').toLowerCase();
+    const role = tokenUser.admin ? 'admin' : tokenUser.seller ? 'seller' : email ? 'customer' : 'anonymous';
+    const label = fn.name === 'admin' && b.action ? 'admin.' + clean(b.action) : (fn.name || 'api') + (b.action ? '.' + clean(b.action) : '');
+    const path = String(e.path || e.rawUrl || '').split('?')[0].slice(0, 250);
+    const headers = e.headers || {};
+    const address = String(headers['x-nf-client-connection-ip'] || '').slice(0, 80);
+    const agent = String(headers['user-agent'] || '').slice(0, 250);
+    const id = 'JA' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+    await sheets.append('ActivityLog', [id, now(), label, email, role, outcome + ' (' + status + ')', String(e.httpMethod || '').slice(0, 12), path, address, agent, safeActivityDetails(b)]);
+  } catch (err) {
+    // Activity logging must never prevent a legitimate customer action.
+    console.error('Juno activity log write failed:', err && (err.message || err));
+  }
+};
+const wrap = (method, fn, auth) => async e => {
+  const b = parse(e);
+  if (e.httpMethod !== method) {
+    await writeActivity(e, fn, b, null, 'rejected_method', 405);
+    return json(405, { error: method + ' only' });
+  }
+  let u = null;
+  try {
     if (auth === 'user') { u = bearer(e); if (!u || !u.email || u.admin || u.purpose || u.o) throw new E('Please log in again.', 401) }
-    const r = await fn(parse(e), e, u);
-    return r && r.__raw ? r.__raw : json(200, r);
-  } catch (x) { if (x.code) return json(x.code, { error: x.message }); console.error(x); return json(500, { error: 'Something went wrong. Please try again.' }) }
+    const r = await fn(b, e, u);
+    const response = r && r.__raw ? r.__raw : json(200, r);
+    await writeActivity(e, fn, b, u, 'success', response.statusCode || 200);
+    return response;
+  } catch (x) {
+    const status = x.code || 500;
+    await writeActivity(e, fn, b, u, 'failure', status);
+    if (x.code) return json(x.code, { error: x.message });
+    console.error(x);
+    return json(500, { error: 'Something went wrong. Please try again.' });
+  }
 };
 /* ---------- products ---------- */
 const nk = h => String(h).trim().toLowerCase().replace(/\s*\(.*\)\s*$/, '');
