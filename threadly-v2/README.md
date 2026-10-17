@@ -216,7 +216,7 @@ The branch `feature/juno-messaging-otp` adds backend/frontend code for email OTP
 | `FCM_SERVICE_ACCOUNT_EMAIL` | Firebase service-account email with permission to send FCM messages |
 | `FCM_PRIVATE_KEY` | Firebase service-account private key, server-side only |
 
-The backend creates `OTPChallenges` and `DeviceTokens` tabs when first needed. Share the Google spreadsheet with the service account as Editor. SMS is silently skipped if its required settings/template are absent. Push is skipped unless all FCM settings are configured.
+The backend creates `OTPChallenges`, `DeviceTokens`, `NotificationPreferences` and `CartRecovery` tabs when first needed. Share the Google spreadsheet with the service account as Editor. SMS is skipped if its required settings/template are absent. Push is skipped unless all FCM settings are configured. Customers can manage marketing email/SMS and push preferences from the account panel. Marketing preferences default to off.
 
 ### Firebase Android setup
 
@@ -227,4 +227,4 @@ The backend creates `OTPChallenges` and `DeviceTokens` tabs when first needed. S
 5. Sign in to Juno inside the app and allow notifications. The authenticated endpoint `POST /api/register-device-token` stores the token in `DeviceTokens`. Order confirmation and status events then attempt an FCM push to active tokens for that email.
 6. Test foreground/background/killed app behaviour, token refresh, logout, deep links, and invalid token cleanup before release. Push permission denial must not prevent shopping.
 
-The current notification registration keeps device tokens active after logout; before broad rollout, add an authenticated unregister-on-logout action and a customer settings screen to disable push. Marketing recommendations and abandoned-cart campaigns are not sent by this branch yet; implement explicit opt-in, suppression after purchase, frequency caps, and unsubscribe handling before sending promotions.
+Cart activity is synced for logged-in customers only. The hourly `abandoned-cart-reminders` scheduled function waits at least two hours, requires explicit marketing-email opt-in, limits reminders to two with a seven-day cooldown, and marks a cart converted after a verified purchase. It includes current cart items and same-category recommendations from the live catalogue. The account screen lets customers opt out of marketing email/SMS and disable push. Test scheduled functions on a Netlify deploy preview before production; no marketing messages should be considered live until the provider configuration and opt-in flows are verified.
