@@ -81,6 +81,7 @@ jobs:
             ['captured payment status validation', /payment\.status !== 'captured'/],
             ['webhook amount validation', /Number\(confirmed\.amount\) !== Number\(o\.total\) \* 100/],
             ['seller order idempotency', /existing\.has/],
+            ['seller product price cap', /priceValue <= 500/],
             ['seller ledger', /ensureSellerLedger/],
             ['configurable commission rate', /JUNO_MARKETPLACE_COMMISSION_BPS/],
             ['refund review state', /REFUND_REVIEW/],
