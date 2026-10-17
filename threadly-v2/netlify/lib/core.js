@@ -401,6 +401,72 @@ async function ensureSellerLedger(parentOrderId) {
     else { await sheets.append('SellerLedger', row); ledger.push(row); }
   }
 }
+
+const PREF_HEADERS = ['User Email','Marketing Email','Marketing SMS','Push Enabled','Consent Source','Consent At','Updated'];
+const CART_HEADERS = ['User Email','User Name','Items JSON','Subtotal','Cart Updated ISO','Last Reminder ISO','Status','Reminder Count'];
+const notificationPreferences = async (b, e, u) => {
+  await sheets.ensureTab('NotificationPreferences', PREF_HEADERS);
+  const rows = await sheets.read('NotificationPreferences'), i = rows.findIndex((r,k)=>k>0 && String(r[0]||'').toLowerCase()===u.email.toLowerCase());
+  const current = i>0 ? rows[i] : [];
+  if (b.action === 'load') return { ok:true, marketingEmail:String(current[1]||'No')==='Yes', marketingSms:String(current[2]||'No')==='Yes', pushEnabled:String(current[3]||'Yes')!=='No' };
+  if (b.action !== 'update') throw new E('Unknown notification preference action.');
+  const emailOpt = b.marketingEmail === true, smsOpt = b.marketingSms === true, pushOpt = b.pushEnabled !== false;
+  const row = [u.email, emailOpt?'Yes':'No', smsOpt?'Yes':'No', pushOpt?'Yes':'No', 'account-settings', (emailOpt||smsOpt)?now():(current[5]||''), now()];
+  if (i>0) await sheets.update('NotificationPreferences',i+1,row); else await sheets.append('NotificationPreferences',row);
+  return { ok:true, marketingEmail:emailOpt, marketingSms:smsOpt, pushEnabled:pushOpt };
+};
+const cartActivity = async (b, e, u) => {
+  limit('cart-activity:' + u.email, 120, 36e5);
+  await sheets.ensureTab('CartRecovery', CART_HEADERS);
+  const rows = await sheets.read('CartRecovery'), i = rows.findIndex((r,k)=>k>0 && String(r[0]||'').toLowerCase()===u.email.toLowerCase());
+  const items = Array.isArray(b.items) ? b.items.slice(0,50) : [];
+  let details = [], subtotal = 0;
+  if (items.length) {
+    const priced = await price(items, '');
+    details = priced.itemDetails;
+    subtotal = priced.sub;
+  }
+  const current = i>0 ? rows[i] : [];
+  const empty = details.length === 0;
+  const row = [u.email, clean(b.name || u.name || u.email.split('@')[0]), JSON.stringify(details), subtotal, new Date().toISOString(), current[5]||'', empty?'empty':'active', +current[7]||0];
+  if (i>0) await sheets.update('CartRecovery',i+1,row); else await sheets.append('CartRecovery',row);
+  return { ok:true, itemCount:details.reduce((n,it)=>n+(+it.quantity||0),0) };
+};
+const markCartConverted = async email => {
+  try {
+    await sheets.ensureTab('CartRecovery', CART_HEADERS);
+    const rows = await sheets.read('CartRecovery'), i = rows.findIndex((r,k)=>k>0 && String(r[0]||'').toLowerCase()===String(email||'').toLowerCase());
+    if (i>0) { const row=rows[i].slice(); while(row.length<8)row.push(''); row[6]='converted'; await sheets.update('CartRecovery',i+1,row); }
+  } catch (x) { console.error('cart conversion update failed'); }
+};
+const sendAbandonedCartReminders = async () => {
+  if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM || !process.env.SHEET_ID) return { skipped:true, reason:'email or sheet not configured' };
+  await sheets.ensureTab('CartRecovery', CART_HEADERS);
+  await sheets.ensureTab('NotificationPreferences', PREF_HEADERS);
+  const [carts,prefs,productsRows,orders] = await Promise.all([sheets.read('CartRecovery'),sheets.read('NotificationPreferences'),productRows(true),sheets.read('Orders').catch(()=>[])]);
+  const prefByEmail = new Map(prefs.slice(1).map(r=>[String(r[0]||'').toLowerCase(),r]));
+  const cat = await catalogue(), base = process.env.URL || 'https://threadly-fashion.netlify.app', nowMs = Date.now();
+  let sent=0, skipped=0;
+  for(let i=1;i<carts.length;i++){
+    const r=carts[i], email=String(r[0]||'').toLowerCase(), updated=Date.parse(r[4]||''), last=Date.parse(r[5]||'');
+    if(!email || r[6]!=='active' || !updated || nowMs-updated<2*60*60*1000 || (+r[7]||0)>=2 || (last && nowMs-last<7*864e5)){skipped++;continue}
+    const pref=prefByEmail.get(email); if(!pref || String(pref[1]||'No')!=='Yes'){skipped++;continue}
+    let items=[]; try{items=JSON.parse(r[2]||'[]')}catch(x){}
+    items=items.filter(it=>cat[it.productId] && cat[it.productId].stock>0);
+    if(!items.length){const row=r.slice();row[6]='empty';await sheets.update('CartRecovery',i+1,row);skipped++;continue}
+    const inCart=new Set(items.map(it=>String(it.productId)));
+    const categories=items.map(it=>String(it.category||'')).filter(Boolean), focus=categories[0]||'';
+    const recs=productObjs(productsRows).filter(p=>p['product id'] && !inCart.has(String(p['product id'])) && num(p['selling price'])>0 && String(p['show on site']).toLowerCase()!=='no' && (!focus || String(p.category||'')===focus) && num(p.stock)>0).slice(0,3);
+    const itemHtml=items.map(it=>'<li>'+safeMailText(it.name)+' × '+(+it.quantity||1)+' — ₹'+((+it.unitPrice||0)*(+it.quantity||1)).toFixed(2)+'</li>').join('');
+    const recHtml=recs.map(p=>'<li>'+safeMailText(p['product name'])+' — ₹'+num(p['selling price']).toFixed(2)+'</li>').join('');
+    const link=base+'/?cart=1';
+    try{
+      await mail(email,'Your Juno cart is still waiting', '<p>Hi '+safeMailText(r[1]||'there')+',</p><p>You still have these items in your Juno cart:</p><ul>'+itemHtml+'</ul><p><b>Cart subtotal:</b> ₹'+num(r[3]).toFixed(2)+'</p>'+(recHtml?'<p>More styles you may like:</p><ul>'+recHtml+'</ul>':'')+'<p><a href="'+link+'">Return to your cart</a></p><p>You received this reminder because you opted in to Juno email updates. You can turn off promotional emails in your notification preferences.</p><p>Team Juno</p>');
+      const row=r.slice();while(row.length<8)row.push('');row[5]=new Date().toISOString();row[7]=(+row[7]||0)+1;await sheets.update('CartRecovery',i+1,row);sent++;
+    }catch(x){console.error('abandoned cart email failed for a customer');}
+  }
+  return {ok:true,sent,skipped};
+};
 async function recordPaid(o, payId, rzpId) {
   const rows = await sheets.read('Orders');
   const isNew = !rows.some(r => r[15] === payId);
@@ -408,6 +474,7 @@ async function recordPaid(o, payId, rzpId) {
     await record(o, 'Paid', payId);
     // Notification failures must never undo a confirmed payment/order.
     try { await notifyOrder(o, payId); } catch (x) { console.error('order notification failed for', o.id); }
+    await markCartConverted(o.email);
   }
   try {
     await ensureSellerOrders(o, payId);
@@ -695,4 +762,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, verifyLoginOtp, registerDeviceToken, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, verifyLoginOtp, registerDeviceToken, notificationPreferences, cartActivity, sendAbandonedCartReminders, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
