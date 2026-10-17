@@ -182,3 +182,12 @@ The backend also creates `SellerLedger` with these headers automatically if it i
 - **No seller payout is sent.** Razorpay Route / linked seller accounts, KYC/bank onboarding, transfers, payout idempotency, disputes, refund allocation and accounting review are not implemented. Do not pay sellers solely from these estimates; implement and test the provider-specific payout flow first.
 - The fulfilment split is best-effort after payment is recorded. If the SellerOrders tab/header is missing or a Sheets write fails, the main paid order is preserved and an error is logged; repair the sheet and reconcile that order before fulfilment. Do not claim all seller orders are reconciled until preview testing confirms it.
 - Test one Juno-only order and one cart containing products from two distinct approved sellers in Razorpay Test Mode. Verify parent order/payment records, seller order rows, seller isolation, status transitions and duplicate webhook retries.
+
+
+## Activity tracking and audit log
+
+Juno's Netlify API records server-side activity in the `ActivityLog` Google Sheets tab. The tab is created automatically on the first logged request when the Google Sheets credentials have permission to create tabs. It records an event ID, India-local timestamp, event/function and admin action, actor email when available, actor role, success/failure and HTTP status, method, endpoint, client IP supplied by Netlify, user-agent, and a small allowlist of non-secret identifiers.
+
+Events include API requests such as customer signup/login, failed login attempts, seller applications and seller login, order/payment API actions, support tickets, and admin changes. Only allowlisted metadata is logged; passwords, tokens, payment credentials, and raw form contents are not copied into the audit log. Activity logging failures are written to Netlify function logs and do not intentionally block the customer's primary action.
+
+**Scope:** this is server/API audit logging, not a complete clickstream. It does not automatically record every page view, search keystroke, product impression, cart click, or client-side logout unless that action calls a logged API or explicit front-end tracking is added. Review the ActivityLog tab and Netlify function logs after deployment. Client IP and user-agent are personal/security metadata; restrict spreadsheet access and disclose the tracking in Juno's privacy notice.
