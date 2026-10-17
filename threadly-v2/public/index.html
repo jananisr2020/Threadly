@@ -641,11 +641,33 @@ $('#cov').onclick=e=>{const t=e.target,d=t.dataset;
 let user=ST.get('tl_session');
 const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 const ubtn=()=>$('#ub').textContent=user?'Hi, '+user.name.split(' ')[0]:'Login';
+async function registerJunoPush(){
+  try{
+    const cap=window.Capacitor, push=cap&&cap.Plugins&&cap.Plugins.PushNotifications;
+    if(!push||!user||!user.token)return;
+    if(ST.get('juno_push_prompted')!=='yes'){
+      if(!confirm('Enable Juno notifications for order and delivery updates on this device?')){ST.set('juno_push_prompted','yes');return}
+      ST.set('juno_push_prompted','yes');
+    }
+    if(!window.__junoPushListeners){
+      window.__junoPushListeners=true;
+      await push.addListener('registration',async token=>{
+        try{await fetch(API+'/api/register-device-token',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+(user&&user.token||'')},body:JSON.stringify({token:token.value,platform:'android'})})}catch(e){}
+      });
+      await push.addListener('pushNotificationActionPerformed',action=>{
+        const path=action&&action.notification&&action.notification.data&&action.notification.data.url;
+        if(path){try{const target=new URL(path,location.origin);if(target.origin===location.origin)location.href=target.href}catch(e){}}
+      });
+    }
+    const permission=await push.requestPermissions();
+    if(permission.receive==='granted')await push.register();
+  }catch(e){/* Web visitors and builds without native push support continue normally. */}
+}
 function authUI(m){$('#auth').innerHTML=`<div class="md fm"><button class="x" data-x="#aov" aria-label="Close">×</button><h2 style="margin:0">${m==='up'?'Create your account':'Log in to Juno'}</h2>${m==='up'?'<input id="an" placeholder="Full name" autocomplete="name">':''}<input id="ae" type="email" placeholder="Email" autocomplete="email"><input id="ap" type="password" placeholder="Password (6+ characters)" autocomplete="${m==='up'?'new-password':'current-password'}"><div class="err" id="aerr"></div><button class="cta" id="go">${m==='up'?'Sign up':'Log in'}</button>${m==='in'?'<button class="lk" data-m="fp" style="align-self:flex-start">Forgot password?</button>':''}<div>${m==='up'?'Have an account?':'New here?'} <button class="lk" data-m="${m==='up'?'in':'up'}">${m==='up'?'Log in':'Create account'}</button></div></div>`;show('#aov')}
 let resetTok='', otpChallenge='';
 function otpUI(email){$('#auth').innerHTML=`<div class="md fm"><button class="x" data-x="#aov" aria-label="Close">×</button><h2 style="margin:0">Verify your login</h2><small>Enter the 6-digit code sent to ${esc(email)}. It expires in 5 minutes.</small><input id="otpcode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit verification code"><div class="err" id="aerr"></div><button class="cta" id="ovgo">Verify and log in</button><button class="lk" id="otpresend" style="align-self:flex-start">Back to login</button></div>`;show('#aov')}
 async function doVerifyOtp(){const code=($('#otpcode')?.value||'').replace(/\\D/g,''),er=t=>$('#aerr').textContent=t;if(!/^\\d{6}$/.test(code))return er('Enter the 6-digit code.');
-try{const q=await fetch(API+'/api/verify-login-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({challengeId:otpChallenge,code})}),d=await q.json();if(!q.ok)throw new Error(d.error);user={...d.user,token:d.token};ST.set('tl_session',user);show('#aov',false);ubtn();toast('You are logged in.');if(S.pc){S.pc=0;openPay()}}catch(e){er(e.message||'Could not verify the code. Try again.')}}
+try{const q=await fetch(API+'/api/verify-login-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({challengeId:otpChallenge,code})}),d=await q.json();if(!q.ok)throw new Error(d.error);user={...d.user,token:d.token};ST.set('tl_session',user);show('#aov',false);ubtn();registerJunoPush();toast('You are logged in.');if(S.pc){S.pc=0;openPay()}}catch(e){er(e.message||'Could not verify the code. Try again.')}}
 function forgotUI(){$('#auth').innerHTML=`<div class="md fm"><button class="x" data-x="#aov" aria-label="Close">×</button><h2 style="margin:0">Reset your password</h2><small>Enter your account email and we will send you a reset link.</small><input id="fe" type="email" placeholder="Email" autocomplete="email"><div class="err" id="aerr"></div><button class="cta" id="fgo">Send reset link</button><button class="lk" data-m="in" style="align-self:flex-start">Back to log in</button></div>`;show('#aov')}
 async function doForgot(){const em=$('#fe').value.trim().toLowerCase(),er=t=>$('#aerr').textContent=t;if(!/^\S+@\S+\.\S+$/.test(em))return er('Enter a valid email.');
   if(!LIVE)return er('Password reset emails work on the live site, not in this preview.');
@@ -654,12 +676,12 @@ async function doForgot(){const em=$('#fe').value.trim().toLowerCase(),er=t=>$('
 function resetUI(){$('#auth').innerHTML=`<div class="md fm"><button class="x" data-x="#aov" aria-label="Close">×</button><h2 style="margin:0">Choose a new password</h2><input id="np" type="password" placeholder="New password (6+ characters)" autocomplete="new-password"><div class="err" id="aerr"></div><button class="cta" id="rgo">Save and log in</button></div>`;show('#aov')}
 async function doReset(){const er=t=>$('#aerr').textContent=t,pw=$('#np').value;if(pw.length<6)return er('Use 6 or more characters.');
   try{const q=await fetch(API+'/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:resetTok,password:pw})}),d=await q.json();if(!q.ok)throw new Error(d.error);
-    user={...d.user,token:d.token};ST.set('tl_session',user);ubtn();show('#aov',false);history.replaceState(null,'',location.pathname);toast('Password updated. You are logged in.')}catch(e){er(e.message||'Could not reset. Ask for a new link.')}}
+    user={...d.user,token:d.token};ST.set('tl_session',user);ubtn();registerJunoPush();show('#aov',false);history.replaceState(null,'',location.pathname);toast('Password updated. You are logged in.')}catch(e){er(e.message||'Could not reset. Ask for a new link.')}}
 async function doAuth(m){const em=$('#ae').value.trim().toLowerCase(),pw=$('#ap').value,nm=$('#an')?$('#an').value.trim():'',er=t=>$('#aerr').textContent=t;
   if(!/^\S+@\S+\.\S+$/.test(em)||pw.length<6)return er('Enter a valid email and a password with 6 or more characters.');
   if(LIVE){try{const q=await fetch(API+'/api/'+(m==='up'?'signup':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nm,email:em,password:pw})}),d=await q.json();if(!q.ok)throw new Error(d.error);if(d.otpRequired){otpChallenge=d.challengeId;otpUI(em);return}user={...d.user,token:d.token}}catch(e){return er(e.message||'Could not reach the server.')}}
   else{const us=ST.get('tl_users')||{},h=await sha(pw);if(m==='up'){if(us[em])return er('This email already has an account. Log in instead.');us[em]={name:nm||em.split('@')[0],h};ST.set('tl_users',us)}else if(!us[em]||us[em].h!==h)return er('Wrong email or password.');user={name:us[em].name,email:em}}
-  ST.set('tl_session',user);show('#aov',false);ubtn();toast('Welcome, '+user.name);if(S.pc){S.pc=0;openPay()}}
+  ST.set('tl_session',user);show('#aov',false);ubtn();registerJunoPush();toast('Welcome, '+user.name);if(S.pc){S.pc=0;openPay()}}
 async function acct(){let os=ST.get('tl_orders_'+user.email)||[];RQ=LIVE?[]:ST.get('tl_reqs_'+user.email)||[];TK=LIVE?[]:ST.get('tl_tickets_'+user.email)||[];
   if(LIVE){try{const q=await fetch(API+'/api/my-orders',{headers:{Authorization:'Bearer '+user.token}});if(q.ok)os=await q.json();const q2=await fetch(API+'/api/my-requests',{headers:{Authorization:'Bearer '+user.token}});if(q2.ok)RQ=await q2.json();const q3=await fetch(API+'/api/my-tickets',{headers:{Authorization:'Bearer '+user.token}});if(q3.ok)TK=await q3.json()}catch(e){}}
   $('#auth').innerHTML=`<div class="md"><button class="x" data-x="#aov" aria-label="Close">×</button><h2 style="margin:0">${esc(user.name)}</h2><small>${esc(user.email)}</small><h3 style="margin:8px 0 0">Your orders</h3>${os.length?os.map(o=>`<div class="ci" style="grid-template-columns:1fr auto"><div><b>${esc(o.id)}</b><br><small>${esc(o.date)} · ${o.n} items · ${esc(o.method)}${o.status?' · '+esc(o.status):''}${o.tracking?' · Tracking '+esc(o.tracking):''}<br>Delivery by ${esc(o.eta||'')}</small>${reqHTML(o)}</div><b>${inr(o.total)}</b></div>`).join(''):'<p style="color:var(--mut)">No orders yet.</p>'}${tkHTML()}<button class="cta" id="lo">Log out</button></div>`;show('#aov')}
