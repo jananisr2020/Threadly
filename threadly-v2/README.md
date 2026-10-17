@@ -53,7 +53,7 @@ Netlify's drag-and-drop upload does not run the order and login functions, so de
 4. Add both in Netlify and trigger a deploy. "Forgot password?" on the login box then emails a link that works for 30 minutes, once.
 
 ## Marketplace seller price rule
-- Seller-submitted accessories must have a selling price of **₹500 or less**. The API enforces this limit even if a seller bypasses the browser form. MRP must also be no more than ₹500 and cannot be lower than the selling price.
+- Seller-submitted accessories must have a selling price of **₹500 or less**. The API enforces this limit even if a seller bypasses the browser form. MRP must be at least the selling price; the selling price is the value capped at ₹500.
 
 ## Chat assistant
 The 💬 button is a free, built-in assistant (no key or subscription needed). It answers delivery, returns, payment, coupon, size and gift questions, and finds products from sentences like "black earrings under ₹199" using your live product sheet. To change its answers, edit the `botRules` function in `public/index.html`.
