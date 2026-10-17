@@ -215,10 +215,45 @@ async function ensureSellerOrders(o, payId) {
     existing.add(String(o.id) + '|' + sellerId);
   }
 }
+async function ensureSellerLedger(parentOrderId) {
+  let orders, ledger;
+  try { orders = await sheets.read('SellerOrders'); ledger = await sheets.read('SellerLedger'); }
+  catch (x) { console.error('SellerLedger sheet missing; seller amounts are not reconciled for', parentOrderId); return; }
+  if (!orders.length || String(orders[0][0] || '').trim() !== 'Seller Order ID' ||
+      !ledger.length || String(ledger[0][0] || '').trim() !== 'Ledger ID') {
+    console.error('SellerOrders/SellerLedger headers missing; ledger reconciliation skipped for', parentOrderId); return;
+  }
+  const rawBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+  const configured = rawBps !== undefined && String(rawBps).trim() !== '' && /^\\d+$/.test(String(rawBps).trim());
+  const bps = configured ? Number(rawBps) : null;
+  if (configured && (!Number.isSafeInteger(bps) || bps < 0 || bps > 5000)) throw new E('JUNO_MARKETPLACE_COMMISSION_BPS must be an integer from 0 to 5000.', 500);
+  const sellerOrders = orders.slice(1).filter(r => String(r[1] || '') === String(parentOrderId));
+  for (const so of sellerOrders) {
+    const id = String(so[0] || ''), existingIndex = ledger.findIndex((r, i) => i > 0 && String(r[1] || '') === id);
+    const gross = Math.max(0, num(so[12]));
+    const parent = (await sheets.read('Orders')).find((r, i) => i > 0 && String(r[0] || '') === String(parentOrderId));
+    const orderSubtotal = parent ? Math.max(0, num(parent[9])) : 0;
+    const discount = parent ? Math.max(0, num(parent[10])) : 0;
+    const allocatedDiscount = orderSubtotal > 0 ? Math.min(gross, Math.round(discount * gross / orderSubtotal)) : 0;
+    const commissionBase = Math.max(0, gross - allocatedDiscount);
+    const commission = configured ? Math.round(commissionBase * bps / 10000) : '';
+    const net = configured ? commissionBase - commission : '';
+    const current = existingIndex > 0 ? ledger[existingIndex].slice() : [];
+    if (existingIndex > 0 && String(current[13] || '').trim()) continue; // Never rewrite a row carrying a payout reference.
+    const lid = existingIndex > 0 ? current[0] : 'JL' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const status = configured ? 'READY_FOR_REVIEW' : 'CONFIG_REQUIRED';
+    const row = [lid, id, String(so[1] || ''), String(so[19] || ''), String(so[3] || ''), String(so[4] || ''), gross, allocatedDiscount, configured ? bps : '', commission, net, 'INR', status, '', existingIndex > 0 ? (current[14] || now()) : now(), now(), configured ? 'Calculation only; payout not sent.' : 'Set JUNO_MARKETPLACE_COMMISSION_BPS before reviewing seller payable amounts.'];
+    if (existingIndex > 0) await sheets.update('SellerLedger', existingIndex + 1, row);
+    else { await sheets.append('SellerLedger', row); ledger.push(row); }
+  }
+}
 async function recordPaid(o, payId, rzpId) {
   const rows = await sheets.read('Orders');
   if (!rows.some(r => r[15] === payId)) await record(o, 'Paid', payId);
-  try { await ensureSellerOrders(o, payId); } catch (x) { console.error('seller fulfilment split needs retry for', o.id, x && x.message); }
+  try {
+    await ensureSellerOrders(o, payId);
+    await ensureSellerLedger(o.id);
+  } catch (x) { console.error('seller order/ledger reconciliation needs retry for', o.id, x && x.message); }
   await markPending(rzpId, 'recorded');
   return true;
 }
@@ -244,11 +279,14 @@ const webhook = async (b, e) => {
       await sleep(process.env.WEBHOOK_DELAY_MS !== undefined ? +process.env.WEBHOOK_DELAY_MS : 4000);
       const row = (await sheets.read('Pending')).find((r, k) => k > 0 && r[0] === oid);
       if (!row) console.error('webhook: no pending order for', oid);
-      else { const o = JSON.parse(row[1]); if (pay.amount && pay.amount !== o.total * 100) console.error('webhook: amount mismatch', oid); else await recordPaid(o, pid, oid) }
+      else { const o = JSON.parse(row[1]); if (Number(pay.amount) !== Number(o.total) * 100 || String(pay.currency || 'INR') !== 'INR') { console.error('webhook: amount/currency mismatch; refusing to record paid order', oid); throw new E('Payment amount or currency mismatch.', 400); } else await recordPaid(o, pid, oid) }
     }
   } else if (ev.event === 'refund.processed' || ev.event === 'refund.created') {
     const pid = pl.refund && pl.refund.entity && pl.refund.entity.payment_id, rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[15] === pid);
-    if (i > 0) { const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = 'Refunded'; await sheets.update('Orders', i + 1, row) }
+    if (i > 0) {
+      const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = 'Refunded'; await sheets.update('Orders', i + 1, row);
+      try { const ledger = await sheets.read('SellerLedger'); for (let k = 1; k < ledger.length; k++) if (String(ledger[k][2] || '') === String(rows[i][0] || '')) { const lr = ledger[k].slice(); while (lr.length < 17) lr.push(''); lr[12] = 'REFUND_REVIEW'; lr[15] = now(); lr[16] = 'Refund event received; reconcile refund allocation and any payout manually before settlement.'; await sheets.update('SellerLedger', k + 1, lr); } } catch (x) { console.error('refund received but seller ledger review update failed', rows[i][0], x && x.message); }
+    }
   } else if (ev.event === 'payment.failed') console.error('payment failed', JSON.stringify(((pl.payment || {}).entity || {}).error_description || ''));
   return { ok: true };
 };
@@ -411,8 +449,8 @@ const admin = async (b, e) => {
   if (b.action === 'login') return adminLogin(b, e);
   const u = bearer(e); if (!u || !u.admin) throw new E('Session expired. Log in again.', 401);
   if (b.action === 'load') {
-    const [o, p, us, rv, rq, tk, so] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => [])]);
-    return { sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
+    const [o, p, us, rv, rq, tk, so, sl] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => [])]);
+    return { sellerLedger: sl.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 17 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
   }
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
