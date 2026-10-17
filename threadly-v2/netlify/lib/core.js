@@ -46,6 +46,7 @@ const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.pa
 /* ---------- marketplace: seller applications ---------- */
 const sellerApply = async (b, e) => {
   limit('seller-apply:' + ip(e), 5, 36e5);
+  await ensureMarketplaceTabs();
   const ownerName = clean(b.ownerName), storeName = clean(b.storeName);
   const email = clean(b.email).toLowerCase(), phone = String(b.phone || '').replace(/\D/g, '');
   const city = clean(b.city), category = clean(b.category), social = clean(b.social), about = String(b.about || '').replace(/[<>]/g, '').trim().slice(0, 1000);
@@ -67,7 +68,15 @@ const sellerApply = async (b, e) => {
 
 
 /* ---------- marketplace: seller accounts and owned products ---------- */
-const sellerRows = async () => sheets.read('Sellers');
+const MARKETPLACE_SHEET_HEADERS = {
+  Sellers: ["Seller ID","Application ID","Store Name","Email","Password Hash","City","Category","Status","Created","Last Login"],
+  SellerOrders: ["Seller Order ID","Parent Order ID","Date","Seller ID","Seller Store Name","Customer Name","Customer Email","Customer Phone","Shipping Address","Pincode","Items JSON","Item Count","Seller Subtotal","Shipping Allocation","Seller Order Total","Payment Status","Fulfilment Status","Tracking","Updated","Payment ID"],
+  SellerLedger: ["Ledger ID","Seller Order ID","Parent Order ID","Payment ID","Seller ID","Store Name","Gross Item Subtotal","Allocated Discount","Commission BPS","Commission Amount","Net Seller Amount","Currency","Ledger Status","Payout Reference","Created","Updated","Notes"]
+};
+const ensureMarketplaceTabs = async () => {
+  for (const [tab, headers] of Object.entries(MARKETPLACE_SHEET_HEADERS)) await sheets.ensureTab(tab, headers);
+};
+const sellerRows = async () => { await sheets.ensureTab('Sellers', MARKETPLACE_SHEET_HEADERS.Sellers); return sheets.read('Sellers'); };
 const sellerByEmail = async email => {
   const rows = await sellerRows();
   for (let i = 1; i < rows.length; i++) if (String(rows[i][3] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] };
@@ -102,7 +111,7 @@ const sellerLogin = async (b, e) => {
 const sellerOrders = async (b, e) => {
   const u = bearer(e); if (!u || !u.seller || !u.sellerId || !u.email) throw new E('Please sign in to your seller account.', 401);
   const sr = await sellerByEmail(u.email); if (!sr || sr.v[0] !== u.sellerId || sr.v[7] !== 'Active') throw new E('Seller account is inactive. Contact Juno.', 403);
-  let rows; try { rows = await sheets.read('SellerOrders'); } catch (x) { throw new E('SellerOrders sheet is not set up yet. Ask the Juno administrator to add it.', 503); }
+  let rows; try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); rows = await sheets.read('SellerOrders'); } catch (x) { throw new E('Could not set up the SellerOrders tab. Check Google Sheets permissions and SHEET_ID.', 503); }
   if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') throw new E('SellerOrders sheet headers are not set up yet. Ask the Juno administrator to follow the README.', 503);
   if (b.action === 'load') return { ok: true, orders: rows.slice(1).filter(r => String(r[3]) === u.sellerId).reverse().map(r => ({ id:r[0], parentOrderId:r[1], date:r[2], storeName:r[4], customerName:r[5], phone:r[7], address:r[8], pincode:r[9], items:(()=>{try{return JSON.parse(r[10]||'[]')}catch(x){return []}})(), itemCount:+r[11]||0, subtotal:+r[12]||0, paymentStatus:r[15], status:r[16]||'New', tracking:r[17]||'' })) };
   if (b.action === 'update') {
@@ -193,7 +202,7 @@ async function markPending(id, status) { try { const rows = await sheets.read('P
 async function ensureSellerOrders(o, payId) {
   if (!Array.isArray(o.itemDetails) || !o.itemDetails.length) return;
   let rows;
-  try { rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab missing; seller fulfilment records were not created for', o.id); return; }
+  try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab setup failed; seller fulfilment records were not created for', o.id); return; }
   if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') { console.error('SellerOrders header row missing; seller fulfilment records were not created for', o.id); return; }
   const existing = new Set(rows.slice(1).map(r => String(r[1] || '') + '|' + String(r[3] || '')));
   const sellers = new Map();
@@ -217,7 +226,7 @@ async function ensureSellerOrders(o, payId) {
 }
 async function ensureSellerLedger(parentOrderId) {
   let orders, ledger;
-  try { orders = await sheets.read('SellerOrders'); ledger = await sheets.read('SellerLedger'); }
+  try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); await sheets.ensureTab('SellerLedger', MARKETPLACE_SHEET_HEADERS.SellerLedger); orders = await sheets.read('SellerOrders'); ledger = await sheets.read('SellerLedger'); }
   catch (x) { console.error('SellerLedger sheet missing; seller amounts are not reconciled for', parentOrderId); return; }
   if (!orders.length || String(orders[0][0] || '').trim() !== 'Seller Order ID' ||
       !ledger.length || String(ledger[0][0] || '').trim() !== 'Ledger ID') {
@@ -464,6 +473,7 @@ const admin = async (b, e) => {
   if (b.action === 'login') return adminLogin(b, e);
   const u = bearer(e); if (!u || !u.admin) throw new E('Session expired. Log in again.', 401);
   if (b.action === 'load') {
+    await ensureMarketplaceTabs();
     const [o, p, us, rv, rq, tk, so, sl] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => [])]);
     return { sellerLedger: sl.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 17 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
   }
