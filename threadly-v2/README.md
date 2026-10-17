@@ -210,6 +210,7 @@ The branch `feature/juno-messaging-otp` adds backend/frontend code for email OTP
 | `MSG91_SENDER_ID` | Approved sender ID required by your MSG91 setup |
 | `MSG91_ORDER_TEMPLATE_ID` | Approved order-confirmation Flow template; receives `VAR1` = order ID and `VAR2` = order total |
 | `MSG91_STATUS_TEMPLATE_ID` | Approved order-status Flow template; receives `VAR1` = order ID and `VAR2` = status |
+| `MSG91_OTP_TEMPLATE_ID` | Optional approved login OTP Flow template; receives `VAR1` = OTP and `VAR2` = expiry minutes |
 | `MSG91_TEMPLATE_ID` | Optional fallback status template for compatibility |
 | `FCM_PROJECT_ID` | Firebase project ID for Android push |
 | `FCM_SERVICE_ACCOUNT_EMAIL` | Firebase service-account email with permission to send FCM messages |
