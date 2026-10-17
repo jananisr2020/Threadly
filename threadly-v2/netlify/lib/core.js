@@ -45,8 +45,8 @@ const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.pa
 
 const OTP_HEADERS = ['Challenge ID','Email','OTP Hash','Expires At','Attempts','Status','Created'];
 const otpDigest = (id, code) => crypto.createHmac('sha256', secret()).update(id + ':' + code).digest('hex');
-const sendSms = async (phone, templateVars) => {
-  const auth = process.env.MSG91_AUTH_KEY, template = process.env.MSG91_TEMPLATE_ID, sender = process.env.MSG91_SENDER_ID;
+const sendSms = async (phone, templateVars, templateOverride) => {
+  const auth = process.env.MSG91_AUTH_KEY, template = templateOverride || process.env.MSG91_STATUS_TEMPLATE_ID || process.env.MSG91_TEMPLATE_ID, sender = process.env.MSG91_SENDER_ID;
   if (!auth || !template || !sender || !phone) return false;
   const recipients = [{ mobiles: '91' + String(phone).replace(/\\D/g, '').slice(-10), ...templateVars }];
   const res = await fetch('https://control.msg91.com/api/v5/flow/', { method: 'POST', headers: { authkey: auth, 'content-type': 'application/json' }, body: JSON.stringify({ template_id: template, sender, short_url: '0', recipients }) });
@@ -99,7 +99,7 @@ const notifyOrderStatus = async (order, status, tracking) => {
   try {
     if (order[3]) await mail(String(order[3]), 'Juno order update — ' + safeMailText(order[0]), '<p>Hi ' + safeMailText(order[2] || 'there') + ',</p><p>Your Juno order <b>' + safeMailText(order[0]) + '</b> is now <b>' + safeMailText(word) + '</b>.</p>' + track + '<p>For the latest details, check My Orders on Juno.</p><p>Team Juno</p>');
   } catch (x) { console.error('order status email could not be sent for', order[0]); }
-  if (order[4]) { try { await sendSms(order[4], { VAR1: String(order[0]).slice(0,30), VAR2: String(word).slice(0,30) }); } catch (x) { console.error('order status SMS could not be sent for', order[0]); } }
+  if (order[4]) { try { await sendSms(order[4], { VAR1: String(order[0]).slice(0,30), VAR2: String(word).slice(0,30) }, process.env.MSG91_STATUS_TEMPLATE_ID || process.env.MSG91_TEMPLATE_ID); } catch (x) { console.error('order status SMS could not be sent for', order[0]); } }
   try { await sendPush(String(order[3] || ''), 'Juno order update', 'Order ' + String(order[0]) + ' is now ' + word + '.', '/?orders=1'); } catch (x) { console.error('order status push could not be sent for', order[0]); }
 };
 const notifyOrder = async (o, payId) => {
@@ -107,7 +107,7 @@ const notifyOrder = async (o, payId) => {
   const items = (o.itemDetails || []).map(it => '<li>' + safeMailText(it.name) + ' × ' + (+it.quantity || 1) + ' — ₹' + ((+it.unitPrice || 0) * (+it.quantity || 1)).toFixed(2) + '</li>').join('');
   const html = '<p>Hi ' + safeMailText(o.addr && o.addr.name || 'there') + ',</p><p>Thanks for shopping with Juno. Your payment has been verified and your order is confirmed.</p><p><b>Order:</b> ' + safeMailText(o.id) + '<br><b>Items:</b></p><ul>' + items + '</ul><p><b>Total paid:</b> ₹' + (+o.total || 0).toFixed(2) + '<br><b>Payment reference:</b> ' + safeMailText(payId || '') + '</p><p>You can check the latest status in My Orders on Juno.</p><p>Team Juno</p>';
   try { await mail(o.email, subject, html); } catch (x) { console.error('order confirmation email could not be sent for', o.id); }
-  try { await sendSms(o.addr && o.addr.phone, { VAR1: String(o.id).slice(0,30), VAR2: String((+o.total || 0).toFixed(2)) }); } catch (x) { console.error('order confirmation SMS could not be sent for', o.id); }
+  try { await sendSms(o.addr && o.addr.phone, { VAR1: String(o.id).slice(0,30), VAR2: String((+o.total || 0).toFixed(2)) }, process.env.MSG91_ORDER_TEMPLATE_ID); } catch (x) { console.error('order confirmation SMS could not be sent for', o.id); }
   try { await sendPush(o.email, 'Juno order confirmed', 'Order ' + o.id + ' is confirmed. Total: ₹' + (+o.total || 0).toFixed(2), '/?orders=1'); } catch (x) { console.error('order confirmation push could not be sent for', o.id); }
 };
 
