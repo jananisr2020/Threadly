@@ -55,6 +55,43 @@ const sendSms = async (phone, templateVars) => {
 };
 const safeMailText = value => String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').slice(0,500);
 
+
+const DEVICE_HEADERS = ['Token ID','User Email','Platform','FCM Token','Active','Created','Last Seen','Updated'];
+const registerDeviceToken = async (b, e, u) => {
+  const token = String(b.token || '').trim(), platform = String(b.platform || 'android').toLowerCase();
+  if (token.length < 40 || token.length > 4096 || !/^[a-z0-9_-]+$/.test(platform)) throw new E('Invalid device registration.');
+  await sheets.ensureTab('DeviceTokens', DEVICE_HEADERS);
+  const rows = await sheets.read('DeviceTokens'), i = rows.findIndex((r,k)=>k>0 && String(r[3] || '') === token);
+  const row = ['DT' + crypto.createHash('sha256').update(token).digest('hex').slice(0,18), u.email, platform, token, 'Yes', i>0 ? (rows[i][5] || now()) : now(), now(), now()];
+  if (i>0) await sheets.update('DeviceTokens',i+1,row); else await sheets.append('DeviceTokens',row);
+  return { ok: true };
+};
+const sendPush = async (email, title, body, link) => {
+  const project = process.env.FCM_PROJECT_ID, account = process.env.FCM_SERVICE_ACCOUNT_EMAIL, key = process.env.FCM_PRIVATE_KEY;
+  if (!project || !account || !key) return false;
+  const rows = await sheets.read('DeviceTokens');
+  const tokens = rows.slice(1).filter(r => String(r[1] || '').toLowerCase() === String(email || '').toLowerCase() && String(r[4] || '').toLowerCase() === 'yes').map(r => String(r[3] || '')).filter(Boolean);
+  if (!tokens.length) return true;
+  const { JWT } = require('google-auth-library');
+  const client = new JWT({ email: account, key: key.replace(/\\n/g,'\n'), scopes: ['https://www.googleapis.com/auth/firebase.messaging'] });
+  const access = await client.getAccessToken();
+  if (!access || !access.token) throw new Error('FCM authentication failed');
+  for (const token of tokens) {
+    const response = await fetch('https://fcm.googleapis.com/v1/projects/' + encodeURIComponent(project) + '/messages:send', {
+      method: 'POST', headers: { authorization: 'Bearer ' + access.token, 'content-type': 'application/json' },
+      body: JSON.stringify({ message: { token, notification: { title: String(title).slice(0,100), body: String(body).slice(0,240) }, data: { url: String(link || '/').slice(0,300) }, android: { priority: 'HIGH' } } })
+    });
+    if (!response.ok) {
+      const errorText = await response.text().catch(()=> '');
+      console.error('FCM push failed:', response.status, errorText.slice(0,160));
+      if (response.status === 404 || response.status === 400) {
+        const ix = rows.findIndex((r,k)=>k>0 && r[3]===token);
+        if (ix>0) { const dead=rows[ix].slice(); dead[4]='No'; dead[7]=now(); await sheets.update('DeviceTokens',ix+1,dead).catch(()=>{}); }
+      }
+    }
+  }
+  return true;
+};
 const notifyOrderStatus = async (order, status, tracking) => {
   const labels = { New: 'confirmed', Accepted: 'accepted', Packed: 'packed', Shipped: 'shipped', Delivered: 'delivered', Cancelled: 'cancelled', Returned: 'returned' };
   const word = labels[String(status)] || String(status || 'updated').toLowerCase();
@@ -63,6 +100,7 @@ const notifyOrderStatus = async (order, status, tracking) => {
     if (order[3]) await mail(String(order[3]), 'Juno order update — ' + safeMailText(order[0]), '<p>Hi ' + safeMailText(order[2] || 'there') + ',</p><p>Your Juno order <b>' + safeMailText(order[0]) + '</b> is now <b>' + safeMailText(word) + '</b>.</p>' + track + '<p>For the latest details, check My Orders on Juno.</p><p>Team Juno</p>');
   } catch (x) { console.error('order status email could not be sent for', order[0]); }
   if (order[4]) { try { await sendSms(order[4], { VAR1: String(order[0]).slice(0,30), VAR2: String(word).slice(0,30) }); } catch (x) { console.error('order status SMS could not be sent for', order[0]); } }
+  try { await sendPush(String(order[3] || ''), 'Juno order update', 'Order ' + String(order[0]) + ' is now ' + word + '.', '/?orders=1'); } catch (x) { console.error('order status push could not be sent for', order[0]); }
 };
 const notifyOrder = async (o, payId) => {
   const subject = 'Juno order confirmed — ' + o.id;
@@ -70,6 +108,7 @@ const notifyOrder = async (o, payId) => {
   const html = '<p>Hi ' + safeMailText(o.addr && o.addr.name || 'there') + ',</p><p>Thanks for shopping with Juno. Your payment has been verified and your order is confirmed.</p><p><b>Order:</b> ' + safeMailText(o.id) + '<br><b>Items:</b></p><ul>' + items + '</ul><p><b>Total paid:</b> ₹' + (+o.total || 0).toFixed(2) + '<br><b>Payment reference:</b> ' + safeMailText(payId || '') + '</p><p>You can check the latest status in My Orders on Juno.</p><p>Team Juno</p>';
   try { await mail(o.email, subject, html); } catch (x) { console.error('order confirmation email could not be sent for', o.id); }
   try { await sendSms(o.addr && o.addr.phone, { VAR1: String(o.id).slice(0,30), VAR2: String((+o.total || 0).toFixed(2)) }); } catch (x) { console.error('order confirmation SMS could not be sent for', o.id); }
+  try { await sendPush(o.email, 'Juno order confirmed', 'Order ' + o.id + ' is confirmed. Total: ₹' + (+o.total || 0).toFixed(2), '/?orders=1'); } catch (x) { console.error('order confirmation push could not be sent for', o.id); }
 };
 
 
@@ -638,4 +677,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, verifyLoginOtp, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
+module.exports = { E, json, wrap, products, signup, login, verifyLoginOtp, registerDeviceToken, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv } };
