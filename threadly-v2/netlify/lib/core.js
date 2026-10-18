@@ -40,7 +40,15 @@ async function price(items, coupon) {
   return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty, itemDetails };
 }
 /* ---------- users ---------- */
-const findUser = async email => { const rows = await sheets.read('Users'); for (let i = 1; i < rows.length; i++) if (String(rows[i][1] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] }; return null };
+const findUser = async email => {
+  if (!process.env.SHEET_ID) throw new E('Login and signup are unavailable: SHEET_ID is missing from Netlify environment variables.', 503);
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) throw new E('Login and signup are unavailable: Google Sheets credentials are missing from Netlify environment variables.', 503);
+  let rows;
+  try { rows = await sheets.read('Users'); }
+  catch (x) { console.error('Juno account database read failed:', x && x.message ? x.message : x); throw new E('Juno could not reach the account database. Check the Google Sheets service-account access and the Users tab in Netlify, then redeploy.', 503); }
+  for (let i = 1; i < rows.length; i++) if (String(rows[i][1] || '').toLowerCase() === email) return { row: i + 1, v: rows[i] };
+  return null;
+};
 const cred = b => { const email = clean(b.email).toLowerCase(), pw = String(b.password || ''); return { email, pw, name: clean(b.name) } };
 
 /* ---------- marketplace: seller applications ---------- */
