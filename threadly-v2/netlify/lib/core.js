@@ -180,9 +180,20 @@ const sellerProducts = async (b, e) => {
   throw new E('Unknown seller action.');
 };
 
+const passwordPolicyError = pw => {
+  const missing = [];
+  if (pw.length < 8) missing.push('at least 8 characters');
+  if (!/[A-Z]/.test(pw)) missing.push('an uppercase letter');
+  if (!/[a-z]/.test(pw)) missing.push('a lowercase letter');
+  if (!/[0-9]/.test(pw)) missing.push('a number');
+  if (!/[^A-Za-z0-9]/.test(pw)) missing.push('a special character');
+  return missing.length ? 'Password must contain ' + missing.join(', ').replace(/, ([^,]*)$/, ' and $1') + '.' : '';
+};
 const signup = async (b, e) => {
   limit('su:' + ip(e), 10, 36e5);
-  const { email, pw, name } = cred(b); if (!/^\S+@\S+\.\S+$/.test(email) || pw.length < 6) throw new E('Enter a valid email and a 6+ character password.');
+  const { email, pw, name } = cred(b);
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new E('Enter a valid email address, for example name@example.com.', 400);
+  const policyError = passwordPolicyError(pw); if (policyError) throw new E(policyError, 400);
   if (await findUser(email)) throw new E('This email already has an account. Log in instead.');
   const nm = name || email.split('@')[0]; await sheets.append('Users', [nm, email, await bcrypt.hash(pw, 10), '', now(), now(), 1]);
   const u = { name: nm, email }; return { user: u, token: sign(u, '30d') };
@@ -350,7 +361,8 @@ const forgot = async (b, e) => {
   return { ok: true };
 };
 const reset = async (b, e) => {
-  limit('rs:' + ip(e), 10, 36e5); const pw = String(b.password || ''); if (pw.length < 6) throw new E('Use a password with 6 or more characters.');
+  limit('rs:' + ip(e), 10, 36e5); const pw = String(b.password || '');
+  const policyError = passwordPolicyError(pw); if (policyError) throw new E(policyError, 400);
   let t; try { t = jwt.verify(String(b.token || ''), secret()) } catch (x) { throw new E('This reset link has expired. Please ask for a new one.') }
   if (t.purpose !== 'reset') throw new E('Invalid link.');
   const f = await findUser(t.email); if (!f || String(f.v[2]).slice(-12) !== t.h) throw new E('This reset link was already used or has expired. Please ask for a new one.');
