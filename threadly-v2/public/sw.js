@@ -1,7 +1,7 @@
 /* Juno PWA service worker.
  * Keep API responses, checkout, account and payment flows network-only.
  */
-const CACHE_NAME = "juno-shell-v4";
+const CACHE_NAME = "juno-shell-v5";
 const SHELL_URLS = [
   "/",
   "/index.html",
