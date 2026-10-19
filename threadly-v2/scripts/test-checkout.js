@@ -24,7 +24,7 @@ sheets.read = async tab => {
   if (Object.prototype.hasOwnProperty.call(mockedSheets, tab)) return mockedSheets[tab];
   throw new Error('Unexpected sheet read in offline checkout test: ' + tab);
 };
-sheets.append = async (tab, row) => { appendedRows.push({ tab, row }); };
+sheets.append = async (tab, row) => { appendedRows.push({ tab, row }); if (Array.isArray(mockedSheets[tab])) mockedSheets[tab].push(row); };
 sheets.update = async (tab, rowNum, row) => {
   updatedRows.push({ tab, rowNum, row });
   if (mockedSheets[tab] && mockedSheets[tab][rowNum - 1]) mockedSheets[tab][rowNum - 1] = row;
@@ -123,6 +123,49 @@ async function rejectsWith(items, pattern) {
       }
     });
 
+    await check('marks seller reconciliation required when seller tabs are unavailable', async () => {
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      mockedSheets = {
+        Orders: [['Order ID', '', '', '', '', '', '', '', '', 'Subtotal', 'Discount', '', '', '', '', 'Payment ID', '', '', '', 'Notes'], ['JUNO-SELLER-FAIL', '', '', '', '', '', '', '', '', 100, 0, '', '', '', '', 'pay_seller_fail', '', '', '', '']],
+        Pending: [['Razorpay Order ID', 'Order JSON', 'Created', 'Status'], ['order_rzp_seller_fail', '{}', '', 'pending']]
+      };
+      try {
+        const order = { id: 'JUNO-SELLER-FAIL', total: 100, sub: 100, disc: 0, itemDetails: [{ productId: 'JN0002', name: 'Seller hair clip', unitPrice: 100, quantity: 1, sellerId: 'JSRSELLER1' }] };
+        assert.equal(await _t.recordPaid(order, 'pay_seller_fail', 'order_rzp_seller_fail'), true);
+        const pendingUpdate = updatedRows.slice(previousUpdates).find(x => x.tab === 'Pending');
+        assert.ok(pendingUpdate, 'expected pending status update');
+        assert.equal(pendingUpdate.row[3], 'seller_reconciliation_required');
+        assert.equal(appendedRows.filter(x => x.tab === 'Orders' && x.row[0] === order.id).length, 0);
+      } finally { mockedSheets = previousSheets; }
+    });
+
+    await check('creates seller order and ledger records idempotently for a paid seller item', async () => {
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      mockedSheets = {
+        Orders: [['Order ID', '', '', '', '', '', '', '', '', 'Subtotal', 'Discount', '', '', '', '', 'Payment ID', '', '', '', 'Notes'], ['JUNO-SELLER-OK', '', '', '', '', '', '', '', '', 100, 0, '', '', '', '', 'pay_seller_ok', '', '', '', '']],
+        Pending: [['Razorpay Order ID', 'Order JSON', 'Created', 'Status'], ['order_rzp_seller_ok', '{}', '', 'pending']],
+        Sellers: [['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status'], ['JSRSELLER1', 'APP1', 'Cute Clips', 'seller@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active']],
+        SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID']],
+        SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
+      };
+      const previousBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+      process.env.JUNO_MARKETPLACE_COMMISSION_BPS = '500';
+      try {
+        const order = { id: 'JUNO-SELLER-OK', total: 100, sub: 100, disc: 0, addr: { name: 'Buyer', phone: '9876543210', line: 'Test address', pin: '641001' }, email: 'buyer@example.com', itemDetails: [{ productId: 'JN0002', name: 'Seller hair clip', unitPrice: 100, quantity: 1, sellerId: 'JSRSELLER1' }] };
+        assert.equal(await _t.recordPaid(order, 'pay_seller_ok', 'order_rzp_seller_ok'), true);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerOrders').length, 1);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerLedger').length, 1);
+        assert.equal(mockedSheets.SellerLedger[1][12], 'READY_FOR_REVIEW');
+        assert.equal(mockedSheets.SellerLedger[1][10], 95);
+        assert.equal(await _t.recordPaid(order, 'pay_seller_ok', 'order_rzp_seller_ok'), true);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerOrders').length, 1);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerLedger').length, 1);
+      } finally {
+        if (previousBps === undefined) delete process.env.JUNO_MARKETPLACE_COMMISSION_BPS; else process.env.JUNO_MARKETPLACE_COMMISSION_BPS = previousBps;
+        mockedSheets = previousSheets;
+      }
+    });
     await check('does not create a duplicate paid order when payment recording is retried', async () => {
       const previousSheets = mockedSheets;
       const previousAppends = appendedRows.length;
