@@ -18,7 +18,7 @@ sheets.read = async tab => {
   throw new Error('Unexpected sheet read in offline checkout test: ' + tab);
 };
 
-const { _t } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -57,6 +57,29 @@ async function rejectsWith(items, pattern) {
       const result = await _t.price([{ id: 'JN0002', n: 1 }], '');
       assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
       assert.equal(result.itemDetails[0].unitPrice, 50);
+    });
+    await check('rejects webhook events when the webhook secret is missing', async () => {
+      const previous = process.env.RAZORPAY_WEBHOOK_SECRET;
+      delete process.env.RAZORPAY_WEBHOOK_SECRET;
+      try {
+        await assert.rejects(() => webhook({}, { body: '{}', headers: {} }), /Webhook secret not set/i);
+      } finally {
+        if (previous === undefined) delete process.env.RAZORPAY_WEBHOOK_SECRET;
+        else process.env.RAZORPAY_WEBHOOK_SECRET = previous;
+      }
+    });
+    await check('rejects webhook events with an invalid signature', async () => {
+      const previous = process.env.RAZORPAY_WEBHOOK_SECRET;
+      process.env.RAZORPAY_WEBHOOK_SECRET = 'offline-test-secret';
+      try {
+        await assert.rejects(() => webhook({}, { body: '{"event":"payment.captured"}', headers: { 'x-razorpay-signature': 'invalid' } }), /Bad signature/i);
+      } finally {
+        if (previous === undefined) delete process.env.RAZORPAY_WEBHOOK_SECRET;
+        else process.env.RAZORPAY_WEBHOOK_SECRET = previous;
+      }
+    });
+    await check('rejects payment verification requests missing required fields', async () => {
+      await assert.rejects(() => verifyPayment({}, {}, { email: 'buyer@example.com' }), /Missing payment details/i);
     });
   } finally {
     sheets.read = originalRead;
