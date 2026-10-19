@@ -306,7 +306,7 @@ const createOrder = async (b, e, u) => {
 };
 async function markPending(id, status) { try { const rows = await sheets.read('Pending'), i = rows.findIndex((r, k) => k > 0 && r[0] === id); if (i > 0) { const r = rows[i].slice(); while (r.length < 4) r.push(''); r[3] = status; await sheets.update('Pending', i + 1, r) } } catch (x) { console.error('pending mark failed', x) } }
 async function ensureSellerOrders(o, payId) {
-  if (!Array.isArray(o.itemDetails) || !o.itemDetails.length) return;
+  if (!Array.isArray(o.itemDetails) || !o.itemDetails.length || !o.itemDetails.some(it => String(it.sellerId || '').trim())) return true;
   let rows;
   try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab setup failed; seller fulfilment records were not created for', o.id); return false; }
   if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') { console.error('SellerOrders header row missing; seller fulfilment records were not created for', o.id); return false; }
