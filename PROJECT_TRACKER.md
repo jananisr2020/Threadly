@@ -9,7 +9,7 @@
 
 ## What this tracker contains
 
-The CSV contains one row per commit returned by GitHub's first two 100-commit history pages: UTC timestamp, converted India timestamp, full commit message, full and short SHA, clickable commit URL, and file-change details where fetched. GitHub history currently returned 163 commits dated 2026-10-11 to 2026-10-19. The earliest returned entry is the initial commit dated 2026-10-11.
+The CSV contains one row per commit returned by GitHub's first two 100-commit history pages: UTC timestamp, converted India timestamp, full commit message, full and short SHA, clickable commit URL, and file-change details where fetched. GitHub history snapshot initially contained 163 project commits dated 2026-10-11 to 2026-10-19; the CSV now also lists the two bootstrap commits that created this tracker. Future tracker-maintenance commits will be captured on the next refresh. The earliest returned entry is the initial commit dated 2026-10-11.
 
 **File-stat coverage:** GitHub history provides dates, messages and SHAs. Per-file stats were individually fetched for the 12 newest commits. Remaining rows are explicitly marked as needing file-stat backfill rather than guessing how many files changed. Open the linked commit for its authoritative file list and diff. This keeps the tracker honest and highlights what remains to fill in.
 
