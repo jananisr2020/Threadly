@@ -261,10 +261,39 @@ async function buildOrder(b, u) {
   return { id: 'JN' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase(), email: u.email, addr: { name: clean(a.name), phone: a.phone, line: clean(a.line), pin: a.pin }, method: b.method, eta: clean(b.eta), ...t };
 }
 async function record(o, payStatus, payId) {
-  await sheets.append('Orders', [o.id, now(), o.addr.name, o.email, o.addr.phone, o.addr.line, o.addr.pin, o.lines, o.count, o.sub, o.disc, o.ship, o.total, o.method, payStatus, payId || '', o.eta, 'New', '', '']);
-  try { const rows = await productRows(true), ps = productObjs(rows), si = (rows[0] || []).map(nk).indexOf('stock');
-    for (const [id, n] of o.qty) { const p = ps.find(x => x['product id'] === id); if (p && p.stock !== '' && si >= 0) { const row = rows[p.row - 1].slice(); while (row.length < 13) row.push(''); row[si] = Math.max(0, num(p.stock) - n); await sheets.update('Products', p.row, row) } }
-    invalidate() } catch (x) { console.error('stock update failed', x) }
+  // Persist the paid order first. If inventory sync then fails, keep the order and flag
+  // the exact problem rather than silently treating the checkout as fully reconciled.
+  const orderRow = [o.id, now(), o.addr.name, o.email, o.addr.phone, o.addr.line, o.addr.pin, o.lines, o.count, o.sub, o.disc, o.ship, o.total, o.method, payStatus, payId || '', o.eta, 'New', '', 'STOCK_SYNC_PENDING'];
+  await sheets.append('Orders', orderRow);
+  try {
+    const rows = await productRows(true), ps = productObjs(rows), si = (rows[0] || []).map(nk).indexOf('stock');
+    if (si < 0) throw new Error('Products sheet has no Stock column.');
+    for (const [id, n] of o.qty) {
+      const p = ps.find(x => String(x['product id']) === String(id));
+      if (!p) throw new Error('Product ' + id + ' was not found while updating stock.');
+      // Blank stock means inventory is not tracked for this product; do not invent a quantity.
+      if (p.stock === '') continue;
+      const current = num(p.stock);
+      if (current < n) throw new Error('Stock changed after payment for ' + String(p['product name'] || id) + ': requested ' + n + ', current stock ' + current + '.');
+      const row = rows[p.row - 1].slice();
+      while (row.length <= si) row.push('');
+      row[si] = current - n;
+      await sheets.update('Products', p.row, row);
+      rows[p.row - 1] = row;
+    }
+    invalidate();
+    const orderRows = await sheets.read('Orders');
+    const oi = orderRows.findIndex((r, i) => i > 0 && String(r[0] || '') === String(o.id));
+    if (oi > 0) { const row = orderRows[oi].slice(); while (row.length < 20) row.push(''); row[19] = 'STOCK_SYNCED'; await sheets.update('Orders', oi + 1, row); }
+  } catch (x) {
+    console.error('Inventory reconciliation required for paid order ' + o.id, x);
+    try {
+      const orderRows = await sheets.read('Orders');
+      const oi = orderRows.findIndex((r, i) => i > 0 && String(r[0] || '') === String(o.id));
+      if (oi > 0) { const row = orderRows[oi].slice(); while (row.length < 20) row.push(''); row[19] = 'STOCK_RECONCILIATION_REQUIRED: ' + String(x.message || 'inventory update failed').slice(0, 180); await sheets.update('Orders', oi + 1, row); }
+    } catch (writeError) { console.error('Could not flag inventory reconciliation for paid order ' + o.id, writeError); }
+    throw new E('Payment was recorded, but Juno could not finish updating stock for order ' + o.id + '. Do not pay again. Contact Juno support with this order ID while inventory is reconciled.', 503);
+  }
 }
 const placeCod = async () => { throw new E('Cash on delivery is not available. Please pay online using UPI, cards or netbanking.', 410) };
 const rz = () => { if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) throw new E('Payments are not set up yet.', 500); return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET }) };
@@ -338,7 +367,12 @@ async function ensureSellerLedger(parentOrderId) {
 async function recordPaid(o, payId, rzpId) {
   const rows = await sheets.read('Orders');
   // Razorpay verify and webhook can both report the same capture; dedupe by payment ID and our order ID.
-  if (!rows.some((r, i) => i > 0 && (String(r[15] || '') === String(payId) || String(r[0] || '') === String(o.id)))) await record(o, 'Paid', payId);
+  const existing = rows.find((r, i) => i > 0 && (String(r[15] || '') === String(payId) || String(r[0] || '') === String(o.id)));
+  if (!existing) await record(o, 'Paid', payId);
+  else if (String(existing[19] || '').startsWith('STOCK_RECONCILIATION_REQUIRED:')) {
+    await markPending(rzpId, 'stock_reconciliation_required');
+    throw new E('Payment is already recorded for order ' + o.id + ', but stock needs reconciliation. Do not pay again; contact Juno support with this order ID.', 503);
+  }
   try {
     await ensureSellerOrders(o, payId);
     await ensureSellerLedger(o.id);
