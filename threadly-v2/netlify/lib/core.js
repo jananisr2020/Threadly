@@ -64,11 +64,23 @@ const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).re
 const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await productRows()) } });
 const productObjs = rows => { const k = (rows[0] || []).map(nk); return rows.slice(1).map((r, i) => { const o = { row: i + 2 }; k.forEach((n, j) => o[n] = r[j] == null ? '' : r[j]); return o }) };
 const num = v => +String(v || '').replace(/[^\d.]/g, '') || 0;
-async function catalogue() { const m = {}; productObjs(await productRows()).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
+async function catalogue(force = false) { const m = {}; productObjs(await productRows(force)).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
 async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
-  const cat = await catalogue(); let sub = 0, count = 0; const lines = [], qty = [];
-  for (const it of items) { const p = cat[it.id], n = Math.floor(+it.n); if (!p || !(n >= 1 && n <= 20)) throw new E('A product in your cart is no longer available.'); if (p.stock < n) throw new E(p.name + ' has only ' + p.stock + ' left.'); sub += p.price * n; count += n; lines.push(p.name + ' (' + clean(it.s) + ') x' + n); qty.push([it.id, n]) }
+  // Checkout always reads fresh product rows so stale cached stock cannot approve a known-out-of-stock cart.
+  const cat = await catalogue(true); let sub = 0, count = 0; const lines = [], qty = [], requested = new Map();
+  for (const it of items) {
+    const p = cat[it.id], n = Math.floor(+it.n);
+    if (!p || !(n >= 1 && n <= 20)) throw new E('A product in your cart is no longer available.');
+    requested.set(it.id, (requested.get(it.id) || 0) + n);
+    sub += p.price * n; count += n; lines.push(p.name + ' (' + clean(it.s) + ') x' + n);
+  }
+  for (const [id, n] of requested) {
+    const p = cat[id];
+    if (n > 20) throw new E('You can order up to 20 units of ' + p.name + ' per order.');
+    if (p.stock < n) throw new E(p.name + ' has only ' + p.stock + ' left.');
+    qty.push([id, n]);
+  }
   const disc = require('./coupons').discount(coupon, sub), ship = sub - disc < 299 ? 39 : 0;
   const itemDetails = qty.map(([id, n]) => { const p = cat[id]; return { productId: id, name: p.name, category: p.category || '', unitPrice: p.price, quantity: n, sellerId: p.sellerId || '' }; });
   return { sub, disc, ship, total: sub - disc + ship, count, lines: lines.join('; '), qty, itemDetails };
@@ -246,7 +258,7 @@ async function buildOrder(b, u) {
   if (!(await tnPin(a.pin))) throw new E('We currently deliver only in Tamil Nadu. We are expanding to other states soon.');
   if (!METHODS.includes(b.method)) throw new E('Choose a payment method.');
   const t = await price(b.items, b.coupon);
-  return { id: 'TL' + Date.now().toString().slice(-8), email: u.email, addr: { name: clean(a.name), phone: a.phone, line: clean(a.line), pin: a.pin }, method: b.method, eta: clean(b.eta), ...t };
+  return { id: 'JN' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase(), email: u.email, addr: { name: clean(a.name), phone: a.phone, line: clean(a.line), pin: a.pin }, method: b.method, eta: clean(b.eta), ...t };
 }
 async function record(o, payStatus, payId) {
   await sheets.append('Orders', [o.id, now(), o.addr.name, o.email, o.addr.phone, o.addr.line, o.addr.pin, o.lines, o.count, o.sub, o.disc, o.ship, o.total, o.method, payStatus, payId || '', o.eta, 'New', '', '']);
@@ -325,7 +337,8 @@ async function ensureSellerLedger(parentOrderId) {
 }
 async function recordPaid(o, payId, rzpId) {
   const rows = await sheets.read('Orders');
-  if (!rows.some(r => r[15] === payId)) await record(o, 'Paid', payId);
+  // Razorpay verify and webhook can both report the same capture; dedupe by payment ID and our order ID.
+  if (!rows.some((r, i) => i > 0 && (String(r[15] || '') === String(payId) || String(r[0] || '') === String(o.id)))) await record(o, 'Paid', payId);
   try {
     await ensureSellerOrders(o, payId);
     await ensureSellerLedger(o.id);
