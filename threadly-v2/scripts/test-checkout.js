@@ -13,10 +13,23 @@ const rows = [
   ['JN0004', 'Pending clip', 'Hair accessories', 100, 5, 'Yes', 'JSRSELLER2', 'Pending']
 ];
 const originalRead = sheets.read;
+const originalAppend = sheets.append;
+const originalUpdate = sheets.update;
+const originalEnsureTab = sheets.ensureTab;
+let mockedSheets = {};
+const appendedRows = [];
+const updatedRows = [];
 sheets.read = async tab => {
   if (tab === 'Products') return rows;
+  if (Object.prototype.hasOwnProperty.call(mockedSheets, tab)) return mockedSheets[tab];
   throw new Error('Unexpected sheet read in offline checkout test: ' + tab);
 };
+sheets.append = async (tab, row) => { appendedRows.push({ tab, row }); };
+sheets.update = async (tab, rowNum, row) => {
+  updatedRows.push({ tab, rowNum, row });
+  if (mockedSheets[tab] && mockedSheets[tab][rowNum - 1]) mockedSheets[tab][rowNum - 1] = row;
+};
+sheets.ensureTab = async () => true;
 
 const { _t, webhook, verifyPayment } = require('../netlify/lib/core');
 const cases = [];
@@ -81,8 +94,38 @@ async function rejectsWith(items, pattern) {
     await check('rejects payment verification requests missing required fields', async () => {
       await assert.rejects(() => verifyPayment({}, {}, { email: 'buyer@example.com' }), /Missing payment details/i);
     });
+    await check('does not create a duplicate paid order when payment recording is retried', async () => {
+      const previousSheets = mockedSheets;
+      const previousAppends = appendedRows.length;
+      const previousUpdates = updatedRows.length;
+      mockedSheets = {
+        Orders: [
+          ['Order ID', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Payment ID', '', '', '', 'Notes'],
+          ['JUNO-ORDER-1', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'pay_existing_1', '', '', '', '']
+        ],
+        Pending: [
+          ['Razorpay Order ID', 'Order JSON', 'Created', 'Status'],
+          ['order_rzp_1', JSON.stringify({ id: 'JUNO-ORDER-1', total: 100, itemDetails: [] }), '', 'pending']
+        ],
+        SellerOrders: [['Seller Order ID']],
+        SellerLedger: [['Ledger ID']]
+      };
+      try {
+        const order = { id: 'JUNO-ORDER-1', total: 100, itemDetails: [] };
+        assert.equal(await _t.recordPaid(order, 'pay_existing_1', 'order_rzp_1'), true);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Orders').length, 0);
+        const pendingUpdate = updatedRows.slice(previousUpdates).find(x => x.tab === 'Pending');
+        assert.ok(pendingUpdate, 'expected pending payment status to be updated');
+        assert.equal(pendingUpdate.row[3], 'recorded');
+      } finally {
+        mockedSheets = previousSheets;
+      }
+    });
   } finally {
     sheets.read = originalRead;
+    sheets.append = originalAppend;
+    sheets.update = originalUpdate;
+    sheets.ensureTab = originalEnsureTab;
   }
 
   const failed = cases.filter(x => !x.ok);
