@@ -94,6 +94,35 @@ async function rejectsWith(items, pattern) {
     await check('rejects payment verification requests missing required fields', async () => {
       await assert.rejects(() => verifyPayment({}, {}, { email: 'buyer@example.com' }), /Missing payment details/i);
     });
+    await check('blocks a payment retry when the existing order requires stock reconciliation', async () => {
+      const previousSheets = mockedSheets;
+      const previousAppends = appendedRows.length;
+      const previousUpdates = updatedRows.length;
+      mockedSheets = {
+        Orders: [
+          ['Order ID', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Payment ID', '', '', '', 'Notes'],
+          ['JUNO-ORDER-RECON', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'pay_recon_1', '', '', '', 'STOCK_RECONCILIATION_REQUIRED: stock mismatch']
+        ],
+        Pending: [
+          ['Razorpay Order ID', 'Order JSON', 'Created', 'Status'],
+          ['order_rzp_recon', JSON.stringify({ id: 'JUNO-ORDER-RECON', total: 100, itemDetails: [] }), '', 'pending']
+        ]
+      };
+      try {
+        const order = { id: 'JUNO-ORDER-RECON', total: 100, itemDetails: [] };
+        await assert.rejects(
+          () => _t.recordPaid(order, 'pay_recon_1', 'order_rzp_recon'),
+          /already recorded.*stock needs reconciliation.*Do not pay again/i
+        );
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Orders').length, 0);
+        const pendingUpdate = updatedRows.slice(previousUpdates).find(x => x.tab === 'Pending');
+        assert.ok(pendingUpdate, 'expected pending payment status to be updated');
+        assert.equal(pendingUpdate.row[3], 'stock_reconciliation_required');
+      } finally {
+        mockedSheets = previousSheets;
+      }
+    });
+
     await check('does not create a duplicate paid order when payment recording is retried', async () => {
       const previousSheets = mockedSheets;
       const previousAppends = appendedRows.length;
