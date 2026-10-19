@@ -308,8 +308,8 @@ async function markPending(id, status) { try { const rows = await sheets.read('P
 async function ensureSellerOrders(o, payId) {
   if (!Array.isArray(o.itemDetails) || !o.itemDetails.length) return;
   let rows;
-  try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab setup failed; seller fulfilment records were not created for', o.id); return; }
-  if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') { console.error('SellerOrders header row missing; seller fulfilment records were not created for', o.id); return; }
+  try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); rows = await sheets.read('SellerOrders'); } catch (x) { console.error('SellerOrders tab setup failed; seller fulfilment records were not created for', o.id); return false; }
+  if (!rows.length || String(rows[0][0] || '').trim() !== 'Seller Order ID') { console.error('SellerOrders header row missing; seller fulfilment records were not created for', o.id); return false; }
   const existing = new Set(rows.slice(1).map(r => String(r[1] || '') + '|' + String(r[3] || '')));
   const sellers = new Map();
   for (const it of o.itemDetails) {
@@ -322,21 +322,22 @@ async function ensureSellerOrders(o, payId) {
   for (const [sellerId, items] of sellers) {
     if (existing.has(String(o.id) + '|' + sellerId)) continue;
     const sr = sellerRowsData.find((r, i) => i > 0 && String(r[0]) === sellerId);
-    if (!sr || sr[7] !== 'Active') { console.error('Seller missing/inactive during order split', sellerId, o.id); continue; }
+    if (!sr || sr[7] !== 'Active') { console.error('Seller missing/inactive during order split', sellerId, o.id); return false; }
     const subtotal = items.reduce((sum, it) => sum + (+it.unitPrice || 0) * (+it.quantity || 0), 0);
     const itemCount = items.reduce((sum, it) => sum + (+it.quantity || 0), 0);
     const sid = 'SO' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
     await sheets.append('SellerOrders', [sid, o.id, now(), sellerId, sr[2] || '', o.addr.name, o.email, o.addr.phone, o.addr.line, o.addr.pin, JSON.stringify(items), itemCount, subtotal, 0, subtotal, 'Paid', 'New', '', now(), payId || '']);
     existing.add(String(o.id) + '|' + sellerId);
   }
+  return true;
 }
 async function ensureSellerLedger(parentOrderId) {
   let orders, ledger;
   try { await sheets.ensureTab('SellerOrders', MARKETPLACE_SHEET_HEADERS.SellerOrders); await sheets.ensureTab('SellerLedger', MARKETPLACE_SHEET_HEADERS.SellerLedger); orders = await sheets.read('SellerOrders'); ledger = await sheets.read('SellerLedger'); }
-  catch (x) { console.error('SellerLedger sheet missing; seller amounts are not reconciled for', parentOrderId); return; }
+  catch (x) { console.error('SellerLedger sheet missing; seller amounts are not reconciled for', parentOrderId); return false; }
   if (!orders.length || String(orders[0][0] || '').trim() !== 'Seller Order ID' ||
       !ledger.length || String(ledger[0][0] || '').trim() !== 'Ledger ID') {
-    console.error('SellerOrders/SellerLedger headers missing; ledger reconciliation skipped for', parentOrderId); return;
+    console.error('SellerOrders/SellerLedger headers missing; ledger reconciliation skipped for', parentOrderId); return false;
   }
   const rawBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
   const hasBps = rawBps !== undefined && String(rawBps).trim() !== '';
@@ -363,6 +364,7 @@ async function ensureSellerLedger(parentOrderId) {
     if (existingIndex > 0) await sheets.update('SellerLedger', existingIndex + 1, row);
     else { await sheets.append('SellerLedger', row); ledger.push(row); }
   }
+  return true;
 }
 async function recordPaid(o, payId, rzpId) {
   const rows = await sheets.read('Orders');
@@ -373,11 +375,12 @@ async function recordPaid(o, payId, rzpId) {
     await markPending(rzpId, 'stock_reconciliation_required');
     throw new E('Payment is already recorded for order ' + o.id + ', but stock needs reconciliation. Do not pay again; contact Juno support with this order ID.', 503);
   }
+  let sellerReconciled = true;
   try {
-    await ensureSellerOrders(o, payId);
-    await ensureSellerLedger(o.id);
-  } catch (x) { console.error('seller order/ledger reconciliation needs retry for', o.id, x && x.message); }
-  await markPending(rzpId, 'recorded');
+    sellerReconciled = (await ensureSellerOrders(o, payId)) !== false;
+    if (sellerReconciled) sellerReconciled = (await ensureSellerLedger(o.id)) !== false;
+  } catch (x) { sellerReconciled = false; console.error('seller order/ledger reconciliation needs retry for', o.id, x && x.message); }
+  await markPending(rzpId, sellerReconciled ? 'recorded' : 'seller_reconciliation_required');
   return true;
 }
 const verifyPayment = async (b, e, u) => {
