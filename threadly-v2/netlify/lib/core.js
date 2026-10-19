@@ -24,7 +24,41 @@ const wrap = (method, fn, auth) => async e => {
 /* ---------- products ---------- */
 const nk = h => String(h).trim().toLowerCase().replace(/\s*\(.*\)\s*$/, '');
 let pc = { t: 0, rows: [] };
-const productRows = async force => { if (!force && Date.now() - pc.t < 30000 && pc.rows.length) return pc.rows; const rows = await sheets.read('Products'); pc = { t: Date.now(), rows }; return rows };
+const budgetBands = {
+  'hair accessories':[.50,129], 'artificial jewellery':[.50,149], 'bags & purses':[.62,249],
+  'phone & bag charms':[.50,129], 'beauty accessories':[.50,129], 'cute & kawaii accessories':[.50,149],
+  'everyday essentials':[.50,99], 'fashion accessories':[.50,149], 'gifts & sets':[.55,199],
+  'jewellery & accessory storage':[.50,149], 'makeup & nail accessories':[.50,129],
+  'party & occasion accessories':[.55,199], 'personalised accessories':[.55,179],
+  'socks & small wearables':[.50,129], 'storage & organisers':[.55,179],
+  'sunglasses & eyewear':[.60,199], 'travel accessories':[.60,199], 'watches':[.60,249],
+  'plush toys & collectibles':[.75,199], 'stationery & desk':[.90,99],
+  'home & kitchen':[.85,129], 'drinkware & lunch':[.80,149], 'tech accessories':[.65,199]
+};
+const budgetPrice = (category, raw) => {
+  const p = num(raw); if (!p) return 0;
+  const band = budgetBands[String(category || '').trim().toLowerCase()] || [.55,199];
+  return Math.max(19, Math.min(band[1], Math.round(Math.min(p * band[0], band[1]) / 5) * 5));
+};
+const budgetRows = rows => {
+  if (!rows || rows.length < 2) return rows || [];
+  const heads = rows[0].map(nk), catI = heads.indexOf('category'), priceI = heads.indexOf('selling price');
+  const mrpI = heads.indexOf('mrp'), offI = heads.findIndex(h => h === 'discount' || h === 'discount %');
+  const sellerI = heads.indexOf('seller id');
+  if (catI < 0 || priceI < 0) return rows;
+  return [rows[0], ...rows.slice(1).map(source => {
+    const row = source.slice();
+    if (sellerI >= 0 && String(row[sellerI] || '').trim()) return row;
+    const price = budgetPrice(row[catI], row[priceI]);
+    if (!price) return row;
+    row[priceI] = price;
+    const mrp = Math.max(price + 5, Math.round((price * 1.3) / 5) * 5);
+    if (mrpI >= 0) row[mrpI] = mrp;
+    if (offI >= 0) row[offI] = Math.round((mrp - price) / mrp * 100) + '%';
+    return row;
+  })];
+};
+const productRows = async force => { if (!force && Date.now() - pc.t < 30000 && pc.rows.length) return pc.rows; const rows = budgetRows(await sheets.read('Products')); pc = { t: Date.now(), rows }; return rows };
 const invalidate = () => { pc = { t: 0, rows: [] } };
 const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\n');
 const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await productRows()) } });
