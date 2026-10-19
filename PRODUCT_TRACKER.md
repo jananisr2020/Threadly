@@ -2,7 +2,7 @@
 
 - Repository: [jananisr2020/Threadly](https://github.com/jananisr2020/Threadly)
 - Primary catalogue tracked: threadly-v2/public/catalog.json
-- Last generated: 2026-10-19 22:54:45 IST
+- Last generated: 2026-10-19 22:55:42 IST
 - Current catalogue product records: **604**
 - Current stock units recorded in catalogue: **17049**
 - In stock: **604** product records | Low stock (1–5): **0** | Out of stock: **0** | Unknown stock: **0**
@@ -18,13 +18,9 @@ Important scope: counts describe committed catalog.json, not a live Google Sheet
 
 | Date | Added | Removed | Stock changed | Details updated | What was not added |
 |---|---:|---:|---:|---:|---|
-| 2026-10-19 | 0 | 0 | 0 | 603 | No new product IDs in this update |
-| 2026-10-14 | 0 | 0 | 0 | 604 | No new product IDs in this update |
-| 2026-10-13 | 0 | 0 | 0 | 604 | No new product IDs in this update |
-| 2026-10-13 | 100 | 0 | 0 | 0 | — |
-| 2026-10-13 | 0 | 0 | 0 | 504 | No new product IDs in this update |
-| 2026-10-13 | 432 | 0 | 0 | 0 | — |
-| 2026-10-13 | 72 | 56 | 0 | 0 | — |
+| 2026-10-19 | 0 | 0 | 0 | 603 | No new product IDs added on this date |
+| 2026-10-14 | 0 | 0 | 0 | 604 | No new product IDs added on this date |
+| 2026-10-13 | 604 | 56 | 0 | 1108 | — |
 | 2026-10-12 | 56 | 0 | 0 | 0 | — |
 
 ## Inventory rules
