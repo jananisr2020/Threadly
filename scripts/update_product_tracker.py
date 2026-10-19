@@ -91,6 +91,34 @@ def main():
             })
         previous = current
 
+    # Roll commit-level changes up into one row per India calendar day.
+    by_day = {}
+    for row in daily:
+        key = row["Date (India)"]
+        if key not in by_day:
+            by_day[key] = dict(row)
+            by_day[key]["Commit"] = [row["Commit"]]
+            by_day[key]["Commit URL"] = [row["Commit URL"]]
+            by_day[key]["Commit Message"] = [row["Commit Message"]]
+        else:
+            target = by_day[key]
+            for field in ("Products Added", "Products Removed", "Stock Changes", "Product Details Updated"):
+                target[field] += row[field]
+            for field in ("Added Product IDs", "Removed Product IDs", "Stock-Changed Product IDs"):
+                values = [target[field], row[field]]
+                target[field] = "; ".join(v for v in values if v)
+            target["Commit"].append(row["Commit"])
+            target["Commit URL"].append(row["Commit URL"])
+            target["Commit Message"].append(row["Commit Message"])
+    daily = []
+    for day in sorted(by_day):
+        row = by_day[day]
+        row["Commit"] = "; ".join(row["Commit"])
+        row["Commit URL"] = "; ".join(row["Commit URL"])
+        row["Commit Message"] = " | ".join(row["Commit Message"])
+        row["Products Not Added"] = "No new product IDs added on this date" if row["Products Added"] == 0 else ""
+        daily.append(row)
+
     current = load_catalog_at("main")
     if not current:
         raise SystemExit("Current catalogue could not be read; inventory tracker was not overwritten.")
