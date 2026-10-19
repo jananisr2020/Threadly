@@ -13,6 +13,7 @@
     "@netlify/blobs": "^8.1.0"
   },
   "scripts": {
-    "check": "node scripts/check-links.js"
+    "check": "node scripts/check-links.js",
+    "test": "node scripts/test-checkout.js"
   }
 }

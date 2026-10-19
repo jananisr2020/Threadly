@@ -1,0 +1,42 @@
+name: Checkout regression tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "threadly-v2/netlify/lib/**"
+      - "threadly-v2/netlify/functions/**"
+      - "threadly-v2/scripts/test-checkout.js"
+      - "threadly-v2/package.json"
+      - ".github/workflows/checkout-tests.yml"
+  pull_request:
+    paths:
+      - "threadly-v2/netlify/lib/**"
+      - "threadly-v2/netlify/functions/**"
+      - "threadly-v2/scripts/test-checkout.js"
+      - "threadly-v2/package.json"
+      - ".github/workflows/checkout-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkout-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: threadly-v2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+      - name: Run checkout regression tests
+        run: npm test
+      - name: Check storefront routes and required files
+        run: npm run check
