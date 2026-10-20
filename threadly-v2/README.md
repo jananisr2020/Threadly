@@ -3,7 +3,7 @@
 Your Google Sheet is the database. You add products there (or on the /admin page), and the store, orders and customer list all read and write to it. Nothing needs editing in the HTML.
 
 ## Step 1. Put the sheet on Google
-1. Go to sheets.google.com > File > Import > Upload `Threadly_Database.xlsx` > "Create new spreadsheet".
+1. Get `Threadly_Database.xlsx` from the private [Juno_tracker workbook backup](https://github.com/jananisr2020/Juno_tracker/blob/private-workbook-backup/Threadly_Database.xlsx) (you need access to that private repository). Then go to sheets.google.com > File > Import > Upload the workbook > "Create new spreadsheet".
 2. Keep the tab names (Products, Orders, Users) and the first row exactly as they are.
 3. Copy the long ID from the sheet link: docs.google.com/spreadsheets/d/**THIS-PART**/edit. That is your `SHEET_ID`.
 
@@ -43,7 +43,7 @@ Netlify's drag-and-drop upload does not run the order and login functions, so de
 2. Webhook URL: `https://YOUR-SITE.netlify.app/api/razorpay-webhook`
 3. Secret: make up a password and keep it. This is `RAZORPAY_WEBHOOK_SECRET` (put the same value in Netlify).
 4. Tick these events: `payment.captured`, `payment.failed`, `refund.processed`. Save.
-5. If you already made your Google Sheet before this update, add one more tab named exactly **Pending** with these headings in row 1: `Razorpay Order ID`, `Order Data`, `Created`, `Status`. (The new `Threadly_Database.xlsx` already has it.)
+5. If you already made your Google Sheet before this update, add one more tab named exactly **Pending** with these headings in row 1: `Razorpay Order ID`, `Order Data`, `Created`, `Status`. (The private workbook backup already includes this tab.)
 6. When you refund a payment in Razorpay, the order's Payment Status turns to Refunded automatically.
 
 ## Step 6. Password-reset emails (free with Brevo)
@@ -59,7 +59,7 @@ Netlify's drag-and-drop upload does not run the order and login functions, so de
 The 💬 button is a free, built-in assistant (no key or subscription needed). It answers delivery, returns, payment, coupon, size and gift questions, and finds products from sentences like "black earrings under ₹199" using your live product sheet. To change its answers, edit the `botRules` function in `public/index.html`.
 
 ## Reviews, cancellations, returns and refunds
-- **Add two tabs** to your Google Sheet if it was made before this update (the new `Threadly_Database.xlsx` already has them). **Reviews** headings: `Review ID, Product ID, Name, Email, Rating, Comment, Date, Verified, Status`. **Requests** headings: `Request ID, Date, Order ID, Email, Type, Reason, Details, Status, Admin Notes`.
+- **Add two tabs** to your Google Sheet if it was made before this update (the private workbook backup already includes them). **Reviews** headings: `Review ID, Product ID, Name, Email, Rating, Comment, Date, Verified, Status`. **Requests** headings: `Request ID, Date, Order ID, Email, Type, Reason, Details, Status, Admin Notes`.
 - **Reviews:** logged-in customers can review a product once. Reviews are marked Verified purchase when that customer ordered the product, and go live straight away. Hide any you do not want from Admin > Reviews.
 - **Cancel:** a customer can cancel an order from their account. If it is still New, it cancels automatically. If it is Packed, the request goes to Admin > Returns for you to decide. Shipped orders cannot be cancelled.
 - **Return:** possible once you set the order to Delivered. You check the 7-day window yourself, then set the request status (Approved, Pickup scheduled, Refunded and so on) and add a note the customer sees in their account.
