@@ -62,6 +62,31 @@ const wrap = (method, fn, auth) => async e => {
     return json(500, { error: 'Something went wrong. Please try again.' });
   }
 };
+
+/* ---------- privacy-conscious browser activity events ---------- */
+const WEBSITE_ACTIVITY_HEADERS = ['Event ID','Timestamp (IST)','Session ID','Event','Page','Product ID','Control','Referrer Origin','Details'];
+let websiteActivityTabReady = null;
+const trackWebsiteActivity = async (b, e) => {
+  limit('website-activity:' + ip(e), 120, 60e3);
+  const allowed = new Set(['page_view','product_view','product_click','add_to_cart','buy_now','wishlist_toggle','compare_toggle','search_submit','checkout_start','account_action','seller_action','cart_action']);
+  const event = String(b.event || '');
+  if (!allowed.has(event)) throw new E('Unsupported activity event.');
+  const sessionId = String(b.sessionId || '');
+  if (!/^[a-zA-Z0-9_-]{8,80}$/.test(sessionId)) throw new E('Invalid session identifier.');
+  const safePath = String(b.page || '/').split('?')[0].split('#')[0].replace(/[^a-zA-Z0-9/_-]/g,'').slice(0,180) || '/';
+  const productId = /^[a-zA-Z0-9_-]{1,80}$/.test(String(b.productId || '')) ? String(b.productId) : '';
+  const control = String(b.control || '').replace(/[^a-zA-Z0-9 _.-]/g,'').slice(0,60);
+  const referrerOrigin = (() => { try { const u = new URL(String(b.referrer || '')); return u.origin.slice(0,180); } catch (_) { return ''; } })();
+  const details = {};
+  if (Number.isFinite(Number(b.queryLength)) && b.queryLength >= 0) details.queryLength = Math.min(200, Math.floor(Number(b.queryLength)));
+  if (['true','false'].includes(String(b.signedIn))) details.signedIn = String(b.signedIn) === 'true';
+  if (!websiteActivityTabReady) websiteActivityTabReady = sheets.ensureTab('WebsiteActivity', WEBSITE_ACTIVITY_HEADERS).catch(err => { websiteActivityTabReady = null; throw err; });
+  await websiteActivityTabReady;
+  const id = 'JW' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase();
+  await sheets.append('WebsiteActivity', [id, now(), sessionId, event, safePath, productId, control, referrerOrigin, JSON.stringify(details)]);
+  return { ok: true };
+};
+
 /* ---------- products ---------- */
 const nk = h => String(h).trim().toLowerCase().replace(/\s*\(.*\)\s*$/, '');
 let pc = { t: 0, rows: [] };
@@ -699,4 +724,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid } };
