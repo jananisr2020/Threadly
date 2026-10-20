@@ -6,6 +6,8 @@ Juno is a budget-fashion storefront for women, men and kids, with accessories, a
 >
 > **Catalogue and pricing note:** the bundled catalogue contains 604 illustrative products across 23 categories. Prices have been shifted toward budget-finds ranges using publicly visible low-price marketplace listings as a guide; they are estimates, not live competitor offers or supplier quotes. Confirm supplier costs, actual stock, taxes and delivery economics before accepting real orders. Product images remain blank until relevant product-specific photos are reviewed. The live Google Sheets API also applies the same budget pricing policy to Juno-owned catalogue rows; seller-owned rows retain seller pricing.
 
+> **Workbook location:** `Threadly_Database.xlsx` and `Juno_Runtime_Trackers.xlsx` are excluded from this public branch. The database workbook backup is retained in the private [Juno_tracker backup branch](https://github.com/jananisr2020/Juno_tracker/tree/private-workbook-backup); repository access is required. The database workbook is a catalogue/setup template, not a live export of customer orders or accounts.
+
 ## Contents
 
 - [Architecture](#architecture)
