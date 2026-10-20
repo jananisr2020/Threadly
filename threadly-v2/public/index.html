@@ -785,5 +785,48 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 })();
 </script>
 
+
+<script id="juno-website-activity">
+(() => {
+  const endpoint = '/.netlify/functions/website-activity';
+  let sessionId = '';
+  try {
+    sessionId = sessionStorage.getItem('juno_activity_session') || '';
+    if (!/^[a-zA-Z0-9_-]{8,80}$/.test(sessionId)) {
+      sessionId = 'js_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Math.random().toString(36).slice(2) + Date.now().toString(36));
+      sessionStorage.setItem('juno_activity_session', sessionId);
+    }
+  } catch (_) { sessionId = 'js_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+  const send = (event, extra = {}) => {
+    const body = { event, sessionId, page: location.pathname, referrer: document.referrer || '',
+      signedIn: Boolean(localStorage.getItem('juno_token') || localStorage.getItem('token')), ...extra };
+    try { fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), keepalive:true, credentials:'same-origin' }).catch(() => {}); } catch (_) {}
+  };
+  send('page_view');
+  window.addEventListener('popstate', () => send('page_view'));
+  document.addEventListener('click', event => {
+    const target = event.target && event.target.closest ? event.target.closest('button,a,[role="button"],article.p[data-id]') : null;
+    if (!target) return;
+    const card = target.closest('article.p[data-id]');
+    const productId = card ? card.getAttribute('data-id') || '' : '';
+    const label = String(target.getAttribute('aria-label') || target.getAttribute('data-track') || target.id || target.textContent || '').trim().toLowerCase().replace(/\s+/g,' ').slice(0,60);
+    if (target.matches('[data-w]')) return send('wishlist_toggle', { productId: target.getAttribute('data-w') || '' });
+    if (target.matches('[data-cmp]')) return send('compare_toggle', { productId: target.getAttribute('data-cmp') || '' });
+    if (target.matches('[data-qa]') || /add to cart|add to bag|quick add/.test(label)) return send('add_to_cart', { productId: productId || target.getAttribute('data-qa') || '', control:'add_to_cart' });
+    if (/buy now|checkout|place order|pay now/.test(label)) return send(/checkout|place order|pay now/.test(label) ? 'checkout_start' : 'buy_now', { productId, control:'checkout' });
+    if (productId) return send('product_click', { productId });
+    if (/search/.test(label) || target.matches('input[type="search"]')) return send('search_submit', { control:'search' });
+    if (/cart|bag/.test(label)) return send('cart_action', { control:'cart' });
+    if (/sign in|log in|account|profile/.test(label)) return send('account_action', { control:'account' });
+    if (/seller|sell on juno/.test(label)) return send('seller_action', { control:'seller' });
+  }, true);
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    const target = event.target;
+    if (target && target.matches && target.matches('input[type="search"],input[placeholder*="Search" i]')) send('search_submit', { control:'search', queryLength:String(target.value || '').length });
+  }, true);
+})();
+</script>
+
 </body>
 </html>
