@@ -599,7 +599,8 @@ const securityHealth = async (b, e) => {
   const required = ['SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'JWT_SECRET', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
   const missingRequired = required.filter(k => env[k] !== 'set');
   const failedTabs = Object.entries(tabs).filter(([, v]) => v !== 'ok').map(([k]) => k);
-  return { checkedAt: now(), env, privateKey, tabs, auditWrite, overall: missingRequired.length || failedTabs.length || auditWrite !== 'ok' ? 'degraded' : 'ok', missingRequired, failedTabs };
+  const result = { checkedAt: now(), env, privateKey, tabs, auditWrite, overall: missingRequired.length || failedTabs.length || auditWrite !== 'ok' ? 'degraded' : 'ok', missingRequired, failedTabs };
+  return { __raw: { statusCode: result.overall === 'ok' ? 200 : 503, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(result) } };
 };
 /* ---------- pincode lookup and Tamil Nadu coverage ---------- */
 const pinCache = new Map(), TN_RE = /^(60[0-9]|61[0-4]|62[0-9]|63[0-9]|64[1-3])\d{3}$/;
