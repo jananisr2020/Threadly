@@ -572,7 +572,7 @@ $('#tkl').onclick=e=>{e.preventDefault();openTicket()};
 $('#fph').textContent=CFG.phone;$('#fph').href='tel:'+CFG.phone;$('#fem').textContent=CFG.email;$('#fem').href='mailto:'+CFG.email;
 /* ---- cookie consent ---- */
 function showCookie(){$('#ckb').classList.add('show');document.body.classList.add('cb-open')}
-function cookieChoice(c){ST.set('tl_cookie',c);if(c==='all'){OPTK.forEach(k=>{if(k in mem)ST.set(k,mem[k])})}else{OPTK.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}$('#ckb').classList.remove('show');document.body.classList.remove('cb-open');toast(c==='all'?'Preferences will be remembered on this device':'Only essential storage is used')}
+function cookieChoice(c){ST.set('tl_cookie',c);window.dispatchEvent(new CustomEvent('juno-cookie-consent',{detail:c}));if(c==='all'){OPTK.forEach(k=>{if(k in mem)ST.set(k,mem[k])})}else{OPTK.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}$('#ckb').classList.remove('show');document.body.classList.remove('cb-open');toast(c==='all'?'Preferences will be remembered on this device':'Only essential storage is used')}
 $('#cka').onclick=()=>cookieChoice('all');$('#cke').onclick=()=>cookieChoice('essential');
 /* ---- payment window: loaded only when someone pays ---- */
 function loadRzp(){return new Promise(res=>{if(typeof Razorpay!=='undefined')return res(true);const s=document.createElement('script');s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=()=>res(true);s.onerror=()=>res(false);document.head.append(s)})}
@@ -797,13 +797,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
       sessionStorage.setItem('juno_activity_session', sessionId);
     }
   } catch (_) { sessionId = 'js_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+  const consented = () => { try { return localStorage.getItem('tl_cookie') === '"all"'; } catch (_) { return false; } };
   const send = (event, extra = {}) => {
+    if (!consented()) return;
     let signedIn = false;
     try { signedIn = Boolean(localStorage.getItem('juno_token') || localStorage.getItem('token')); } catch (_) {}
     const body = { event, sessionId, page: location.pathname, referrer: document.referrer || '', signedIn, ...extra };
     try { fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), keepalive:true, credentials:'same-origin' }).catch(() => {}); } catch (_) {}
   };
   send('page_view');
+  window.addEventListener('juno-cookie-consent', event => { if (event.detail === 'all') send('page_view'); });
   window.addEventListener('popstate', () => send('page_view'));
   document.addEventListener('click', event => {
     const target = event.target && event.target.closest ? event.target.closest('button,a,[role="button"],article.p[data-id]') : null;
