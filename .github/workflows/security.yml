@@ -35,5 +35,7 @@ jobs:
         run: npm test
       - name: Check local links
         run: npm run check
+      - name: Check security configuration and headers
+        run: npm run check:security
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
