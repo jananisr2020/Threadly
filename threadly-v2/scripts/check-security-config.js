@@ -14,6 +14,7 @@ const required = [
   ['admin-only diagnostics', core.includes("if (!u || !u.admin) throw new E('Admin login required.', 401)")],
   ['environment values are not returned', core.includes("env[k] = process.env[k] ? 'set' : 'MISSING'")],
   ['non-2xx responses are audited as failures', core.includes("responseStatus >= 400 ? 'failure' : 'success'")],
+  ['website activity requires explicit consent', core.includes("if (b.consent !== 'all') throw new E('Activity tracking requires explicit consent.', 403)")],
   ['CI audits production dependencies', workflow.includes('npm audit --omit=dev --audit-level=high')]
 ];
 const failed = required.filter(([, ok]) => !ok);
