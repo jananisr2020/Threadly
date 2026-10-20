@@ -568,13 +568,38 @@ const why = x => {
   if (st === 400 || /Unable to parse range/i.test(m)) return 'Tab is missing or named differently';
   return 'Error: ' + m.slice(0, 80);
 };
-const health = async () => {
-  const names = ['SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'JWT_SECRET', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'BREVO_API_KEY', 'MAIL_FROM'], env = {};
-  names.forEach(k => env[k] = process.env[k] ? 'set' : 'MISSING');
-  const key = process.env.GOOGLE_PRIVATE_KEY || '', keyCheck = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'looks wrong: paste the whole private_key including the BEGIN and END lines' : /^\s*["']/.test(key) ? 'looks wrong: remove the quote marks around it' : 'looks fine';
+// Public liveness endpoint: do not disclose environment/configuration details anonymously.
+const health = async () => ({ ok: true, service: 'Juno API', diagnostics: 'Admin authentication required for security diagnostics.' });
+
+const securityHealth = async (b, e) => {
+  const u = bearer(e);
+  if (!u || !u.admin) throw new E('Admin login required.', 401);
+  const names = ['SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'JWT_SECRET', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'BREVO_API_KEY', 'MAIL_FROM'];
+  const env = {};
+  names.forEach(k => { env[k] = process.env[k] ? 'set' : 'MISSING'; });
+  const key = process.env.GOOGLE_PRIVATE_KEY || '';
+  const privateKey = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'format_check_failed' : /^\\s*["']/.test(key) ? 'remove_wrapping_quotes' : 'format_looks_ok';
   const tabs = {};
-  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets']) { try { await sheets.read(t); tabs[t] = 'ok' } catch (x) { tabs[t] = why(x) } }
-  return { env, privateKey: keyCheck, shareSheetWith: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '(not set)', tabs };
+  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets', 'ActivityLog', 'WebsiteActivity']) {
+    try {
+      if (t === 'ActivityLog') await sheets.ensureTab(t, ACTIVITY_HEADERS);
+      else if (t === 'WebsiteActivity') await sheets.ensureTab(t, WEBSITE_ACTIVITY_HEADERS);
+      await sheets.read(t);
+      tabs[t] = 'ok';
+    } catch (x) { tabs[t] = why(x); }
+  }
+  let auditWrite = 'not_tested';
+  if (env.SHEET_ID === 'set' && env.GOOGLE_SERVICE_ACCOUNT_EMAIL === 'set' && env.GOOGLE_PRIVATE_KEY === 'set') {
+    try {
+      const id = 'JH' + Date.now().toString(36).toUpperCase();
+      await sheets.append('ActivityLog', [id, now(), 'security.health_check', '', 'admin', 'success (200)', 'GET', '/api/security-health', ip(e), String((e.headers || {})['user-agent'] || '').slice(0, 250), JSON.stringify({ probe: true })]);
+      auditWrite = 'ok';
+    } catch (x) { auditWrite = 'failed'; tabs.ActivityLog = why(x); }
+  } else auditWrite = 'blocked_missing_configuration';
+  const required = ['SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'JWT_SECRET', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
+  const missingRequired = required.filter(k => env[k] !== 'set');
+  const failedTabs = Object.entries(tabs).filter(([, v]) => v !== 'ok').map(([k]) => k);
+  return { checkedAt: now(), env, privateKey, tabs, auditWrite, overall: missingRequired.length || failedTabs.length || auditWrite !== 'ok' ? 'degraded' : 'ok', missingRequired, failedTabs };
 };
 /* ---------- pincode lookup and Tamil Nadu coverage ---------- */
 const pinCache = new Map(), TN_RE = /^(60[0-9]|61[0-4]|62[0-9]|63[0-9]|64[1-3])\d{3}$/;
@@ -724,4 +749,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid } };
