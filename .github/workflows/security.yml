@@ -1,0 +1,39 @@
+name: Security checks
+
+on:
+  pull_request:
+    paths:
+      - 'threadly-v2/**'
+      - '.github/workflows/security.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'threadly-v2/**'
+      - '.github/workflows/security.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: threadly-v2
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: threadly-v2/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run checkout regression tests
+        run: npm test
+      - name: Check local links
+        run: npm run check
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
