@@ -3,3 +3,6 @@ node_modules
 .netlify
 .venv/
 venv/
+
+# Import this template into a private Google Sheet; do not commit it.
+/Threadly_Database.xlsx
