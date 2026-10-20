@@ -31,7 +31,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -49,6 +49,15 @@ async function rejectsWith(items, pattern) {
 
 (async () => {
   try {
+    await check('public health endpoint does not disclose configuration details', async () => {
+      const result = await health();
+      assert.equal(result.ok, true);
+      assert.equal(Object.prototype.hasOwnProperty.call(result, 'env'), false);
+      assert.equal(Object.prototype.hasOwnProperty.call(result, 'shareSheetWith'), false);
+    });
+    await check('security diagnostics require an admin session', async () => {
+      await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
+    });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
     await check('rejects zero quantity', () => rejectsWith([{ id: 'JN0001', n: 0 }], /no longer available/i));
