@@ -2,9 +2,9 @@
 
 - Repository: [jananisr2020/Threadly](https://github.com/jananisr2020/Threadly)
 - Branch tracked: main (history read from main)
-- Last generated: 2026-10-20 15:37:45 IST
-- Commits covered: 198
-- Date range: 11 Oct 2026 19:12 IST to 20 Oct 2026 15:37 IST
+- Last generated: 2026-10-20 15:43:17 IST
+- Commits covered: 200
+- Date range: 11 Oct 2026 19:12 IST to 20 Oct 2026 15:43 IST
 - Spreadsheet log: [Open project-tracker.csv](./project-tracker.csv)
 
 ## Automatic updates
@@ -1814,6 +1814,24 @@ Branding and app identity: Add consent-based Juno website activity tracking. Tra
 
 - Commit: 70b3c6f | Files changed: 6 | Lines: +81 / -6
 - Changed files: threadly-v2/netlify/functions/website-activity.js, threadly-v2/netlify/lib/core.js, threadly-v2/public/cookie-policy.html, threadly-v2/public/index.html, threadly-v2/public/privacy-policy.html, threadly-v2/scripts/test-checkout.js
+- Test status: not inferred from the commit; inspect CI.
+- Deployment status: not inferred from the commit; verify Netlify.
+
+#### 15:37:45 IST — [Refresh project and product trackers](https://github.com/jananisr2020/Threadly/commit/e395f107b6b4c36c63c55e0ab1758d6a620f50f1)
+
+Project maintenance: Refresh project and product trackers. This changed 4 file(s): PRODUCT_TRACKER.md, PROJECT_TRACKER.md, product-inventory.csv, project-tracker.csv.
+
+- Commit: e395f10 | Files changed: 4 | Lines: +630 / -608
+- Changed files: PRODUCT_TRACKER.md, PROJECT_TRACKER.md, product-inventory.csv, project-tracker.csv
+- Test status: not inferred from the commit; inspect CI.
+- Deployment status: not inferred from the commit; verify Netlify.
+
+#### 15:43:05 IST — [Add Juno runtime tracker docs and Excel generation](https://github.com/jananisr2020/Threadly/commit/689c94129a4b6931754a55bd4b31cd14fba53d1b)
+
+Checkout and orders: Add Juno runtime tracker docs and Excel generation. Generate a repository-side tracker guide and formatted Excel workbook for login/API audit, website activity and orders. Keep private operational records in Google Sheets. Files: .github/workflows/project-tracker.yml, scripts/update_runtime_trackers.py.
+
+- Commit: 689c941 | Files changed: 2 | Lines: +58 / -3
+- Changed files: .github/workflows/project-tracker.yml, scripts/update_runtime_trackers.py
 - Test status: not inferred from the commit; inspect CI.
 - Deployment status: not inferred from the commit; verify Netlify.
 
