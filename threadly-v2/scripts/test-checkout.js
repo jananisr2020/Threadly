@@ -31,7 +31,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -57,6 +57,18 @@ async function rejectsWith(items, pattern) {
     });
     await check('security diagnostics require an admin session', async () => {
       await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
+    });
+    await check('website activity endpoint rejects events without explicit consent', async () => {
+      const previous = appendedRows.length;
+      await assert.rejects(() => trackWebsiteActivity({ event: 'page_view', sessionId: 'test_session_123', page: '/' }, { headers: {} }), /explicit consent/i);
+      assert.equal(appendedRows.slice(previous).filter(x => x.tab === 'WebsiteActivity').length, 0);
+    });
+    await check('website activity endpoint records only after explicit all-consent flag', async () => {
+      const previous = appendedRows.length;
+      await trackWebsiteActivity({ consent: 'all', event: 'page_view', sessionId: 'test_session_123', page: '/', referrer: '' }, { headers: { 'x-nf-client-connection-ip': '127.0.0.1' } });
+      const row = appendedRows.slice(previous).find(x => x.tab === 'WebsiteActivity');
+      assert.ok(row, 'expected WebsiteActivity append after consent');
+      assert.equal(row.row[3], 'page_view');
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
