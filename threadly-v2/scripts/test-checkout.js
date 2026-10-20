@@ -69,7 +69,8 @@ async function rejectsWith(items, pattern) {
     await check('preserves seller ownership in the priced order details', async () => {
       const result = await _t.price([{ id: 'JN0002', n: 1 }], '');
       assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
-      assert.equal(result.itemDetails[0].unitPrice, 50);
+      // Seller-owned catalogue rows retain the seller's listed price; Juno budget pricing applies only to Juno-owned rows.
+      assert.equal(result.itemDetails[0].unitPrice, 100);
     });
     await check('rejects webhook events when the webhook secret is missing', async () => {
       const previous = process.env.RAZORPAY_WEBHOOK_SECRET;

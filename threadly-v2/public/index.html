@@ -798,8 +798,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
     }
   } catch (_) { sessionId = 'js_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
   const send = (event, extra = {}) => {
-    const body = { event, sessionId, page: location.pathname, referrer: document.referrer || '',
-      signedIn: Boolean(localStorage.getItem('juno_token') || localStorage.getItem('token')), ...extra };
+    let signedIn = false;
+    try { signedIn = Boolean(localStorage.getItem('juno_token') || localStorage.getItem('token')); } catch (_) {}
+    const body = { event, sessionId, page: location.pathname, referrer: document.referrer || '', signedIn, ...extra };
     try { fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), keepalive:true, credentials:'same-origin' }).catch(() => {}); } catch (_) {}
   };
   send('page_view');
