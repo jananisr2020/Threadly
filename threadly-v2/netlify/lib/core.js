@@ -578,7 +578,7 @@ const securityHealth = async (b, e) => {
   const env = {};
   names.forEach(k => { env[k] = process.env[k] ? 'set' : 'MISSING'; });
   const key = process.env.GOOGLE_PRIVATE_KEY || '';
-  const privateKey = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'format_check_failed' : /^\\s*["']/.test(key) ? 'remove_wrapping_quotes' : 'format_looks_ok';
+  const privateKey = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'format_check_failed' : /^\s*["']/.test(key) ? 'remove_wrapping_quotes' : 'format_looks_ok';
   const tabs = {};
   for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets', 'ActivityLog', 'WebsiteActivity']) {
     try {
