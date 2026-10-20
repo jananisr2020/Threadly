@@ -68,6 +68,7 @@ const wrap = (method, fn, auth) => async e => {
 const WEBSITE_ACTIVITY_HEADERS = ['Event ID','Timestamp (IST)','Session ID','Event','Page','Product ID','Control','Referrer Origin','Details'];
 let websiteActivityTabReady = null;
 const trackWebsiteActivity = async (b, e) => {
+  if (b.consent !== 'all') throw new E('Activity tracking requires explicit consent.', 403);
   limit('website-activity:' + ip(e), 120, 60e3);
   const allowed = new Set(['page_view','product_view','product_click','add_to_cart','buy_now','wishlist_toggle','compare_toggle','search_submit','checkout_start','account_action','seller_action','cart_action']);
   const event = String(b.event || '');
