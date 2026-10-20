@@ -52,7 +52,8 @@ const wrap = (method, fn, auth) => async e => {
     if (auth === 'user') { u = bearer(e); if (!u || !u.email || u.admin || u.purpose || u.o) throw new E('Please log in again.', 401) }
     const r = await fn(b, e, u);
     const response = r && r.__raw ? r.__raw : json(200, r);
-    await writeActivity(e, fn, b, u, 'success', response.statusCode || 200);
+    const responseStatus = response.statusCode || 200;
+    await writeActivity(e, fn, b, u, responseStatus >= 400 ? 'failure' : 'success', responseStatus);
     return response;
   } catch (x) {
     const status = x.code || 500;
