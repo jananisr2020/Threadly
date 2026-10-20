@@ -1,0 +1,7 @@
+title = "Juno secret scanning rules"
+
+[allowlist]
+description = "Generated project tracker records Git commit SHA-1 identifiers as 40-character hex strings. Ignore that exact identifier shape only within the generated tracker CSV; keep scanning all other files and history."
+paths = ['''project-tracker\.csv''']
+regexTarget = "secret"
+regexes = ['''^[a-f0-9]{40}$''']
