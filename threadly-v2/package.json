@@ -13,6 +13,7 @@
   },
   "scripts": {
     "check": "node scripts/check-links.js",
+    "check:security": "node scripts/check-security-config.js",
     "test": "node scripts/test-checkout.js"
   }
 }
