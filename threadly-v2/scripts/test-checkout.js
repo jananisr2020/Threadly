@@ -36,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -166,6 +166,32 @@ async function rejectsWith(items, pattern) {
         assert.ok(updatedRows.slice(previousUpdates).some(x => x.tab === 'Users'));
         await assert.rejects(() => reset({ token, password: 'NewStrong!456' }, event), /already used or has expired/i);
         await assert.rejects(() => reset({ token: expiredToken, password: 'NewStrong!456' }, event), /link has expired/i);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('support tickets persist and admin replies update the ticket record', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-ticket-admin-secret';
+      mockedSheets = { Tickets: [['Ticket ID', 'Date', 'Type', 'Name', 'Email', 'Phone', 'Order ID', 'Message', 'Status', 'Admin Reply', 'Last Updated']] };
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.30' } };
+      const adminToken = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+      try {
+        await assert.rejects(() => ticket({ name: 'Test Buyer', email: 'buyer@example.com', message: 'short' }, event), /at least 10 characters/i);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Tickets').length, 0);
+        const result = await ticket({ type: 'Query', name: 'Test Buyer', email: 'buyer@example.com', phone: '9876543210', orderId: 'ORDER-1', message: 'Please help me check my order status.' }, event);
+        assert.equal(result.ok, true);
+        const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Tickets');
+        assert.ok(saved, 'expected ticket row to be saved');
+        assert.equal(saved.row[8], 'Open');
+        const updated = await admin({ action: 'updateTicket', id: result.id, status: 'In progress', reply: 'We are checking the order now.' }, { headers: { authorization: 'Bearer ' + adminToken } });
+        assert.equal(updated.ok, true);
+        const ticketRow = mockedSheets.Tickets.find(r => r[0] === result.id);
+        assert.equal(ticketRow[8], 'In progress');
+        assert.equal(ticketRow[9], 'We are checking the order now.');
       } finally {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
