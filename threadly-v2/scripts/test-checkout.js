@@ -36,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -673,6 +673,62 @@ async function rejectsWith(items, pattern) {
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
+    await check('Razorpay test client creates an order and verifies a captured payment end-to-end', async () => {
+      const previousEnv = {
+        JWT_SECRET: process.env.JWT_SECRET,
+        RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
+        RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET
+      };
+      const previousFetch = global.fetch, previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-razorpay-flow-secret';
+      process.env.RAZORPAY_KEY_ID = 'rzp_test_juno';
+      process.env.RAZORPAY_KEY_SECRET = 'razorpay-test-secret';
+      mockedSheets = {
+        Products: [
+          ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
+          ['JN0001', 'Basic scrunchie', 'Hair accessories', 'Unisex', 130, 100, 'Soft fabric scrunchie', 'Pink', '', 5, 'No', 4.5, 'Yes', '', 'Approved']
+        ],
+        Orders: [['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes']],
+        Pending: [['Razorpay Order ID', 'Order Data', 'Created', 'Status']],
+        Sellers: [['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login']],
+        SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID']],
+        SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
+      };
+      let createPayload;
+      const fakeRazorpay = {
+        orders: { create: async payload => { createPayload = payload; return { id: 'order_rzp_test_1', amount: payload.amount, currency: 'INR' }; } },
+        payments: { fetch: async id => ({ id, order_id: 'order_rzp_test_1', status: 'captured', amount: 12900, currency: 'INR' }) }
+      };
+      _t.setRazorpayOverride(fakeRazorpay);
+      global.fetch = async () => ({ ok: true, json: async () => [{ Status: 'Success', PostOffice: [{ State: 'Tamil Nadu', District: 'Coimbatore', Name: 'Coimbatore' }] }] });
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.40' } }, user = { email: 'buyer@example.com' };
+      try {
+        const created = await createOrder({ method: 'UPI', addr: { name: 'Test Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, items: [{ id: 'JN0001', n: 1 }], coupon: 'JUNO10', total: 1, sub: 1, disc: 999, ship: 0 }, event, user);
+        assert.equal(createPayload.amount, 12900);
+        assert.equal(created.amount, 12900);
+        assert.equal(created.key, 'rzp_test_juno');
+        const tokenPayload = jwt.verify(created.orderToken, process.env.JWT_SECRET);
+        assert.equal(tokenPayload.o.total, 129);
+        await assert.rejects(
+          () => verifyPayment({ razorpay_order_id: created.id, razorpay_payment_id: 'pay_test_1', razorpay_signature: 'bad', orderToken: created.orderToken }, event, user),
+          /could not be verified/i
+        );
+        const signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(created.id + '|pay_test_1').digest('hex');
+        const verified = await verifyPayment({ razorpay_order_id: created.id, razorpay_payment_id: 'pay_test_1', razorpay_signature: signature, orderToken: created.orderToken }, event, user);
+        assert.equal(verified.ok, true);
+        assert.equal(verified.orderId, created.orderId);
+        assert.equal(mockedSheets.Orders[1][14], 'Paid');
+        assert.equal(mockedSheets.Orders[1][15], 'pay_test_1');
+        assert.equal(mockedSheets.Products[1][9], 4);
+        assert.equal(mockedSheets.Pending[1][3], 'recorded');
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Orders').length, 1);
+      } finally {
+        _t.setRazorpayOverride(null);
+        global.fetch = previousFetch;
+        mockedSheets = previousSheets;
+        for (const [key, value] of Object.entries(previousEnv)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    });
     await check('order builder validates Tamil Nadu serviceability and ignores client totals', async () => {
       const previousFetch = global.fetch;
       global.fetch = async url => ({
