@@ -694,10 +694,10 @@ async function rejectsWith(items, pattern) {
         SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID']],
         SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
       };
-      let createPayload;
+      let createPayload, fetchedPaymentStatus = 'authorized';
       const fakeRazorpay = {
         orders: { create: async payload => { createPayload = payload; return { id: 'order_rzp_test_1', amount: payload.amount, currency: 'INR' }; } },
-        payments: { fetch: async id => ({ id, order_id: 'order_rzp_test_1', status: 'captured', amount: 12900, currency: 'INR' }) }
+        payments: { fetch: async id => ({ id, order_id: 'order_rzp_test_1', status: fetchedPaymentStatus, amount: 12900, currency: 'INR' }) }
       };
       _t.setRazorpayOverride(fakeRazorpay);
       global.fetch = async () => ({ ok: true, json: async () => [{ Status: 'Success', PostOffice: [{ State: 'Tamil Nadu', District: 'Coimbatore', Name: 'Coimbatore' }] }] });
@@ -714,6 +714,13 @@ async function rejectsWith(items, pattern) {
           /could not be verified/i
         );
         const signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(created.id + '|pay_test_1').digest('hex');
+        await assert.rejects(
+          () => verifyPayment({ razorpay_order_id: created.id, razorpay_payment_id: 'pay_test_1', razorpay_signature: signature, orderToken: created.orderToken }, event, user),
+          /Payment is not captured yet/i
+        );
+        assert.equal(mockedSheets.Orders.length, 1, 'authorized but uncaptured payment must not create a paid order');
+        assert.equal(mockedSheets.Products[1][9], 5, 'uncaptured payment must not decrement stock');
+        fetchedPaymentStatus = 'captured';
         const verified = await verifyPayment({ razorpay_order_id: created.id, razorpay_payment_id: 'pay_test_1', razorpay_signature: signature, orderToken: created.orderToken }, event, user);
         assert.equal(verified.ok, true);
         assert.equal(verified.orderId, created.orderId);
