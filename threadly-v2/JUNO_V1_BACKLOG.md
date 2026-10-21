@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **20 confirmed complete** (code/test/CI evidence listed below)
-- **60 open** (implementation, verification, external setup, or release acceptance still required)
+- **22 confirmed complete** (code/test/CI evidence listed below)
+- **58 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -54,8 +54,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 
 ## P1 — customer accounts, seller workflows, orders and trust (T31–T55)
 
-- [ ] **T31** Test customer sign-up validation, duplicate accounts and password handling. (0.5 day)
-- [ ] **T32** Test customer login, invalid credentials, rate limits and session protection. (0.5 day)
+- [x] **T31** Regression tests verify weak passwords are rejected, valid signup stores a password hash, and duplicate email registration is rejected. CI passed for commit `15eff8ec`. (0.5 day)
+- [x] **T32** Regression tests cover invalid credentials and successful login/token issuance; code review confirms per-IP/email login rate limiting and login metadata updates. CI passed for commit `15eff8ec`. Live session-expiry smoke testing remains in T34. (0.5 day)
 - [ ] **T33** Test password reset link expiry, one-time use and email delivery. (0.5–1 day)
 - [ ] **T34** Test logout, token expiry and access after account/session changes. (0.5 day)
 - [ ] **T35** Verify customer profile data is read/written only for the authenticated customer. (0.5 day)
