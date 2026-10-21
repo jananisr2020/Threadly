@@ -193,3 +193,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 seller mobile layout verification: Playwright tests verify both `sell-on-juno.html` and `seller-studio.html` render at 390px width without horizontal overflow. Evidence: [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39602186403). Backlog commit `e259f136` marks T63 complete; progress is 46 confirmed complete and 34 open.
+
+
+2026-10-21 accessibility checks: The Playwright suite now runs axe WCAG 2.1 A/AA scans on the storefront, seller application and Seller Studio and fails on critical/serious violations. Fixed discount text contrast, visible-text/accessibility-name mismatch for wishlist/cart buttons (including live counts), and Seller Studio form labels. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39604355076). Backlog commit `0272e78f` marks T67 complete; progress is 47 confirmed complete and 33 open.
