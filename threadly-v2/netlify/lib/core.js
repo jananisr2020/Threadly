@@ -98,6 +98,7 @@ const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).re
 const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await publicProductRows()) } });
 const productObjs = rows => { const k = (rows[0] || []).map(nk); return rows.slice(1).map((r, i) => { const o = { row: i + 2 }; k.forEach((n, j) => o[n] = r[j] == null ? '' : r[j]); return o }) };
 const num = v => +String(v || '').replace(/[^\d.]/g, '') || 0;
+const marketplaceSellerSalesEnabled = () => String(process.env.MARKETPLACE_SELLER_SALES_ENABLED || '').toLowerCase() === 'true';
 async function publicProductRows(force = false) {
   const rows = await productRows(force);
   if (!rows || rows.length < 2) return rows || [];
@@ -105,6 +106,7 @@ async function publicProductRows(force = false) {
   const showI = heads.indexOf('show on site'), sellerI = heads.indexOf('seller id'), approvalI = heads.indexOf('approval status');
   const visible = rows.slice(1).filter(row => {
     if (idI >= 0 && !String(row[idI] || '').trim()) return false;
+    if (sellerI >= 0 && String(row[sellerI] || '').trim() && !marketplaceSellerSalesEnabled()) return false;
     if (priceI >= 0 && !(num(row[priceI]) > 0 && num(row[priceI]) <= 500)) return false;
     if (showI >= 0 && String(row[showI] || '').trim().toLowerCase() === 'no') return false;
     if (approvalI >= 0 && String(row[approvalI] || '').trim() && String(row[approvalI]).trim().toLowerCase() !== 'approved') return false;
@@ -117,7 +119,7 @@ async function publicProductRows(force = false) {
   });
   return [rows[0], ...visible];
 }
-async function catalogue(force = false) { const m = {}; productObjs(await productRows(force)).forEach(p => { if (p['product id'] && num(p['selling price']) > 0 && num(p['selling price']) <= 500 && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
+async function catalogue(force = false) { const m = {}; productObjs(await productRows(force)).forEach(p => { if (p['product id'] && num(p['selling price']) > 0 && num(p['selling price']) <= 500 && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved') && (!String(p['seller id'] || '').trim() || marketplaceSellerSalesEnabled())) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
 async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
   // Checkout always reads fresh product rows so stale cached stock cannot approve a known-out-of-stock cart.
@@ -673,7 +675,7 @@ const signals = async () => {
   }
   return { __raw: { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }, body: JSON.stringify(sg.v) } };
 };
-const visibleIds = async () => productObjs(await productRows()).filter(p => p['product id'] && num(p['selling price']) > 0 && num(p['selling price']) <= 500 && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')).map(p => p['product id']);
+const visibleIds = async () => productObjs(await productRows()).filter(p => p['product id'] && num(p['selling price']) > 0 && num(p['selling price']) <= 500 && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved') && (!String(p['seller id'] || '').trim() || marketplaceSellerSalesEnabled())).map(p => p['product id']);
 const myOrders = async (b, e, u) => (await sheets.read('Orders')).slice(1).filter(r => String(r[3] || '').toLowerCase() === u.email).reverse().map(r => ({ id: r[0], date: String(r[1] || '').split(',')[0], n: +r[8] || 0, method: r[13] === 'COD' ? 'Cash on delivery' : r[13], total: num(r[12]), eta: r[16], status: r[17] || 'New', tracking: r[18] || '' }));
 /* ---------- admin ---------- */
 const sha = t => crypto.createHash('sha256').update(String(t)).digest();
@@ -775,6 +777,7 @@ const admin = async (b, e) => {
     if (i < 0) throw new E('Product not found.', 404);
     const row = rows[i].slice(); while (row.length < 15) row.push('');
     if (!row[13]) throw new E('This is not a seller-submitted product.');
+    if (status === 'Approved' && !marketplaceSellerSalesEnabled()) throw new E('Seller sales are disabled until marketplace payment settlement and inventory safeguards are configured. Set MARKETPLACE_SELLER_SALES_ENABLED=true only after launch approval.');
     row[14] = status; row[12] = status === 'Approved' ? 'Yes' : 'No';
     await sheets.update('Products', i + 1, row); invalidate(); return { ok: true };
   }
