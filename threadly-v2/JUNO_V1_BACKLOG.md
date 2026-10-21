@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **25 confirmed complete** (code/test/CI evidence listed below)
-- **55 open** (implementation, verification, external setup, or release acceptance still required)
+- **26 confirmed complete** (code/test/CI evidence listed below)
+- **54 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -39,7 +39,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T16** Test product detail route, variant selection, image failure and stock display. (0.5–1 day)
 - [ ] **T17** Test cart persistence across refresh/reopen and correct removal. (0.5 day)
 - [ ] **T18** Test quantity bounds, duplicate cart lines, stock checks and correct subtotal. (0.5 day)
-- [ ] **T19** Verify server recomputes price, coupon, shipping and total; ignores manipulated client totals. (1 day)
+- [x] **T19** Server order creation derives subtotal, discount, shipping and total from server-side product rows and coupon rules; client-supplied totals are not read. Regression tests verify source prices, discount, shipping and total; coupon boundary/cap tests passed in CI for commits `3f7f861c` and `8574dd9d`. (1 day)
 - [ ] **T20** Verify checkout only accepts valid Tamil Nadu delivery pincodes and server repeats validation. (0.5 day)
 - [ ] **T21** Test required address/contact fields and safe error handling at checkout. (0.5 day)
 - [ ] **T22** Complete Razorpay test-mode order creation and client checkout integration. (1 day)
