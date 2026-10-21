@@ -276,8 +276,27 @@ const sellerProducts = async (b, e) => {
   }
   const sidCol = headers.indexOf('seller id'), statusCol = headers.indexOf('approval status');
   if (b.action === 'load') {
-    const list = productObjs(rows).filter(p => String(p['seller id']) === u.sellerId).map(p => ({ id: p['product id'], name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 0 : num(p.stock), status: p['approval status'] || 'Pending', visibility: String(p['show on site']).toLowerCase() === 'no' ? 'Hidden' : 'Live' }));
+    const list = productObjs(rows).filter(p => String(p['seller id']) === u.sellerId).map(p => ({ id: p['product id'], name: p['product name'], category: p.category, price: num(p['selling price']), mrp: num(p.mrp), stock: p.stock === '' ? 0 : num(p.stock), details: p.details || '', sizes: p.sizes || '', image: p.image || '', status: p['approval status'] || 'Pending', visibility: String(p['show on site']).toLowerCase() === 'no' ? 'Hidden' : 'Live' }));
     return { ok: true, seller: sellerPublic(sr.v), products: list };
+  }
+  if (b.action === 'update') {
+    const p = b.product || {}, id = clean(p.id), name = clean(p.name), cat = clean(p.cat), priceValue = num(p.price), mrp = num(p.mrp) || priceValue, stock = Number(p.stock);
+    const categories = ['Hair accessories', 'Jewellery', 'Bags and purses', 'Scarves and fashion accessories', 'Belts and wallets', 'Mixed accessories'];
+    if (!id) throw new E('Product ID is required to edit a product.');
+    if (name.length < 2 || !categories.includes(cat) || !(priceValue > 0 && priceValue <= 500) || !(stock >= 0 && Number.isInteger(stock))) throw new E('Check product name, category, price and stock.');
+    if (mrp < priceValue || mrp > 100000) throw new E('MRP must be at least the selling price.');
+    const image = String(p.image || '').trim(); try { const im = new URL(image); if (!['http:', 'https:'].includes(im.protocol)) throw new Error(); } catch (x) { throw new E('Enter a valid https:// or http:// product image URL.'); }
+    if (clean(p.details).length < 3) throw new E('Add a short product description.');
+    const idCol = headers.indexOf('product id'), nameCol = headers.indexOf('product name'), catCol = headers.indexOf('category'), mrpCol = headers.indexOf('mrp'), priceCol = headers.indexOf('selling price'), detailsCol = headers.indexOf('details'), sizesCol = headers.indexOf('sizes'), imageCol = headers.indexOf('image'), stockCol = headers.indexOf('stock'), showCol = headers.indexOf('show on site');
+    const requiredCols = [idCol, nameCol, catCol, mrpCol, priceCol, detailsCol, sizesCol, imageCol, stockCol, showCol, sidCol, statusCol];
+    if (requiredCols.some(col => col < 0)) throw new E('Products sheet is missing columns required for safe seller product editing.', 503);
+    const i = rows.findIndex((r, k) => k > 0 && String(r[idCol]) === id && String(r[sidCol]) === u.sellerId);
+    if (i < 0) throw new E('Product not found in your seller account.', 404);
+    const row = rows[i].slice();
+    row[nameCol] = name; row[catCol] = cat; row[mrpCol] = mrp; row[priceCol] = priceValue; row[detailsCol] = clean(p.details); row[sizesCol] = clean(p.sizes); row[imageCol] = image.slice(0, 500); row[stockCol] = stock;
+    row[showCol] = 'No'; row[statusCol] = 'Pending';
+    await sheets.update('Products', i + 1, row); invalidate();
+    return { ok: true, id, status: 'Pending', visibility: 'Hidden' };
   }
   if (b.action === 'save') {
     const p = b.product || {}, name = clean(p.name), cat = clean(p.cat), priceValue = num(p.price), mrp = num(p.mrp) || priceValue, stock = Number(p.stock);
