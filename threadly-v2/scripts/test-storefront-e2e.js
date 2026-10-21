@@ -188,8 +188,14 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile checkout/login step should not overflow');
     await page.goto(`http://127.0.0.1:${address.port}/sell-on-juno.html`, { waitUntil: 'domcontentloaded' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller application page should fit mobile viewport');
+    const applicationAxe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    const applicationBlockers = applicationAxe.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+    if (applicationBlockers.length) throw new Error('Seller application accessibility blockers: ' + JSON.stringify(applicationBlockers.map(v => ({ id: v.id, help: v.help, nodes: v.nodes.slice(0, 3).map(n => n.target) }))));
     await page.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller studio should fit mobile viewport');
+    const studioAxe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    const studioBlockers = studioAxe.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+    if (studioBlockers.length) throw new Error('Seller Studio accessibility blockers: ' + JSON.stringify(studioBlockers.map(v => ({ id: v.id, help: v.help, nodes: v.nodes.slice(0, 3).map(n => n.target) }))));
 
     // If the live catalogue fails, the bundled preview is explicitly labelled and checkout stays disabled.
     liveCatalogueAvailable = false;
