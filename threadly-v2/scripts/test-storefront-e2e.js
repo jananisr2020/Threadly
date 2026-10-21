@@ -41,6 +41,14 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ ok: true, bestsellers: [], trending: [], popular: [], recent: [] }));
       return;
     }
+    if (url.pathname === '/api/seller-products') {
+      res.end(JSON.stringify({ ok: true, seller: { id: 'JSR-E2E', storeName: 'E2E Test Store', email: 'seller@example.com', city: 'Coimbatore', category: 'Hair accessories' }, products: [] }));
+      return;
+    }
+    if (url.pathname === '/api/seller-orders') {
+      res.end(JSON.stringify({ ok: true, orders: [] }));
+      return;
+    }
     res.end(JSON.stringify({ ok: true, reviews: [], orders: [], products: [], requests: [] }));
     return;
   }
@@ -217,6 +225,15 @@ const server = http.createServer((req, res) => {
     const studioAxe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
     const studioBlockers = studioAxe.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
     if (studioBlockers.length) throw new Error('Seller Studio accessibility blockers: ' + JSON.stringify(studioBlockers.map(v => ({ id: v.id, help: v.help, nodes: v.nodes.slice(0, 3).map(n => n.target) }))));
+    const sellerSessionPage = await context.newPage();
+    sellerSessionPage.on('pageerror', error => pageErrors.push(error.message));
+    await sellerSessionPage.addInitScript(() => sessionStorage.setItem('junoSellerToken', 'e2e-seller-session'));
+    await sellerSessionPage.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
+    await sellerSessionPage.waitForFunction(() => !document.querySelector('#studio').classList.contains('hidden'));
+    await sellerSessionPage.locator('#logout').click();
+    await sellerSessionPage.waitForFunction(() => !sessionStorage.getItem('junoSellerToken') && !document.querySelector('#auth').classList.contains('hidden'));
+    assert.equal(await sellerSessionPage.evaluate(() => sessionStorage.getItem('junoSellerToken')), null, 'seller logout must clear the session token');
+    await sellerSessionPage.close();
 
     // If the live catalogue fails, the bundled preview is explicitly labelled and checkout stays disabled.
     liveCatalogueAvailable = false;
