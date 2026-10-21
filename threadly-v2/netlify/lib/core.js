@@ -742,7 +742,9 @@ const admin = async (b, e) => {
   if (b.action === 'saveProduct') {
     const p = b.product || {}, rows = await productRows(true); let id = clean(p.id);
     const name = clean(p.name), sp = num(p.price), mrp = num(p.mrp) || sp;
-    if (!name || !sp) throw new E('Name and selling price are required.');
+    if (!name || !(sp > 0)) throw new E('Name and selling price are required.');
+    if (sp > 500) throw new E('Juno selling prices must be ₹500 or less.');
+    if (mrp < sp || mrp > 100000) throw new E('MRP must be at least the selling price and no more than ₹100000.');
     if (!id) { const mx = rows.slice(1).reduce((m, r) => Math.max(m, +String(r[0] || '').replace(/\D/g, '') || 0), 0); id = 'TL' + String(mx + 1).padStart(3, '0') }
     const i = rows.findIndex((r, k) => k > 0 && r[0] === id);
     const row = [id, name, clean(p.cat) || 'More', clean(p.g) || 'Unisex', mrp, sp, clean(p.details), clean(p.sizes), String(p.image || '').trim().slice(0, 500), p.stock === '' || p.stock == null ? '' : num(p.stock), /^y/i.test(p.sale) ? 'Yes' : 'No', num(p.rating) || 4.2, /^n/i.test(p.show) ? 'No' : 'Yes'];
