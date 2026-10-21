@@ -309,6 +309,39 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin can suspend a seller and the suspended seller loses API access', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-suspension-secret';
+      mockedSheets = {
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', '']
+        ]
+      };
+      const adminToken = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+      const sellerToken = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'one@example.com' }, process.env.JWT_SECRET);
+      try {
+        const result = await admin({ action: 'setSellerStatus', id: 'JSRSELLER1', status: 'Suspended' }, { headers: { authorization: 'Bearer ' + adminToken } });
+        assert.equal(result.status, 'Suspended');
+        const saved = updatedRows.slice(previousUpdates).find(x => x.tab === 'Sellers');
+        assert.ok(saved, 'expected seller account status update');
+        assert.equal(saved.row[7], 'Suspended');
+        await assert.rejects(
+          () => sellerProducts({ action: 'profile' }, { headers: { authorization: 'Bearer ' + sellerToken } }),
+          /Seller account is inactive/i
+        );
+        await assert.rejects(
+          () => sellerOrders({ action: 'load' }, { headers: { authorization: 'Bearer ' + sellerToken } }),
+          /Seller account is inactive/i
+        );
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin data and mutation actions require an admin session', async () => {
       const previousSecret = process.env.JWT_SECRET;
       process.env.JWT_SECRET = 'offline-admin-authorization-secret';
