@@ -1,64 +1,72 @@
 # Juno multi-seller marketplace roadmap
 
-This plan upgrades the existing Juno storefront in `threadly-v2/`; it does not create a second repository or replace the existing storefront.
+This roadmap upgrades the existing Juno storefront in `threadly-v2/`. It does not create a second repository or replace the storefront.
 
 ## Launch decisions
 
-- Marketplace niche: accessories only (hair accessories, jewellery, bags/purses, scarves/fashion accessories, belts/wallets and mixed accessories).
-- Seller onboarding fee: free during the initial launch.
-- Checkout: prepaid online payments only; cash on delivery remains disabled.
-- Initial catalogue: current Juno catalogue is the first seller's inventory.
-- Seller admission: application review and product moderation before public publishing.
+- Marketplace niche: accessories sellers at launch (hair accessories, jewellery, bags/purses, scarves/fashion accessories, belts/wallets and mixed accessories).
+- Seller onboarding fee: free during the initial pilot.
+- Checkout: prepaid online payments only; COD is disabled in the storefront, admin UI and server APIs.
+- Selling prices: ₹1–₹500; source-sheet prices are not silently rewritten. Products outside the cap are not publicly listed or purchasable.
+- Seller admission: application review, account activation and product moderation before public publishing.
+- Seller payouts: **disabled** until provider approval, seller KYC, commission/shipping/refund policy and reconciliation are complete.
 
-## Phase 1 implemented on this branch: seller application intake
+## Phase 1 — Seller application intake (implemented)
 
 - Public application page: `public/sell-on-juno.html`.
 - API endpoint: `POST /api/seller-apply`.
-- Applications are written to the existing Google Sheets `Requests` tab using the existing 9-column format. The request type is `Seller application`; application details are stored as JSON in the Details cell.
+- Applications are written to the existing Google Sheets `Requests` tab using the existing 9-column format. Request type is `Seller application`; application details are stored as JSON in the Details cell.
 - Rate limiting, field validation, duplicate active-application checks and explicit consent are included.
-- Admin > Seller applications lists applications and lets an admin save a review status and internal note.
-- **An approved application does not yet provision seller login, a seller dashboard, product ownership or seller payouts.** Those are subsequent phases. Do not describe this branch as a complete marketplace.
+- Admin > Seller applications lists applications and saves review status/internal notes.
+- Approving an application sends an activation link when Brevo and `MAIL_FROM` are configured; the seller must activate an account before logging in.
 
-The existing spreadsheet must have a `Requests` tab with these headers: `Request ID, Date, Order ID, Email, Type, Reason, Details, Status, Admin Notes`. The project README describes this tab.
+The `Requests` tab headers are: `Request ID, Date, Order ID, Email, Type, Reason, Details, Status, Admin Notes`.
 
-## Next implementation phases
+## Phase 2 — Seller accounts and permissions (implemented; CI-covered subset)
 
-### Phase 2 — Seller accounts and permissions
-- Add a seller role separate from customer and admin roles.
-- Create a seller record only after manual approval and secure identity/business verification.
-- Implement seller login/session controls and ownership checks on every seller endpoint.
-- Never trust a client-supplied seller ID; derive seller identity from the verified session.
+- Seller role is separate from customer and admin roles.
+- Seller records are provisioned only after an approved application and activation link.
+- Seller login uses a signed session; seller APIs validate the seller ID and email against an active seller record.
+- Seller product and order reads/updates are scoped to the authenticated seller; regression tests cover cross-seller product/order access.
+- Admin can set seller accounts to Active or Suspended. Suspended accounts are denied seller product and order API access.
+- Remaining before launch: live activation-email test, production sheet permissions, seller-account suspension smoke test after deploy, and any additional legal/business verification policy Juno chooses to require.
 
-### Phase 3 — Product ownership and moderation
-- Add `seller_id`, `approval_status`, `created_at`, `updated_at` and stock fields to products.
-- Assign existing catalogue products to the Juno-owned seller.
-- Allow sellers to create/update only their own products.
-- Keep seller-submitted products pending until approved by an admin.
+## Phase 3 — Product ownership and moderation (implemented; CI-covered subset)
 
-### Phase 4 — Multi-seller orders and inventory
-- **Foundation added on this branch:** checkout order snapshots now carry product/seller IDs and item prices; paid orders can create seller-specific fulfilment records in `SellerOrders`; Seller Studio lets each seller see and update only their own fulfilment orders; Admin > Seller orders provides oversight.
-- Create the `SellerOrders` sheet using the exact header list in `README.md` before preview testing.
-- Still needed: safe inventory reservation and rollback for failed/expired payments; robust retry/reconciliation for partial Sheets writes; shipping, cancellations, returns and refund allocation for mixed-seller carts.
-- **Ledger foundation added on this branch:** per-seller order ledger, configurable commission basis points, proportional discount allocation estimate, admin reconciliation view, and refund-review flags.
-- Still required before money can move: confirm Juno's commission policy; implement Razorpay Route/linked seller account onboarding, KYC/bank details, transfer creation and idempotency, payout reconciliation, refund/dispute allocation and audit logs. This phase does not send transfers or pay sellers.
+- Seller products include seller ID and approval status; new seller products are hidden and Pending until approved.
+- Seller product creation and editing enforce allowed accessories categories, selling price cap, MRP, stock, description and image URL validation.
+- Seller edit requests must match both product ID and authenticated seller ID; edits preserve ownership and return the listing to hidden/Pending moderation.
+- Admin approval publishes seller listings; rejection/pending status keeps them hidden. Juno-owned products cannot be moderated through the seller-product moderation action.
+- Remaining: inspect the real production catalogue/sheet headers and test public visibility with actual data.
 
-### Phase 5 — Marketplace payments
-- Keep Razorpay's current standard checkout for the single-seller flow until marketplace payment-provider approval is complete.
-- Before enabling external seller sales, onboard and verify sellers through a marketplace-supported payment product such as Razorpay Route (subject to provider approval).
-- Maintain a seller ledger for captured payments, shipping, fees, refunds, commission and amounts payable.
-- Verify signed webhooks, make payment processing idempotent, and reconcile gateway records before settlement.
-- Do not store card credentials or expose gateway secrets in the browser.
-- Launch with a 0% Juno commission if desired, but still record seller payable and payment-provider fees accurately.
+## Phase 4 — Multi-seller orders and inventory (foundation implemented; launch blockers remain)
 
-### Phase 6 — Growth and monetisation
-- Give each seller a shareable store URL and track visits and orders by source.
-- Recruit a small pilot cohort of accessory sellers before opening applications broadly.
-- Track conversion, successful fulfilment, cancellations, refunds, repeat purchase and seller retention.
+- Checkout snapshots carry product IDs, seller IDs, quantities and unit prices.
+- Paid mixed-seller orders create seller-specific fulfilment records in `SellerOrders`; seller APIs restrict reads/updates to the owning seller.
+- Admin > Seller orders provides oversight; fulfilment status transitions and tracking updates have regression coverage.
+- Per-seller ledger foundation records gross subtotal, proportional discount estimate, configurable commission basis points, reconciliation status and refund-review flags. Automated transfers are not performed.
+- **Still required before production marketplace orders:** concurrency-safe inventory reservation and rollback for failed/expired payments; reliable reconciliation for partial Google Sheets writes; mixed-seller shipping/discount allocation policy; cancellation, return and refund allocation; and tested handling for late/duplicate payment events.
+- The current Sheets backend does not provide transactional row locking. Do not describe inventory reservation or seller balances as concurrency-safe until this is solved and tested.
+
+## Phase 5 — Marketplace payments (not ready for external seller payouts)
+
+- Keep the standard Razorpay checkout until marketplace payment-provider approval is complete.
+- Before enabling seller payouts, onboard sellers through a marketplace-supported payment product such as Razorpay Route, subject to provider approval.
+- Confirm Juno's commission and shipping policy; verify seller KYC/bank setup, transfer creation, idempotency, payout reconciliation, refunds/disputes and audit logs.
+- Maintain seller ledger entries for captured payments, shipping, fees, refunds, commission and amounts payable.
+- Verify signed webhooks and reconcile gateway records before settlement.
+- Never store card credentials or expose gateway secrets in the browser.
+
+## Phase 6 — Growth and monetisation (later)
+
+- Add shareable seller-store URLs and source attribution.
+- Recruit a small accessory-seller pilot before opening applications broadly.
+- Track conversion, fulfilment, cancellations, refunds, repeat purchase and seller retention.
 - Add commission or promoted listings only after communicating terms and validating buyer demand.
 
 ## Target data model
 
-Recommended relational entities when moving critical transactions off Sheets:
+Recommended relational entities if/when critical transactions move off Sheets:
 
 - `users`, `sellers`, `seller_documents`
 - `products`, `product_variants`, `inventory_movements`
@@ -66,10 +74,13 @@ Recommended relational entities when moving critical transactions off Sheets:
 - `payments`, `refunds`, `seller_ledger`, `settlements`
 - `addresses`, `reviews`, `audit_logs`
 
-The current production code uses Google Sheets for products, users and orders. Do not introduce a database migration without choosing and provisioning the transactional database, writing a tested migration/import path, and validating rollback. Google Sheets can remain a reporting/export surface, but concurrent inventory, checkout and seller balances should ultimately use transactional storage.
+The current code uses Google Sheets for products, users, orders and marketplace records. Do not migrate without choosing/provisioning a transactional database, writing a tested import path and validating rollback. Sheets can remain a reporting/export surface, but concurrent inventory and seller balances ultimately need transactional storage.
 
 ## Verification checklist before production
-- Test seller application validation, duplicate submissions, rate limits and failed Sheets writes.
-- Verify application rows appear in Admin > Seller applications and status/note changes persist.
-- Test the storefront and existing customer login/order/payment flows for regressions.
-- Do not enable public seller product uploads or seller payouts until seller authorization, order splitting, refund logic and marketplace payment onboarding are implemented and tested.
+
+- [ ] Verify live `SHEET_ID`, service-account permissions, and required tab headers without exposing credentials.
+- [ ] Test seller application, duplicate submissions, activation email, login, suspension and failed Sheets writes.
+- [ ] Test the storefront/customer login/order/payment flow against the production Sheet and Razorpay test mode.
+- [ ] Complete inventory reservation/rollback and mixed-seller refund/shipping allocation tests.
+- [ ] Do not enable public seller uploads or seller payouts beyond the tested pilot scope until authorization, order splitting, refund handling and provider setup are verified.
+- [ ] Run GitHub Actions, deploy the exact main commit on Netlify, then run production smoke tests before accepting real orders.
