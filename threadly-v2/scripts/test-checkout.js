@@ -12,7 +12,8 @@ const rows = [
   ['JN0001', 'Basic scrunchie', 'Hair accessories', 100, 5, 'Yes', '', 'Approved'],
   ['JN0002', 'Seller hair clip', 'Hair accessories', 100, 50, 'Yes', 'JSRSELLER1', 'Approved'],
   ['JN0003', 'Hidden clip', 'Hair accessories', 100, 5, 'No', '', 'Approved'],
-  ['JN0004', 'Pending clip', 'Hair accessories', 100, 5, 'Yes', 'JSRSELLER2', 'Pending']
+  ['JN0004', 'Pending clip', 'Hair accessories', 100, 5, 'Yes', 'JSRSELLER2', 'Pending'],
+  ['JN0005', 'Over-budget clip', 'Hair accessories', 501, 5, 'Yes', '', 'Approved']
 ];
 const originalRead = sheets.read;
 const originalAppend = sheets.append;
@@ -65,7 +66,7 @@ async function rejectsWith(items, pattern) {
       const csv = response.__raw.body;
       assert.match(csv, /JN0001/);
       assert.match(csv, /JN0002/);
-      assert.doesNotMatch(csv, /JN0003|JN0004|JSRSELLER1|JSRSELLER2|Pending/);
+      assert.doesNotMatch(csv, /JN0003|JN0004|JN0005|JSRSELLER1|JSRSELLER2|Pending/);
       const ids = await visibleIds();
       assert.deepEqual(ids, ['JN0001', 'JN0002']);
     });
@@ -364,6 +365,7 @@ async function rejectsWith(items, pattern) {
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
+    await check('checkout rejects products priced above ₹500 instead of silently repricing them', () => rejectsWith([{ id: 'JN0005', n: 1 }], /no longer available/i));
     await check('rejects zero quantity', () => rejectsWith([{ id: 'JN0001', n: 0 }], /no longer available/i));
     await check('rejects more than 20 units on one cart line', () => rejectsWith([{ id: 'JN0001', n: 21 }], /no longer available/i));
     await check('rejects duplicate lines whose combined quantity exceeds 20', () => rejectsWith([{ id: 'JN0001', n: 11 }, { id: 'JN0001', n: 10 }], /up to 20 units/i));
@@ -372,17 +374,17 @@ async function rejectsWith(items, pattern) {
     await check('does not allow unapproved seller products at checkout', () => rejectsWith([{ id: 'JN0004', n: 1 }], /no longer available/i));
     await check('prices a valid order, shipping and coupon on the server', async () => {
       const result = await _t.price([{ id: 'JN0001', n: 2, s: 'pink' }], 'JUNO10');
-      assert.equal(result.sub, 100);
-      assert.equal(result.disc, 10);
+      assert.equal(result.sub, 200);
+      assert.equal(result.disc, 20);
       assert.equal(result.ship, 39);
-      assert.equal(result.total, 129);
+      assert.equal(result.total, 219);
+      assert.equal(result.itemDetails[0].unitPrice, 100);
       assert.equal(result.count, 2);
       assert.deepEqual(result.qty, [['JN0001', 2]]);
     });
     await check('preserves seller ownership in the priced order details', async () => {
       const result = await _t.price([{ id: 'JN0002', n: 1 }], '');
       assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
-      // Seller-owned catalogue rows retain the seller's listed price; Juno budget pricing applies only to Juno-owned rows.
       assert.equal(result.itemDetails[0].unitPrice, 100);
     });
     await check('rejects webhook events when the webhook secret is missing', async () => {
