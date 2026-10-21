@@ -65,14 +65,23 @@ async function rejectsWith(items, pattern) {
     await check('security diagnostics require an admin session', async () => {
       await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
     });
-    await check('public catalogue and sitemap exclude hidden and pending products', async () => {
-      const response = await products();
-      const csv = response.__raw.body;
-      assert.match(csv, /JN0001/);
-      assert.match(csv, /JN0002/);
-      assert.doesNotMatch(csv, /JN0003|JN0004|JN0005|JSRSELLER1|JSRSELLER2|Pending/);
-      const ids = await visibleIds();
-      assert.deepEqual(ids, ['JN0001', 'JN0002']);
+    await check('public catalogue hides external seller products until the sales feature flag is enabled', async () => {
+      const previousFlag = process.env.MARKETPLACE_SELLER_SALES_ENABLED;
+      try {
+        delete process.env.MARKETPLACE_SELLER_SALES_ENABLED;
+        const disabled = await products(), disabledCsv = disabled.__raw.body;
+        assert.match(disabledCsv, /JN0001/);
+        assert.doesNotMatch(disabledCsv, /JN0002|JN0003|JN0004|JN0005|JSRSELLER1|JSRSELLER2|Pending/);
+        assert.deepEqual(await visibleIds(), ['JN0001']);
+        process.env.MARKETPLACE_SELLER_SALES_ENABLED = 'true';
+        const enabled = await products(), enabledCsv = enabled.__raw.body;
+        assert.match(enabledCsv, /JN0002/);
+        assert.doesNotMatch(enabledCsv, /JN0003|JN0004|JN0005|JSRSELLER1|JSRSELLER2|Pending/);
+        assert.deepEqual(await visibleIds(), ['JN0001', 'JN0002']);
+      } finally {
+        if (previousFlag === undefined) delete process.env.MARKETPLACE_SELLER_SALES_ENABLED;
+        else process.env.MARKETPLACE_SELLER_SALES_ENABLED = previousFlag;
+      }
     });
     await check('website activity endpoint rejects events without explicit consent', async () => {
       const previous = appendedRows.length;
@@ -854,10 +863,17 @@ async function rejectsWith(items, pattern) {
       assert.equal(result.count, 2);
       assert.deepEqual(result.qty, [['JN0001', 2]]);
     });
-    await check('preserves seller ownership in the priced order details', async () => {
-      const result = await _t.price([{ id: 'JN0002', n: 1 }], '');
-      assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
-      assert.equal(result.itemDetails[0].unitPrice, 100);
+    await check('preserves seller ownership in the priced order details when seller sales are enabled', async () => {
+      const previousFlag = process.env.MARKETPLACE_SELLER_SALES_ENABLED;
+      process.env.MARKETPLACE_SELLER_SALES_ENABLED = 'true';
+      try {
+        const result = await _t.price([{ id: 'JN0002', n: 1 }], '');
+        assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
+        assert.equal(result.itemDetails[0].unitPrice, 100);
+      } finally {
+        if (previousFlag === undefined) delete process.env.MARKETPLACE_SELLER_SALES_ENABLED;
+        else process.env.MARKETPLACE_SELLER_SALES_ENABLED = previousFlag;
+      }
     });
     await check('signed payment-captured webhook records paid orders and is replay-safe', async () => {
       const previousEnv = {
