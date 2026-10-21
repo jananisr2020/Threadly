@@ -65,6 +65,16 @@ jobs:
             throw new Error('Manifest must include the existing Juno icon as maskable');
           }
           if (!fs.existsSync('threadly-v2/public/favicon.svg')) throw new Error('Juno favicon is missing');
+          const publicDir = 'threadly-v2/public';
+          const htmlPages = fs.readdirSync(publicDir).filter(name => name.endsWith('.html'));
+          for (const name of htmlPages) {
+            const page = fs.readFileSync(path.join(publicDir, name), 'utf8');
+            const title = (page.split('<title>')[1] || '').split('</title>')[0];
+            if (!/juno/i.test(title) || /threadly/i.test(title)) throw new Error('Stale or missing Juno page title: ' + name);
+            if (!page.includes('favicon.svg')) throw new Error('Juno favicon is missing on page: ' + name);
+          }
+          console.log('Juno title and favicon verified on all ' + htmlPages.length + ' public HTML pages');
+
           const catalogue = JSON.parse(fs.readFileSync('threadly-v2/public/catalog.json', 'utf8'));
           if (!Array.isArray(catalogue.products) || catalogue.products.length < 100) {
             throw new Error('Bundled catalogue must contain at least 100 products');
