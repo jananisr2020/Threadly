@@ -35,7 +35,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts, sellerOrders, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts, sellerOrders, sellerApply, sellerActivate, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -100,6 +100,35 @@ async function rejectsWith(items, pattern) {
       } finally {
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('seller application validates consent and writes a clean application record', async () => {
+      const previousEnv = {
+        SHEET_ID: process.env.SHEET_ID,
+        GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY
+      };
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      process.env.SHEET_ID = 'offline-test-sheet';
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'juno-test@example.com';
+      process.env.GOOGLE_PRIVATE_KEY = 'offline-test-key';
+      mockedSheets = { Requests: [['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes']] };
+      const application = { ownerName: 'Test Seller', storeName: 'Cute Clips Test', email: 'seller-apply@example.com', phone: '9876543210', city: 'Coimbatore', category: 'Hair accessories', about: 'Affordable handmade hair accessories for everyday use', social: '', consent: true };
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.10' } };
+      try {
+        await assert.rejects(() => sellerApply({ ...application, consent: false }, event), /application consent/i);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Requests').length, 0);
+        const result = await sellerApply(application, event);
+        assert.equal(result.ok, true);
+        const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Requests');
+        assert.ok(saved, 'expected seller application to be saved');
+        assert.equal(saved.row[3], 'seller-apply@example.com');
+        assert.equal(saved.row[4], 'Seller application');
+        assert.equal(saved.row[7], 'Requested');
+        assert.equal(JSON.parse(saved.row[6]).category, 'Hair accessories');
+      } finally {
+        mockedSheets = previousSheets;
+        for (const [key, value] of Object.entries(previousEnv)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
       }
     });
     await check('seller product API rejects prices above ₹500', async () => {
