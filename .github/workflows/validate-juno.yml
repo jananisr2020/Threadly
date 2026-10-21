@@ -62,6 +62,13 @@ jobs:
             throw new Error('Cash on delivery must remain disabled in the storefront');
           }
           const manifest = JSON.parse(fs.readFileSync('threadly-v2/public/manifest.webmanifest', 'utf8'));
+          const sw = fs.readFileSync('threadly-v2/public/sw.js', 'utf8');
+          if (!sw.includes('caches.delete(key)') || !sw.includes('key !== CACHE_NAME')) {
+            throw new Error('Service worker must delete stale Juno/Threadly shell caches on activation');
+          }
+          if (!sw.includes('url.pathname.startsWith("/api/")') || !sw.includes('cache: "no-store"')) {
+            throw new Error('Service worker must keep APIs network-only and refresh the bundled catalogue');
+          }
           if (manifest.short_name !== 'Juno') throw new Error('PWA brand must be Juno');
           if (!manifest.icons.some(icon => icon.src.startsWith('/favicon.svg') && /maskable/.test(icon.purpose || ''))) {
             throw new Error('Manifest must include the existing Juno icon as maskable');
