@@ -238,6 +238,42 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('seller fulfilment updates enforce valid status transitions and tracking', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-transition-secret';
+      mockedSheets = {
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', '']
+        ],
+        SellerOrders: [
+          ['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID'],
+          ['SO-ONE', 'ORDER-1', '', 'JSRSELLER1', 'Seller One', 'Buyer One', 'buyer@example.com', '9876543210', 'Address one', '641001', '[]', 1, 100, 0, 100, 'Paid', 'New', '', '', 'pay_one']
+        ]
+      };
+      const token = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'one@example.com' }, process.env.JWT_SECRET);
+      const event = { headers: { authorization: 'Bearer ' + token } };
+      try {
+        await assert.rejects(
+          () => sellerOrders({ action: 'update', id: 'SO-ONE', status: 'Delivered' }, event),
+          /status change is not allowed/i
+        );
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'SellerOrders').length, 0);
+        const result = await sellerOrders({ action: 'update', id: 'SO-ONE', status: 'Accepted', tracking: 'TRACK-123' }, event);
+        assert.equal(result.ok, true);
+        const saved = updatedRows.slice(previousUpdates).find(x => x.tab === 'SellerOrders');
+        assert.ok(saved, 'expected seller order update');
+        assert.equal(saved.row[16], 'Accepted');
+        assert.equal(saved.row[17], 'TRACK-123');
+        assert.equal(saved.row[3], 'JSRSELLER1');
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin product editor accepts the ₹500 price ceiling', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousAppends = appendedRows.length;
