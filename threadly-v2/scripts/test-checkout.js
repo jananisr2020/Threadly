@@ -6,6 +6,7 @@
 const assert = require('node:assert/strict');
 const sheets = require('../netlify/lib/sheets');
 const jwt = require('jsonwebtoken');
+const coupons = require('../netlify/lib/coupons');
 const rows = [
   ['Product ID', 'Product Name', 'Category', 'Selling Price', 'Stock', 'Show on site', 'Seller ID', 'Approval Status'],
   ['JN0001', 'Basic scrunchie', 'Hair accessories', 100, 5, 'Yes', '', 'Approved'],
@@ -319,6 +320,14 @@ async function rejectsWith(items, pattern) {
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
       }
+    });
+    await check('coupon rules enforce minimum spend, discount caps and case-insensitive codes', async () => {
+      assert.equal(coupons.discount('juno10', 100), 10);
+      assert.equal(coupons.discount('WELCOME50', 298), 0);
+      assert.equal(coupons.discount('WELCOME50', 299), 50);
+      assert.equal(coupons.discount('JUNO15', 599), 90);
+      assert.equal(coupons.discount('JUNO15', 2000), 150);
+      assert.equal(coupons.discount('NOT-A-COUPON', 1000), 0);
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
