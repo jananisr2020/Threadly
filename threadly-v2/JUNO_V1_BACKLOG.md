@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **22 confirmed complete** (code/test/CI evidence listed below)
-- **58 open** (implementation, verification, external setup, or release acceptance still required)
+- **23 confirmed complete** (code/test/CI evidence listed below)
+- **57 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -56,17 +56,17 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 
 - [x] **T31** Regression tests verify weak passwords are rejected, valid signup stores a password hash, and duplicate email registration is rejected. CI passed for commit `15eff8ec`. (0.5 day)
 - [x] **T32** Regression tests cover invalid credentials and successful login/token issuance; code review confirms per-IP/email login rate limiting and login metadata updates. CI passed for commit `15eff8ec`. Live session-expiry smoke testing remains in T34. (0.5 day)
-- [ ] **T33** Test password reset link expiry, one-time use and email delivery. (0.5–1 day)
+- [ ] **T33** Password reset token expiry, one-time use and password-policy behavior are CI-tested in commit `be0b3ab3`; live reset-email delivery still requires Brevo/MAIL_FROM configuration and a deployed smoke test. (0.5–1 day)
 - [ ] **T34** Test logout, token expiry and access after account/session changes. (0.5 day)
 - [ ] **T35** Verify customer profile data is read/written only for the authenticated customer. (0.5 day)
 - [ ] **T36** Confirm whether addresses are device-local or server-synced; make behavior clear and test it. (0.5–1 day)
 - [ ] **T37** Test order history privacy and status refresh. (0.5 day)
-- [ ] **T38** Test cancellation rules against each order state. (0.5–1 day)
+- [x] **T38** Regression tests cover cancellation of New orders, cancellation requests for Packed orders, rejection after shipment/delivery, and return eligibility only after delivery. Cancellation messaging no longer promises a refund before it is processed. CI passed for commit `9fd1d38b`. (0.5–1 day)
 - [ ] **T39** Test return-request eligibility, time window, admin decision and customer-visible status. (0.5–1 day)
 - [ ] **T40** Test Razorpay refund request, webhook update and retry/error recovery. (1 day)
 - [ ] **T41** Verify stock reconciliation for cancelled/returned orders and prevent overselling. (0.5–1 day)
 - [ ] **T42** Test review submission, one-review rule, verified-purchase flag and moderation. (0.5 day)
-- [ ] **T43** Test support ticket submission, persistence, admin reply and email delivery. (0.5–1 day)
+- [ ] **T43** Ticket validation, persistence and admin reply updates are CI-tested in commit `cba779e4`; customer/support email delivery still needs configured Brevo/MAIL_FROM and a deployed smoke test. (0.5–1 day)
 - [ ] **T44** Verify email sender configuration and customer-facing success/failure messages. (0.5 day)
 - [ ] **T45** Decide which V1 messages use email versus SMS/OTP; implement only configured providers and test delivery. (1–2 days plus provider setup)
 - [x] **T46** Seller application validation/consent and persistence have regression coverage; tests verify missing consent does not write a request and a valid accessories application is stored in the existing Requests tab. CI passed for commit `1822fc2a`. Duplicate/rate-limit live behavior remains part of production smoke tests. (0.5 day)
