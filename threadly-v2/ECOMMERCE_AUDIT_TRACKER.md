@@ -179,3 +179,8 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 privacy/consent review: The privacy policy describes optional website activity events, essential-only versus accept-all consent, data minimization (no raw search terms/passwords/payment details in the activity tracker), retention and deletion rights. Existing regression tests reject activity tracking without explicit consent and verify consented events are recorded. Evidence: [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39601848782). Backlog commit `2c56429f` marks T71 complete; progress is 42 confirmed complete and 38 open.
+
+
+2026-10-21 seller-sales launch gate: Commit `d5d152f3` adds `MARKETPLACE_SELLER_SALES_ENABLED`, default false. Public catalogue, sitemap and checkout exclude external seller products while the flag is off; admin cannot approve seller listings for public sale until the flag is deliberately enabled after payment settlement and inventory safeguards are ready. `.env.example`, marketplace roadmap, Admin and Seller Studio copy now document this. Regression tests passed in [Security checks](https://github.com/jananisr2020/Threadly/actions/runs/39602029682).
+
+2026-10-21 catalogue outage browser test: Commit `2969bc46` adds a Playwright test that simulates a failing live product API, verifies the saved catalogue is visibly labelled as preview-only, and confirms checkout cannot proceed in fallback mode. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39602373062). T10 remains open pending live Google Sheets/API verification.
