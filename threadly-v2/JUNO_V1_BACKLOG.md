@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **31 confirmed complete** (code/test/CI evidence listed below)
-- **49 open** (implementation, verification, external setup, or release acceptance still required)
+- **33 confirmed complete** (code/test/CI evidence listed below)
+- **47 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -62,7 +62,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T37** Test order history privacy and status refresh. (0.5 day)
 - [x] **T38** Regression tests cover cancellation of New orders, cancellation requests for Packed orders, rejection after shipment/delivery, and return eligibility only after delivery. Cancellation messaging no longer promises a refund before it is processed. CI passed for commit `9fd1d38b`. (0.5–1 day)
 - [x] **T39** Regression tests cover return eligibility only after delivery, admin decision visibility in customer requests, and the rule that a return cannot be marked Refunded until the verified Razorpay refund webhook has set the order payment status to Refunded. CI passed for commit `b341c45e`. (0.5–1 day)
-- [ ] **T40** Test Razorpay refund request, webhook update and retry/error recovery. (1 day)
+- [x] **T40** Regression tests cover Razorpay refund initiation, exact refund amount, failed-gateway behavior, duplicate-retry rejection, signed refund webhook status update and seller-ledger reconciliation flags. CI passed for commit `2e3275e9`; live Razorpay test-mode refund smoke test remains under T22/T29. (1 day)
 - [ ] **T41** Verify stock reconciliation for cancelled/returned orders and prevent overselling. (0.5–1 day)
 - [x] **T42** Regression tests cover rating validation, one review per customer/product, verified-purchase flagging from order history, and approved review persistence; admin can hide/show reviews. CI passed for commit `d4ca4e6e`. (0.5 day)
 - [ ] **T43** Ticket validation, persistence and admin reply updates are CI-tested in commit `cba779e4`; customer/support email delivery still needs configured Brevo/MAIL_FROM and a deployed smoke test. (0.5–1 day)
@@ -104,7 +104,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T73** Verify admin authentication, session handling, rate limits and authorization for every admin action. Code review confirms a 12-hour admin token and rate-limited login; regression tests confirm data/mutation actions reject missing admin sessions and seller-role tokens. CI passed for commit `8426f0bf`. (1 day)
 - [x] **T74** Regression tests cover admin product creation, update, hide (soft-delete) and preservation of seller ownership/approval status. Price-limit/MRP validation is also covered. CI passed for commit `223680d6`. Permanent hard deletion is intentionally not provided; hiding preserves order-history references. (0.5–1 day)
 - [x] **T75** Admin now returns seller-account rows to the dashboard and supports Active/Suspended status changes; suspended accounts are denied seller product and order API access. Seller application copy now explains activation, product moderation and disabled payouts. Regression tests for suspension and product approval passed CI for commit `2786a1ed`; seller order oversight is present in Admin > Seller orders. (0.5–1 day)
-- [ ] **T76** Test admin order, return/refund, review and support-ticket workflows end to end. (1 day)
+- [x] **T76** Regression coverage now spans admin order status/tracking updates, return/refund gating, Razorpay refund initiation/error handling, review submission/moderation, and support-ticket persistence/admin replies. CI passed for commits `8c5b0e1a` and `2e3275e9`. Provider email delivery and live gateway smoke tests remain external release checks. (1 day)
 - [ ] **T77** Verify security headers, dependency advisories, secret scanning and safe logs; remediate findings. (1 day)
 - [ ] **T78** Validate seller ledger/commission/refund allocation with mixed-seller test orders; keep automatic payouts disabled until provider onboarding, KYC, commission policy and reconciliation are approved. (1–3 days for ledger tests; provider approval excluded)
 - [ ] **T79** Run final GitHub Actions, production deploy and smoke tests against the exact deployed commit. (1 day plus external access)
