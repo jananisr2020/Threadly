@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const sheets = require('../netlify/lib/sheets');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const coupons = require('../netlify/lib/coupons');
 const rows = [
   ['Product ID', 'Product Name', 'Category', 'Selling Price', 'Stock', 'Show on site', 'Seller ID', 'Approval Status'],
@@ -35,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts, sellerOrders, sellerApply, sellerActivate, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, sellerProducts, sellerOrders, sellerApply, sellerActivate, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -98,6 +99,49 @@ async function rejectsWith(items, pattern) {
         );
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Products').length, 0);
       } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('customer signup enforces password policy and prevents duplicate accounts', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-customer-signup-secret';
+      mockedSheets = { Users: [['Name', 'Email', 'Password Hash', 'Phone', 'Created', 'Last Login', 'Login Count']] };
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.20' } };
+      try {
+        await assert.rejects(() => signup({ name: 'Test Buyer', email: 'buyer@example.com', password: 'weak' }, event), /Password must contain/i);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Users').length, 0);
+        const result = await signup({ name: 'Test Buyer', email: 'buyer@example.com', password: 'Strong!123' }, event);
+        assert.equal(result.user.email, 'buyer@example.com');
+        const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Users');
+        assert.ok(saved, 'expected customer account to be created');
+        assert.notEqual(saved.row[2], 'Strong!123');
+        await assert.rejects(() => signup({ name: 'Test Buyer', email: 'buyer@example.com', password: 'Strong!123' }, event), /already has an account/i);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('customer login rejects invalid credentials and updates login metadata', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      process.env.JWT_SECRET = 'offline-customer-login-secret';
+      const hash = await bcrypt.hash('Strong!123', 10);
+      mockedSheets = { Users: [
+        ['Name', 'Email', 'Password Hash', 'Phone', 'Created', 'Last Login', 'Login Count'],
+        ['Test Buyer', 'buyer-login@example.com', hash, '', '', '', 0]
+      ] };
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.21' } };
+      try {
+        await assert.rejects(() => login({ email: 'buyer-login@example.com', password: 'Wrong!123' }, event), /Wrong email or password/i);
+        const result = await login({ email: 'buyer-login@example.com', password: 'Strong!123' }, event);
+        assert.equal(result.user.email, 'buyer-login@example.com');
+        assert.ok(result.token);
+        assert.equal(mockedSheets.Users[1][6], 1);
+      } finally {
+        mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
       }
