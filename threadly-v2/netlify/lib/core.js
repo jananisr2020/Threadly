@@ -728,7 +728,7 @@ const admin = async (b, e) => {
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
     const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
-    if (b.status != null) row[OIDX.status] = clean(b.status); if (b.tracking != null) row[OIDX.track] = clean(b.tracking); if (b.pay != null) row[OIDX.pay] = clean(b.pay); if (b.notes != null) row[OIDX.notes] = clean(b.notes);
+    if (b.status != null) row[OIDX.status] = clean(b.status); if (b.tracking != null) row[OIDX.track] = clean(b.tracking); if (b.pay != null) throw new E('Payment status is controlled by verified Razorpay events and cannot be edited manually.'); if (b.notes != null) row[OIDX.notes] = clean(b.notes);
     await sheets.update('Orders', i + 1, row); return { ok: true };
   }
   if (b.action === 'setReview') {
@@ -753,7 +753,7 @@ const admin = async (b, e) => {
   }
   if (b.action === 'refund') {
     const o = await sheets.read('Orders'), k = o.findIndex((r, n) => n > 0 && r[0] === b.orderId); if (k < 0) throw new E('Order not found.', 404);
-    const orow = padOrder(o[k]), pid = String(orow[OIDX.payid] || ''); if (!pid.startsWith('pay_')) throw new E('No online payment on this order. Refund cash-on-delivery orders by UPI or bank transfer, then set Payment Status to Refunded.');
+    const orow = padOrder(o[k]), pid = String(orow[OIDX.payid] || ''); if (!pid.startsWith('pay_')) throw new E('No online payment ID is recorded for this order. Verify the order and payment record before starting a refund.');
     if (orow[OIDX.pay] !== 'Paid') throw new E('Only orders marked Paid can be refunded here.');
     const amt = Math.round(+orow[OIDX.total] * 100); if (!(amt > 0)) throw new E('Order total is missing.');
     try { await rz().payments.refund(pid, { amount: amt, notes: { orderId: b.orderId } }) } catch (x) { console.error('refund failed', x && x.error ? JSON.stringify(x.error) : x); throw new E('Razorpay could not start the refund. Check the Razorpay dashboard.', 502) }
