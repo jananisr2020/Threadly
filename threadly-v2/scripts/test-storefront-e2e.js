@@ -86,9 +86,15 @@ const server = http.createServer((req, res) => {
     await category.click();
     await page.waitForTimeout(100);
     assert.ok(await page.locator('#grid .p').count() > 0, 'category selection should retain matching products');
-    await page.locator('#sort').selectOption('new');
+    await page.locator('#mp').selectOption('200');
     await page.waitForTimeout(100);
-    assert.ok(await page.locator('#grid .p').count() > 0, 'sorting should keep products visible');
+    assert.ok(await page.locator('#grid .p').count() > 0, 'category plus max-price filter should retain matching products');
+    await page.locator('#mp').selectOption('99999');
+    for (const sort of ['rel', 'new', 'pop', 'best', 'lo', 'hi', 'rt', 'dc']) {
+      await page.locator('#sort').selectOption(sort);
+      await page.waitForTimeout(50);
+      assert.ok(await page.locator('#grid .p').count() > 0, 'sort option should keep products visible: ' + sort);
+    }
 
     // Wishlist persistence across a reload.
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -100,6 +106,9 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => document.querySelector('#wc').textContent === '1');
     const wishlist = await page.evaluate(() => JSON.parse(localStorage.getItem('tl_wl') || '[]'));
     assert.equal(wishlist.length, 1, 'wishlist should persist in local storage');
+    await page.locator('#grid .p').first().locator('[data-w]').click();
+    await page.waitForFunction(() => document.querySelector('#wc').textContent === '0');
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('tl_wl') || '[]')), [], 'wishlist removal should persist');
 
     // Add to cart (choose a colour/size if the product requires one) and verify persistence.
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -121,6 +130,8 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '2');
     await page.locator('#cart [data-d]').first().click();
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
+    await page.locator('#cart [data-d]').first().click();
+    await page.waitForFunction(() => document.querySelector('#cc').textContent === '0', null, { timeout: 3000 });
 
     // Product details and compare limit/summary.
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -132,13 +143,18 @@ const server = http.createServer((req, res) => {
     await page.locator('#mov [data-close]').click();
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
-    const ids = await page.locator('#grid .p').evaluateAll(cards => cards.slice(0, 4).map(card => card.getAttribute('data-id')));
-    assert.ok(ids.length >= 4, 'compare test requires four products');
-    for (const id of ids.slice(0, 3)) await page.locator(`#grid [data-cmp="${id}"]`).click();
+    const compareData = await page.locator('#grid .p').evaluateAll(cards => cards.slice(0, 4).map(card => ({ id: card.getAttribute('data-id'), name: card.querySelector('h3')?.textContent.trim() })));
+    assert.ok(compareData.length >= 4, 'compare test requires four products');
+    for (const item of compareData.slice(0, 3)) await page.locator(`#grid [data-cmp="${item.id}"]`).click();
     await page.waitForSelector('#cmpbar');
     assert.match(await page.locator('#cmpbar').textContent(), /Compare \(3\)/);
-    await page.locator(`#grid [data-cmp="${ids[3]}"]`).click();
+    await page.locator(`#grid [data-cmp="${compareData[3].id}"]`).click();
     assert.match(await page.locator('#cmpbar').textContent(), /Compare \(3\)/, 'compare selection must remain capped at three products');
+    await page.locator('#cmpbar').click();
+    await page.waitForSelector('#aov.show');
+    const comparison = await page.locator('#auth table').textContent();
+    for (const item of compareData.slice(0, 3)) assert.ok(comparison.includes(item.name), 'comparison should include ' + item.name);
+    for (const field of ['Price', 'MRP', 'Rating', 'Sizes/colors', 'Stock']) assert.ok(comparison.includes(field), 'comparison should show ' + field);
 
     // Mobile layout must not overflow the viewport.
     await page.setViewportSize({ width: 390, height: 844 });
@@ -146,7 +162,11 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     assert.equal(overflow, false, 'mobile storefront should not have horizontal page overflow');
-    assert.deepEqual(pageErrors, [], 'storefront should not throw uncaught JavaScript errors');
+    await page.goto(`http://127.0.0.1:${address.port}/sell-on-juno.html`, { waitUntil: 'domcontentloaded' });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller application page should fit mobile viewport');
+    await page.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller studio should fit mobile viewport');
+    assert.deepEqual(pageErrors, [], 'storefront and seller pages should not throw uncaught JavaScript errors');
     process.stdout.write('✓ storefront browser smoke tests passed (search, category, sort, wishlist, cart, product detail, compare, mobile)\n');
   } catch (error) {
     process.stderr.write((error && error.stack) || String(error));
