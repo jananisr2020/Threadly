@@ -176,3 +176,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 mobile E2E coverage: Commit `7d3a5f04` expands the Playwright suite to test mobile product details, cart drawer, checkout/login step, seller application and Seller Studio at 390px width, checking for horizontal overflow. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39602186403). Backlog commit `1da5119b` marks T62 complete; progress is 41 confirmed complete and 39 open.
+
+
+2026-10-21 privacy/consent review: The privacy policy describes optional website activity events, essential-only versus accept-all consent, data minimization (no raw search terms/passwords/payment details in the activity tracker), retention and deletion rights. Existing regression tests reject activity tracking without explicit consent and verify consented events are recorded. Evidence: [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39601848782). Backlog commit `2c56429f` marks T71 complete; progress is 42 confirmed complete and 38 open.
