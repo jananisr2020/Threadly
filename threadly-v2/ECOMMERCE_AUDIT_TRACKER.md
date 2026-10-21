@@ -164,3 +164,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 admin product workflow: Commit `223680d6` adds regression coverage for admin product creation, updating an existing seller product without changing seller ownership/approval status, and hiding a listing. [Checkout tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39600820216), [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39600820291). Backlog commit `59ab5ed4` marks T74 complete. Juno uses hide/soft-delete rather than permanent deletion so order-history references remain valid; progress is 31 confirmed complete and 49 open.
+
+
+2026-10-21 refund/admin workflow tests: Commit `2e3275e9` tests Razorpay refund initiation with the exact amount, duplicate-retry prevention, and failed-gateway handling without falsely changing the order payment status. Combined with the signed refund webhook/ledger-review test and return-status gate, this covers the server-side refund workflow. [Checkout tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39600982022), [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39600981759). Backlog commit `5ad35a77` marks T40 and T76 complete; progress is 33 confirmed complete and 47 open. Live Razorpay test-mode refunds and configured email delivery remain release smoke tests.
