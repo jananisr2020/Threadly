@@ -9,8 +9,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - **80 work items total**
 - **6 confirmed complete** (code/test/CI evidence listed below)
 - **74 open** (implementation, verification, external setup, or release acceptance still required)
-- **Estimated effort: 35–45 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
-- **Calendar estimate: about 7–9 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
+- **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
+- **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
 - Cash on delivery stays disabled. All customer-facing and seller-submitted product selling prices stay at or below ₹500. Launch sellers are accessories-only and free onboarding during the pilot.
 - Google Sheets is the current data store. Concurrency-safe inventory and reliable multi-seller financial settlement are material risks; do not claim enterprise parity or enable automated seller transfers until tested and provider-approved.
