@@ -190,3 +190,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 service-worker release check: CI now verifies stale `juno-shell-*`/legacy `threadly-shell-*` caches are deleted on activation, API routes remain network-only, and `/catalog.json` is refreshed with `no-store`. [Validate Juno storefront passed](https://github.com/jananisr2020/Threadly/actions/runs/39603337509). Backlog commit `8fbabd83` marks T65 complete; progress is 45 confirmed complete and 35 open.
+
+
+2026-10-21 seller mobile layout verification: Playwright tests verify both `sell-on-juno.html` and `seller-studio.html` render at 390px width without horizontal overflow. Evidence: [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39602186403). Backlog commit `e259f136` marks T63 complete; progress is 46 confirmed complete and 34 open.
