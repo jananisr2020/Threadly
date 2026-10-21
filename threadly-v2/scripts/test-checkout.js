@@ -32,7 +32,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts, sellerOrders } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -107,6 +107,60 @@ async function rejectsWith(items, pattern) {
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Products').length, 0);
       } finally {
         delete mockedSheets.Sellers;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('seller product listing is isolated to the authenticated seller', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      process.env.JWT_SECRET = 'offline-seller-isolation-secret';
+      mockedSheets = {
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', ''],
+          ['JSRSELLER2', 'APP2', 'Seller Two', 'two@example.com', 'hash', 'Coimbatore', 'Jewellery', 'Active', '', '']
+        ]
+      };
+      const token = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'one@example.com' }, process.env.JWT_SECRET);
+      try {
+        const result = await sellerProducts({ action: 'load' }, { headers: { authorization: 'Bearer ' + token } });
+        assert.equal(result.ok, true);
+        assert.ok(result.products.every(product => product.id !== 'JN0004' && product.id !== 'JN0005'));
+        assert.ok(result.products.every(product => product.id === 'JN0002'));
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('seller cannot read or update another seller order', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      process.env.JWT_SECRET = 'offline-seller-order-isolation-secret';
+      mockedSheets = {
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', ''],
+          ['JSRSELLER2', 'APP2', 'Seller Two', 'two@example.com', 'hash', 'Coimbatore', 'Jewellery', 'Active', '', '']
+        ],
+        SellerOrders: [
+          ['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID'],
+          ['SO-ONE', 'ORDER-1', '', 'JSRSELLER1', 'Seller One', 'Buyer One', 'buyer1@example.com', '9876543210', 'Address one', '641001', '[]', 1, 100, 0, 100, 'Paid', 'New', '', '', 'pay_one'],
+          ['SO-TWO', 'ORDER-2', '', 'JSRSELLER2', 'Seller Two', 'Buyer Two', 'buyer2@example.com', '9876543211', 'Address two', '641002', '[]', 1, 150, 0, 150, 'Paid', 'New', '', '', 'pay_two']
+        ]
+      };
+      const token = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'one@example.com' }, process.env.JWT_SECRET);
+      try {
+        const result = await sellerOrders({ action: 'load' }, { headers: { authorization: 'Bearer ' + token } });
+        assert.deepEqual(result.orders.map(order => order.id), ['SO-ONE']);
+        await assert.rejects(
+          () => sellerOrders({ action: 'update', id: 'SO-TWO', status: 'Accepted' }, { headers: { authorization: 'Bearer ' + token } }),
+          /Seller order not found/i
+        );
+        assert.equal(mockedSheets.SellerOrders[2][16], 'New', 'another seller order must remain unchanged');
+      } finally {
+        mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
       }
