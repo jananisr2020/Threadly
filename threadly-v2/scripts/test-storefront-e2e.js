@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const AxeBuilder = require('@axe-core/playwright');
 
 const root = path.resolve(__dirname, '../public');
 const csv = fs.readFileSync(path.join(root, 'products.csv'), 'utf8');
@@ -67,6 +68,11 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelectorAll('#grid .p').length > 0, null, { timeout: 15000 });
     assert.ok(await page.locator('#grid .p').count() >= 12, 'storefront should render a useful product grid');
+    const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    const accessibilityBlockers = accessibility.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+    if (accessibilityBlockers.length) {
+      throw new Error('Accessibility blockers: ' + JSON.stringify(accessibilityBlockers.map(v => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 3).map(n => n.target) }))));
+    }
 
     // Search suggestions and keyboard selection.
     await page.locator('#q').fill('Pastel Hair Clip');
