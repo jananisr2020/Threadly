@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **41 confirmed complete** (code/test/CI evidence listed below)
-- **39 open** (implementation, verification, external setup, or release acceptance still required)
+- **42 confirmed complete** (code/test/CI evidence listed below)
+- **38 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -96,7 +96,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T68** Check metadata, canonical URLs, structured data, sitemap and robots endpoints. (0.5–1 day)
 - [ ] **T69** Run mobile performance checks; optimize oversized assets and unnecessary script work. (1 day)
 - [ ] **T70** Test loading, empty, offline, timeout and retry states on major pages. (0.5–1 day)
-- [ ] **T71** Verify consent UI matches activity tracking; document retention and avoid collecting unnecessary personal data. (0.5–1 day)
+- [x] **T71** Privacy policy documents optional activity events, the consent choice, retention, and deletion rights; activity payload excludes raw search terms/passwords/payment data. Regression tests reject tracking without explicit consent and verify consented events are recorded. CI passed in the checkout/security suite for commit `d4ca4e6e`. (0.5–1 day)
 - [ ] **T72** Confirm customer notifications never expose payment secrets or sensitive address/payment details. (0.5 day)
 
 ## P3 — admin, marketplace finance, release and handover (T73–T80)
