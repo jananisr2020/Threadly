@@ -23,7 +23,6 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T04** Seller product API rejects a selling price above ₹500; regression test passes in CI.
 - [x] **T05** Latest Checkout regression, Security checks and historical secret scan pass for commit `2bf380ce3e57f5cc4c740c3f4d0f4f992406b9f5`.
 - [x] **T06** Repository audit tracker and benchmark scope are committed in `ECOMMERCE_AUDIT_TRACKER.md`.
-- [x] **T07** Automated CI passed `npm test`, `npm run check`, and `npm run check:security` for commit `e240dd85`; Security checks also completed `npm audit --omit=dev --audit-level=high` successfully. Evidence: [Checkout regression tests](https://github.com/jananisr2020/Threadly/actions/runs/39595985008), [Security checks](https://github.com/jananisr2020/Threadly/actions/runs/39595985438), [Historical secret scan](https://github.com/jananisr2020/Threadly/actions/runs/39595984980).
 
 ## P0 — launch-blocking functionality and data integrity (T07–T30)
 
