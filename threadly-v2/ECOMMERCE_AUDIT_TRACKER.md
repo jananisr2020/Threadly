@@ -50,7 +50,7 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 ## Execution queue
 
 ### P0 — functional integrity (do these first)
-- [ ] Run `npm install`, `npm run check`, `npm run check:security`, `npm test` from `threadly-v2/`; record the exact results.
+- [ ] Run `npm install`, `npm run check`, `npm run check:security`, `npm test` from `threadly-v2/`; record the exact results. (Checkout regression workflow and Security checks passed on commit `f84fa36e`; see links in Session notes. Full local `npm install` / all-command run not claimed.)
 - [ ] Inspect `placeCod` implementation and verify COD returns a rejection on the server even if called directly; test the UI has no COD option.
 - [ ] Exercise checkout pricing against manipulated client prices, hidden/pending products, zero/negative quantities, insufficient stock, duplicate callbacks and invalid payment signatures.
 - [ ] Verify production `/api/health`, catalogue endpoint, seller application submission, login and checkout without exposing environment values.
@@ -80,9 +80,9 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 - [ ] Confirm required environment variable *names* and Sheet tabs/headers; never copy values into GitHub issues/logs.
 - [ ] Production deploy succeeds; check the exact deployed commit/build stamp.
 - [ ] Smoke-test home/catalogue/search/cart/login/seller form/admin/health on the live URL.
-- [ ] Confirm COD is absent and direct server-side COD attempts fail.
+- [ ] Confirm COD is absent and direct server-side COD attempts fail. (Automated unit regression now covers the direct `placeCod` handler; checkout regression workflow passed on `f84fa36e`. Production UI smoke test remains open.)
 - [ ] Mark a task complete only with a test/log or live verification evidence.
 
 ## Session notes
 
-2026-10-21: Repository metadata confirms default branch `main` and write access. `threadly-v2/package.json` exposes `check`, `check:security` and `test`. Recent GitHub Actions response showed the historical secret-scan workflow passing on commit `f670e2d`; this is not evidence that all current workflows or the live site pass. No production test payment or Netlify deployment is claimed by this tracker.
+2026-10-21: Repository metadata confirms default branch `main` and write access. `threadly-v2/package.json` exposes `check`, `check:security` and `test`. Commit `f84fa36e` adds a regression test asserting the server-side `placeCod` handler always rejects direct calls. The Checkout regression tests workflow passed on `f84fa36e` (https://github.com/jananisr2020/Threadly/actions/runs/39592281920); Security checks also passed (https://github.com/jananisr2020/Threadly/actions/runs/39592282165). Historical secret scan for the new commit was still running at the time of this update. No production test payment or Netlify deployment is claimed by this tracker.
