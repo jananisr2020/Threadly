@@ -913,6 +913,36 @@ async function rejectsWith(items, pattern) {
         for (const [key, value] of Object.entries(previousEnv)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
       }
     });
+    await check('admin refund initiation uses Razorpay, prevents duplicate retries and preserves failed attempts', async () => {
+      const previousSecret = process.env.JWT_SECRET, previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-admin-refund-secret';
+      mockedSheets = { Orders: [
+        ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+        ['ORDER-REFUND-OK', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_refund_ok', '', 'New', '', ''],
+        ['ORDER-REFUND-FAIL', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 0, 100, 'UPI', 'Paid', 'pay_refund_fail', '', 'New', '', '']
+      ] };
+      const calls = [];
+      _t.setRazorpayOverride({ payments: { refund: async (pid, payload) => { calls.push({ pid, payload }); if (pid === 'pay_refund_fail') throw new Error('simulated gateway outage'); return { id: 'rfnd_test_1' }; } } });
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET), event = { headers: { authorization: 'Bearer ' + token } };
+      try {
+        const result = await admin({ action: 'refund', orderId: 'ORDER-REFUND-OK' }, event);
+        assert.equal(result.ok, true);
+        assert.equal(calls[0].pid, 'pay_refund_ok');
+        assert.equal(calls[0].payload.amount, 13900);
+        assert.equal(calls[0].payload.notes.orderId, 'ORDER-REFUND-OK');
+        assert.equal(mockedSheets.Orders[1][14], 'Refund initiated');
+        await assert.rejects(() => admin({ action: 'refund', orderId: 'ORDER-REFUND-OK' }, event), /Only orders marked Paid/i);
+        await assert.rejects(() => admin({ action: 'refund', orderId: 'ORDER-REFUND-FAIL' }, event), /could not start the refund/i);
+        assert.equal(mockedSheets.Orders[2][14], 'Paid', 'failed gateway request must not mark order refunded');
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'Orders').length, 1);
+      } finally {
+        _t.setRazorpayOverride(null);
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('signed refund webhook updates order status and flags seller ledger review', async () => {
       const previousSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
       const previousSheets = mockedSheets;
