@@ -38,7 +38,7 @@ jobs:
           let count = 0;
           for (const page of pages) {
             const html = fs.readFileSync(path.join(dir, page), 'utf8');
-            const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)]
+            const scripts = [...html.matchAll(/<script\b[^>]*>([\s\\S]*?)<\/script>/gi)]
               .map(match => match[1])
               .filter(script => script.trim());
             scripts.forEach((script, index) => {
