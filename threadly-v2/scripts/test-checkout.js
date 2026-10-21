@@ -515,6 +515,47 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
       }
     });
+    await check('splits a mixed-seller paid order into seller-specific fulfilment records idempotently', async () => {
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      const previousBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+      delete process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+      mockedSheets = {
+        Orders: [
+          ['Order ID', '', '', '', '', '', '', '', '', 'Subtotal', 'Discount', 'Shipping', 'Total', '', 'Payment Status', 'Payment ID', '', 'Status', '', 'Notes'],
+          ['MIXED-ORDER', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Juno item x1; seller items x2', 3, 350, 35, 39, 354, 'UPI', 'Paid', 'pay_mixed', '', 'New', '', 'STOCK_SYNCED']
+        ],
+        Pending: [
+          ['Razorpay Order ID', 'Order Data', 'Created', 'Status'],
+          ['order_rzp_mixed', '{}', '', 'pending']
+        ],
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', ''],
+          ['JSRSELLER2', 'APP2', 'Seller Two', 'two@example.com', 'hash', 'Coimbatore', 'Jewellery', 'Active', '', '']
+        ],
+        SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID']],
+        SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
+      };
+      const order = { id: 'MIXED-ORDER', total: 354, sub: 350, disc: 35, ship: 39, addr: { name: 'Buyer', phone: '9876543210', line: 'Test address', pin: '641001' }, email: 'buyer@example.com', itemDetails: [
+        { productId: 'JN0001', name: 'Juno scrunchie', unitPrice: 50, quantity: 1, sellerId: '' },
+        { productId: 'SP-ONE', name: 'Seller One clip', unitPrice: 100, quantity: 1, sellerId: 'JSRSELLER1' },
+        { productId: 'SP-TWO', name: 'Seller Two ring', unitPrice: 200, quantity: 1, sellerId: 'JSRSELLER2' }
+      ] };
+      try {
+        assert.equal(await _t.recordPaid(order, 'pay_mixed', 'order_rzp_mixed'), true);
+        const createdOrders = appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerOrders');
+        const createdLedger = appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerLedger');
+        assert.equal(createdOrders.length, 2);
+        assert.deepEqual(createdOrders.map(x => x.row[3]).sort(), ['JSRSELLER1', 'JSRSELLER2']);
+        assert.equal(createdLedger.length, 2);
+        assert.equal(await _t.recordPaid(order, 'pay_mixed', 'order_rzp_mixed'), true);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerOrders').length, 2);
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerLedger').length, 2);
+      } finally {
+        if (previousBps === undefined) delete process.env.JUNO_MARKETPLACE_COMMISSION_BPS; else process.env.JUNO_MARKETPLACE_COMMISSION_BPS = previousBps;
+        mockedSheets = previousSheets;
+      }
+    });
     await check('does not create a duplicate paid order when payment recording is retried', async () => {
       const previousSheets = mockedSheets;
       const previousAppends = appendedRows.length;
