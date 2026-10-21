@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **14 confirmed complete** (code/test/CI evidence listed below)
-- **66 open** (implementation, verification, external setup, or release acceptance still required)
+- **15 confirmed complete** (code/test/CI evidence listed below)
+- **65 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -48,7 +48,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T25** Define and test inventory decrement/reservation on successful payment without overselling. (1–2 days)
 - [ ] **T26** Define rollback/reconciliation for failed, abandoned and expired payment attempts. (1 day)
 - [ ] **T27** Test order write recovery when Google Sheets has a partial/temporary failure. (1–2 days)
-- [ ] **T28** Confirm COD is absent from every customer checkout UI and direct API calls always reject. (0.5 day)
+- [x] **T28** COD is rejected by direct server-side checkout, absent from storefront and admin payment-status options, and admin cannot manually change payment status; Razorpay events are authoritative. Regression tests passed for commit `ef415c97`; storefront validation passed for commit `7d22bbaf`. (0.5 day)
 - [ ] **T29** Run a full prepaid test order from cart through payment, order record and customer order history. (1 day)
 - [ ] **T30** Verify production deploy configuration, build base/publish/functions paths and current deployed commit. (0.5–1 day; Netlify access may block)
 
