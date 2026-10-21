@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **10 confirmed complete** (code/test/CI evidence listed below)
-- **70 open** (implementation, verification, external setup, or release acceptance still required)
+- **11 confirmed complete** (code/test/CI evidence listed below)
+- **69 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -76,7 +76,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T50** Add safe seller product editing/stock updates for owned products, with server-side validation. Edits preserve seller ownership and return the product to hidden/pending moderation; regression tests passed in CI for commit `5932bcdd`. (1–2 days)
 - [x] **T51** Verify product moderation and approval-state changes are admin-only and immediately affect public visibility. Regression test confirms approval publishes seller products and Juno-owned products cannot be changed through the seller moderation action; CI passed for commit `8c9a65e6`. (0.5–1 day)
 - [ ] **T52** Test multi-seller cart order splitting and seller-specific fulfilment records. (1–2 days)
-- [ ] **T53** Test seller fulfilment status transitions and tracking updates; block unauthorized order IDs. (0.5–1 day)
+- [x] **T53** Test seller fulfilment status transitions and tracking updates; block unauthorized order IDs. Tests reject invalid status jumps, allow New → Accepted, persist tracking, and cross-seller updates are denied. CI passed for commit `f044c952`. (0.5–1 day)
 - [ ] **T54** Review seller/customer personal data exposure; restrict addresses and phone numbers to authorized fulfilment views. (0.5–1 day)
 - [ ] **T55** Verify shipping, cancellation, returns, refund, privacy, terms, contact and seller terms match actual operations. (1 day)
 
