@@ -208,6 +208,36 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin moderation publishes only seller-owned products after approval', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-moderation-secret';
+      mockedSheets = {
+        Products: [
+          ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
+          ['SP-ONE', 'Seller clip', 'Hair accessories', 'Unisex', 100, 80, 'Clip details', '', 'https://example.com/one.jpg', 3, 'No', 0, 'No', 'JSRSELLER1', 'Pending'],
+          ['JN0001', 'Juno scrunchie', 'Hair accessories', 'Unisex', 100, 80, 'Scrunchie details', '', 'https://example.com/juno.jpg', 3, 'No', 4.5, 'Yes', '', 'Approved']
+        ]
+      };
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+      try {
+        const result = await admin({ action: 'setSellerProductStatus', id: 'SP-ONE', status: 'Approved' }, { headers: { authorization: 'Bearer ' + token } });
+        assert.equal(result.ok, true);
+        const saved = updatedRows.slice(previousUpdates).find(x => x.tab === 'Products');
+        assert.ok(saved, 'expected seller product moderation update');
+        assert.equal(saved.row[12], 'Yes');
+        assert.equal(saved.row[14], 'Approved');
+        await assert.rejects(
+          () => admin({ action: 'setSellerProductStatus', id: 'JN0001', status: 'Approved' }, { headers: { authorization: 'Bearer ' + token } }),
+          /not a seller-submitted product/i
+        );
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin product editor accepts the ₹500 price ceiling', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousAppends = appendedRows.length;
