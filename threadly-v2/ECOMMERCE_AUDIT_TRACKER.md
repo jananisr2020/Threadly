@@ -100,3 +100,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 moderation update: Commit `8c9a65e6d261e06e97c9d02ca91a02edf77cb553` adds a regression test for admin approval of seller-submitted products and confirms the seller moderation action refuses Juno-owned catalogue products. [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39596737168), including the regression suite and dependency audit. Backlog commit `74fbb162` marks T51 complete; progress is now 10 confirmed complete and 70 open. Product moderation is now covered by automated checks; production Sheet configuration and live end-to-end review remain unverified.
+
+
+2026-10-21 fulfilment update: Commit `f044c952479d7d72cedc3afc1b8a94250dd73a4b` adds regression coverage for seller order status transitions and tracking updates. It rejects an invalid New → Delivered jump, accepts New → Accepted, verifies tracking is persisted, and complements the earlier cross-seller order ownership test. [Checkout tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39596862733) and [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39596862784). Backlog commit `3fc9a3f4` marks T53 complete; count is now 11 confirmed complete and 69 open. Historical secret scan for the same code commit was still running at last poll.
