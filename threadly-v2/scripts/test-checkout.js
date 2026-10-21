@@ -633,6 +633,42 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin can create products and hide/update existing seller listings without changing ownership', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length, previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-admin-product-crud-secret';
+      mockedSheets = {
+        Products: [
+          ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
+          ['SP-ONE', 'Seller clip', 'Hair accessories', 'Unisex', 100, 80, 'Clip details', 'Pink', 'https://example.com/one.jpg', 3, 'No', 4.2, 'Yes', 'JSRSELLER1', 'Approved']
+        ]
+      };
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET), event = { headers: { authorization: 'Bearer ' + token } };
+      try {
+        const created = await admin({ action: 'saveProduct', product: { name: 'New clip', cat: 'Hair accessories', g: 'Unisex', mrp: 150, price: 120, details: 'Simple hair clip', sizes: 'Pink', image: 'https://example.com/new.jpg', stock: 5, sale: 'No', rating: 4.2, show: 'Yes' } }, event);
+        assert.equal(created.ok, true);
+        const added = appendedRows.slice(previousAppends).find(x => x.tab === 'Products');
+        assert.ok(added, 'expected new Juno-owned product');
+        assert.equal(added.row[1], 'New clip');
+        assert.equal(added.row[5], 120);
+        assert.equal(added.row[12], 'Yes');
+        assert.equal(added.row[13], '');
+        assert.equal(added.row[14], 'Approved');
+        const updated = await admin({ action: 'saveProduct', product: { id: 'SP-ONE', name: 'Seller clip updated', cat: 'Hair accessories', g: 'Unisex', mrp: 160, price: 130, details: 'Updated clip details', sizes: 'Pink, black', image: 'https://example.com/updated.jpg', stock: 7, sale: 'No', rating: 4.3, show: 'No' } }, event);
+        assert.equal(updated.ok, true);
+        const saved = updatedRows.slice(previousUpdates).find(x => x.tab === 'Products');
+        assert.ok(saved, 'expected product update');
+        assert.equal(saved.row[1], 'Seller clip updated');
+        assert.equal(saved.row[5], 130);
+        assert.equal(saved.row[12], 'No');
+        assert.equal(saved.row[13], 'JSRSELLER1', 'admin edit must preserve seller ownership');
+        assert.equal(saved.row[14], 'Approved');
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin product editor accepts the ₹500 price ceiling', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousAppends = appendedRows.length;
