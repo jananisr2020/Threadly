@@ -90,6 +90,38 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin product editor accepts the ₹500 price ceiling', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-admin-regression-secret';
+      try {
+        const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+        const result = await admin({ action: 'saveProduct', product: { name: 'Budget accessory', price: 500, mrp: 500 } }, { headers: { authorization: 'Bearer ' + token } });
+        assert.equal(result.ok, true);
+        const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Products');
+        assert.ok(saved, 'expected product row to be appended');
+        assert.equal(saved.row[5], 500);
+      } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('admin product editor rejects MRP below selling price', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-admin-regression-secret';
+      try {
+        const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+        await assert.rejects(
+          () => admin({ action: 'saveProduct', product: { name: 'Invalid MRP accessory', price: 200, mrp: 150 } }, { headers: { authorization: 'Bearer ' + token } }),
+          /MRP must be at least the selling price/i
+        );
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Products').length, 0);
+      } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
     await check('rejects zero quantity', () => rejectsWith([{ id: 'JN0001', n: 0 }], /no longer available/i));
