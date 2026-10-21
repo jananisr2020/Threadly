@@ -32,7 +32,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -86,6 +86,27 @@ async function rejectsWith(items, pattern) {
         );
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Products').length, 0);
       } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('seller product API rejects prices above ₹500', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousAppends = appendedRows.length;
+      mockedSheets.Sellers = [
+        ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+        ['JSRSELLER1', 'APP1', 'Cute Clips', 'seller@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', '']
+      ];
+      process.env.JWT_SECRET = 'offline-seller-regression-secret';
+      try {
+        const token = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'seller@example.com' }, process.env.JWT_SECRET);
+        await assert.rejects(
+          () => sellerProducts({ action: 'save', product: { name: 'Over budget clip', cat: 'Hair accessories', price: 501, mrp: 600, stock: 3, image: 'https://example.com/clip.jpg', details: 'A simple hair clip' } }, { headers: { authorization: 'Bearer ' + token } }),
+          /price and stock/i
+        );
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Products').length, 0);
+      } finally {
+        delete mockedSheets.Sellers;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
       }
