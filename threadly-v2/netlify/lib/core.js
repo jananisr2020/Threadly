@@ -129,9 +129,28 @@ const budgetRows = rows => {
 const productRows = async force => { if (!force && Date.now() - pc.t < 30000 && pc.rows.length) return pc.rows; const rows = budgetRows(await sheets.read('Products')); pc = { t: Date.now(), rows }; return rows };
 const invalidate = () => { pc = { t: 0, rows: [] } };
 const csv = rows => rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\n');
-const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await productRows()) } });
+const products = async () => ({ __raw: { statusCode: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=30' }, body: csv(await publicProductRows()) } });
 const productObjs = rows => { const k = (rows[0] || []).map(nk); return rows.slice(1).map((r, i) => { const o = { row: i + 2 }; k.forEach((n, j) => o[n] = r[j] == null ? '' : r[j]); return o }) };
 const num = v => +String(v || '').replace(/[^\d.]/g, '') || 0;
+async function publicProductRows(force = false) {
+  const rows = await productRows(force);
+  if (!rows || rows.length < 2) return rows || [];
+  const heads = rows[0].map(nk), idI = heads.indexOf('product id'), priceI = heads.indexOf('selling price');
+  const showI = heads.indexOf('show on site'), sellerI = heads.indexOf('seller id'), approvalI = heads.indexOf('approval status');
+  const visible = rows.slice(1).filter(row => {
+    if (idI >= 0 && !String(row[idI] || '').trim()) return false;
+    if (priceI >= 0 && !(num(row[priceI]) > 0 && num(row[priceI]) <= 500)) return false;
+    if (showI >= 0 && String(row[showI] || '').trim().toLowerCase() === 'no') return false;
+    if (approvalI >= 0 && String(row[approvalI] || '').trim() && String(row[approvalI]).trim().toLowerCase() !== 'approved') return false;
+    return true;
+  }).map(source => {
+    const row = source.slice();
+    if (sellerI >= 0) row[sellerI] = '';
+    if (approvalI >= 0) row[approvalI] = '';
+    return row;
+  });
+  return [rows[0], ...visible];
+}
 async function catalogue(force = false) { const m = {}; productObjs(await productRows(force)).forEach(p => { if (p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')) m[p['product id']] = { name: p['product name'], price: num(p['selling price']), stock: p.stock === '' ? 999 : num(p.stock), row: p.row, sellerId: String(p['seller id'] || '').trim(), category: p.category || '', image: p.image || '' } }); return m }
 async function price(items, coupon) {
   if (!Array.isArray(items) || !items.length) throw new E('Your cart is empty.');
@@ -687,7 +706,7 @@ const signals = async () => {
   }
   return { __raw: { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }, body: JSON.stringify(sg.v) } };
 };
-const visibleIds = async () => productObjs(await productRows()).filter(p => p['product id'] && num(p['selling price']) && String(p['show on site']).toLowerCase() !== 'no').map(p => p['product id']);
+const visibleIds = async () => productObjs(await productRows()).filter(p => p['product id'] && num(p['selling price']) > 0 && num(p['selling price']) <= 500 && String(p['show on site']).toLowerCase() !== 'no' && (!p['approval status'] || String(p['approval status']).toLowerCase() === 'approved')).map(p => p['product id']);
 const myOrders = async (b, e, u) => (await sheets.read('Orders')).slice(1).filter(r => String(r[3] || '').toLowerCase() === u.email).reverse().map(r => ({ id: r[0], date: String(r[1] || '').split(',')[0], n: +r[8] || 0, method: r[13] === 'COD' ? 'Cash on delivery' : r[13], total: num(r[12]), eta: r[16], status: r[17] || 'New', tracking: r[18] || '' }));
 /* ---------- admin ---------- */
 const sha = t => crypto.createHash('sha256').update(String(t)).digest();
