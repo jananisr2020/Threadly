@@ -33,7 +33,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts, sellerOrders } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, sellerProducts, sellerOrders, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -59,6 +59,15 @@ async function rejectsWith(items, pattern) {
     });
     await check('security diagnostics require an admin session', async () => {
       await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
+    });
+    await check('public catalogue and sitemap exclude hidden and pending products', async () => {
+      const response = await products();
+      const csv = response.__raw.body;
+      assert.match(csv, /JN0001/);
+      assert.match(csv, /JN0002/);
+      assert.doesNotMatch(csv, /JN0003|JN0004|JSRSELLER1|JSRSELLER2|Pending/);
+      const ids = await visibleIds();
+      assert.deepEqual(ids, ['JN0001', 'JN0002']);
     });
     await check('website activity endpoint rejects events without explicit consent', async () => {
       const previous = appendedRows.length;
