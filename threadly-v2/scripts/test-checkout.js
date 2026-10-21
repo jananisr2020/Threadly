@@ -633,6 +633,27 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin order updates persist fulfilment status and tracking without editing payment state', async () => {
+      const previousSecret = process.env.JWT_SECRET, previousSheets = mockedSheets;
+      process.env.JWT_SECRET = 'offline-admin-order-update-secret';
+      mockedSheets = { Orders: [
+        ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+        ['ORDER-ADMIN', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_admin', '', 'New', '', '']
+      ] };
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+      try {
+        const result = await admin({ action: 'updateOrder', id: 'ORDER-ADMIN', status: 'Packed', tracking: 'TRK-123', notes: 'Packed safely' }, { headers: { authorization: 'Bearer ' + token } });
+        assert.equal(result.ok, true);
+        assert.equal(mockedSheets.Orders[1][17], 'Packed');
+        assert.equal(mockedSheets.Orders[1][18], 'TRK-123');
+        assert.equal(mockedSheets.Orders[1][19], 'Packed safely');
+        assert.equal(mockedSheets.Orders[1][14], 'Paid', 'fulfilment updates must not alter payment status');
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin can create products and hide/update existing seller listings without changing ownership', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousSheets = mockedSheets, previousAppends = appendedRows.length, previousUpdates = updatedRows.length;
