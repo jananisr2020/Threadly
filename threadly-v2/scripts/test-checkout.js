@@ -36,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, sellerProducts, sellerOrders, sellerApply, sellerActivate, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -140,6 +140,32 @@ async function rejectsWith(items, pattern) {
         assert.equal(result.user.email, 'buyer-login@example.com');
         assert.ok(result.token);
         assert.equal(mockedSheets.Users[1][6], 1);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('password reset enforces policy, expires, and cannot be reused', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets, previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-password-reset-secret';
+      const oldHash = await bcrypt.hash('OldStrong!123', 10);
+      mockedSheets = { Users: [
+        ['Name', 'Email', 'Password Hash', 'Phone', 'Created', 'Last Login', 'Login Count'],
+        ['Reset Buyer', 'reset@example.com', oldHash, '', '', '', 1]
+      ] };
+      const payload = { email: 'reset@example.com', purpose: 'reset', h: String(oldHash).slice(-12) };
+      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30m' });
+      const expiredToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: -1 });
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.22' } };
+      try {
+        await assert.rejects(() => reset({ token, password: 'weak' }, event), /Password must contain/i);
+        const result = await reset({ token, password: 'NewStrong!456' }, event);
+        assert.equal(result.user.email, 'reset@example.com');
+        assert.ok(updatedRows.slice(previousUpdates).some(x => x.tab === 'Users'));
+        await assert.rejects(() => reset({ token, password: 'NewStrong!456' }, event), /already used or has expired/i);
+        await assert.rejects(() => reset({ token: expiredToken, password: 'NewStrong!456' }, event), /link has expired/i);
       } finally {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
