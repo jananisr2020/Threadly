@@ -36,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, addReview, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -557,6 +557,64 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('admin cannot mark a return Refunded before the Razorpay refund is verified', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets, previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-return-refund-gate-secret';
+      mockedSheets = {
+        Requests: [
+          ['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes'],
+          ['RQ-RETURN', '', 'ORDER-RETURN', 'buyer@example.com', 'Return', 'Damaged item', 'Box damaged', 'Requested', '']
+        ],
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          ['ORDER-RETURN', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_return', '', 'Delivered', '', 'STOCK_SYNCED']
+        ]
+      };
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET), event = { headers: { authorization: 'Bearer ' + token } };
+      try {
+        await assert.rejects(() => admin({ action: 'updateRequest', id: 'RQ-RETURN', status: 'Refunded', notes: 'Refund complete' }, event), /wait for the verified refund webhook/i);
+        assert.equal(mockedSheets.Requests[1][7], 'Requested');
+        assert.equal(mockedSheets.Orders[1][17], 'Delivered');
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'Requests' || x.tab === 'Orders').length, 0);
+        mockedSheets.Orders[1][14] = 'Refunded';
+        const result = await admin({ action: 'updateRequest', id: 'RQ-RETURN', status: 'Refunded', notes: 'Refund confirmed' }, event);
+        assert.equal(result.ok, true);
+        assert.equal(mockedSheets.Requests[1][7], 'Refunded');
+        assert.equal(mockedSheets.Orders[1][17], 'Returned');
+        const mine = await myRequests({}, {}, { email: 'buyer@example.com' });
+        assert.equal(mine[0].status, 'Refunded');
+        assert.equal(mine[0].notes, 'Refund confirmed');
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('seller approval does not change status when activation email is not configured', async () => {
+      const previousSecret = process.env.JWT_SECRET, previousBrevo = process.env.BREVO_API_KEY, previousFrom = process.env.MAIL_FROM;
+      const previousSheets = mockedSheets, previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-approval-email-secret';
+      delete process.env.BREVO_API_KEY; delete process.env.MAIL_FROM;
+      mockedSheets = { Requests: [
+        ['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes'],
+        ['APP-NO-MAIL', '', '', 'seller@example.com', 'Seller application', 'Store', JSON.stringify({ storeName: 'Test Store' }), 'Requested', '']
+      ] };
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+      try {
+        await assert.rejects(
+          () => admin({ action: 'updateRequest', id: 'APP-NO-MAIL', status: 'Approved', notes: 'Looks good' }, { headers: { authorization: 'Bearer ' + token } }),
+          /Configure BREVO_API_KEY and MAIL_FROM/i
+        );
+        assert.equal(mockedSheets.Requests[1][7], 'Requested');
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'Requests').length, 0);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
+        if (previousBrevo === undefined) delete process.env.BREVO_API_KEY; else process.env.BREVO_API_KEY = previousBrevo;
+        if (previousFrom === undefined) delete process.env.MAIL_FROM; else process.env.MAIL_FROM = previousFrom;
       }
     });
     await check('admin data and mutation actions require an admin session', async () => {
