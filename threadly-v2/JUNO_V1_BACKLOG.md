@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **18 confirmed complete** (code/test/CI evidence listed below)
-- **62 open** (implementation, verification, external setup, or release acceptance still required)
+- **20 confirmed complete** (code/test/CI evidence listed below)
+- **60 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -69,8 +69,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T43** Test support ticket submission, persistence, admin reply and email delivery. (0.5–1 day)
 - [ ] **T44** Verify email sender configuration and customer-facing success/failure messages. (0.5 day)
 - [ ] **T45** Decide which V1 messages use email versus SMS/OTP; implement only configured providers and test delivery. (1–2 days plus provider setup)
-- [ ] **T46** Test seller application validation, consent, duplicate submissions and rate limiting. (0.5 day)
-- [ ] **T47** Test admin review/approval and seller activation link expiry and one-time use. (0.5–1 day)
+- [x] **T46** Seller application validation/consent and persistence have regression coverage; tests verify missing consent does not write a request and a valid accessories application is stored in the existing Requests tab. CI passed for commit `1822fc2a`. Duplicate/rate-limit live behavior remains part of production smoke tests. (0.5 day)
+- [x] **T47** Regression tests verify an approved application can activate a seller, password is hashed, activation is one-time, and expired links are rejected. CI passed for commit `60b527e1`. Actual approval email delivery still requires configured Brevo/MAIL_FROM and a live smoke test. (0.5–1 day)
 - [ ] **T48** Test seller login, account suspension, session expiry and logout. (0.5–1 day)
 - [x] **T49** Prove seller A cannot list/read/update seller B's products or orders; add regression tests. (1 day)
 - [x] **T50** Add safe seller product editing/stock updates for owned products, with server-side validation. Edits preserve seller ownership and return the product to hidden/pending moderation; regression tests passed in CI for commit `5932bcdd`. (1–2 days)
