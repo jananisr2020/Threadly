@@ -10,6 +10,7 @@ const AxeBuilder = require('@axe-core/playwright');
 
 const root = path.resolve(__dirname, '../public');
 const csv = fs.readFileSync(path.join(root, 'products.csv'), 'utf8');
+const e2eCsv = csv.trimEnd() + '\nE2E001,E2E Broken Image Hair Clip,Hair Clips,Women,150,100,Metal acrylic,Pink|Black|Beige,http://127.0.0.1:1/missing.jpg,2,No,4.5,Yes\n';
 let liveCatalogueAvailable = true;
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -29,7 +30,7 @@ const server = http.createServer((req, res) => {
     if (url.pathname === '/api/products' && req.method === 'GET') {
       if (!liveCatalogueAvailable) { res.writeHead(503); res.end(JSON.stringify({ ok: false, error: 'catalogue unavailable' })); return; }
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.end(csv);
+      res.end(e2eCsv);
       return;
     }
     if (url.pathname === '/api/pincode') {
@@ -68,6 +69,26 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelectorAll('#grid .p').length > 0, null, { timeout: 15000 });
     assert.ok(await page.locator('#grid .p').count() >= 12, 'storefront should render a useful product grid');
+    // Broken image fallback, low-stock messaging and product variant selection.
+    await page.locator('#q').fill('E2E Broken Image Hair Clip');
+    const brokenCard = page.locator('#grid .p[data-id="E2E001"]');
+    await brokenCard.waitFor();
+    await page.waitForFunction(() => {
+      const image = document.querySelector('#grid .p[data-id="E2E001"] img');
+      return !!image && image.complete;
+    });
+    assert.equal(await brokenCard.locator('img').evaluate(img => getComputedStyle(img).display), 'none', 'broken product images should fail gracefully');
+    assert.match(await brokenCard.textContent(), /Only 2 left/, 'low stock should be visible');
+    await brokenCard.click();
+    await page.waitForSelector('#mov.show');
+    assert.ok((await page.locator('#modal').textContent()).includes('E2E Broken Image Hair Clip'));
+    const variants = page.locator('#modal .sz button');
+    assert.ok(await variants.count() >= 3, 'product details should show available colour variants');
+    await variants.first().click();
+    assert.ok((await variants.first().getAttribute('class')).includes('on'), 'selected variant should be visibly indicated');
+    await page.locator('#mov [data-close]').click();
+    await page.locator('#q').fill('');
+    await page.waitForTimeout(300);
     const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
     const accessibilityBlockers = accessibility.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
     if (accessibilityBlockers.length) {
