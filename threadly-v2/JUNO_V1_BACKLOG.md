@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **29 confirmed complete** (code/test/CI evidence listed below)
-- **51 open** (implementation, verification, external setup, or release acceptance still required)
+- **30 confirmed complete** (code/test/CI evidence listed below)
+- **50 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -43,7 +43,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T21** Regression tests reject invalid mobile numbers and too-short delivery addresses, validate payment method, and verify server-side error handling. CI passed for commit `7652aca9`. (0.5 day)
 - [ ] **T22** Backend order creation is regression-tested with an injected Razorpay test client, including server-calculated amount and Pending-row persistence (commit `8622fbde`). The real Razorpay test account and browser checkout integration still require a configured test key and live test-mode smoke test. (1 day)
 - [x] **T23** Regression tests cover invalid Razorpay signatures, server-side payment fetch, rejection of authorized-but-uncaptured payments, and only recording the order/decrementing stock after a captured payment. CI passed for commit `996039f4`. (0.5–1 day)
-- [ ] **T24** Test signed webhook success/failure/refund events, replay/idempotency and duplicate callbacks. (1 day)
+- [x] **T24** Signed webhook regression tests cover payment.captured, payment.failed, refund.processed, captured-event replay, and refund-event replay. Captured events verify Razorpay payment status/amount/currency before recording; replay does not duplicate orders or decrement stock twice. CI passed for commit `4227e91e`. (1 day)
 - [ ] **T25** Define and test inventory decrement/reservation on successful payment without overselling. (1–2 days)
 - [ ] **T26** Define rollback/reconciliation for failed, abandoned and expired payment attempts. (1 day)
 - [ ] **T27** Test order write recovery when Google Sheets has a partial/temporary failure. (1–2 days)
