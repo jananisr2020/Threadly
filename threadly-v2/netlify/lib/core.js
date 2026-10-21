@@ -368,7 +368,8 @@ async function record(o, payStatus, payId) {
   }
 }
 const placeCod = async () => { throw new E('Cash on delivery is not available. Please pay online using UPI, cards or netbanking.', 410) };
-const rz = () => { if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) throw new E('Payments are not set up yet.', 500); return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET }) };
+let razorpayOverride = null;
+const rz = () => { if (razorpayOverride) return razorpayOverride; if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) throw new E('Payments are not set up yet.', 500); return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET }) };
 const createOrder = async (b, e, u) => {
   if (b.method === 'COD') throw new E('Cash on delivery is not available. Please pay online using UPI, cards or netbanking.', 400);
   limit('ord:' + u.email, 20, 36e5);
@@ -792,4 +793,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder } };
+module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, setRazorpayOverride: client => { razorpayOverride = client || null } } };
