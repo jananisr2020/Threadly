@@ -447,11 +447,13 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
-    await check('admin moderation publishes only seller-owned products after approval', async () => {
+    await check('admin moderation blocks external seller publishing until the sales flag is enabled', async () => {
       const previousSecret = process.env.JWT_SECRET;
+      const previousFlag = process.env.MARKETPLACE_SELLER_SALES_ENABLED;
       const previousSheets = mockedSheets;
       const previousUpdates = updatedRows.length;
       process.env.JWT_SECRET = 'offline-seller-moderation-secret';
+      delete process.env.MARKETPLACE_SELLER_SALES_ENABLED;
       mockedSheets = {
         Products: [
           ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
@@ -461,6 +463,12 @@ async function rejectsWith(items, pattern) {
       };
       const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
       try {
+        await assert.rejects(
+          () => admin({ action: 'setSellerProductStatus', id: 'SP-ONE', status: 'Approved' }, { headers: { authorization: 'Bearer ' + token } }),
+          /Seller sales are disabled until marketplace payment settlement/i
+        );
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'Products').length, 0);
+        process.env.MARKETPLACE_SELLER_SALES_ENABLED = 'true';
         const result = await admin({ action: 'setSellerProductStatus', id: 'SP-ONE', status: 'Approved' }, { headers: { authorization: 'Bearer ' + token } });
         assert.equal(result.ok, true);
         const saved = updatedRows.slice(previousUpdates).find(x => x.tab === 'Products');
@@ -475,6 +483,8 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
+        if (previousFlag === undefined) delete process.env.MARKETPLACE_SELLER_SALES_ENABLED;
+        else process.env.MARKETPLACE_SELLER_SALES_ENABLED = previousFlag;
       }
     });
     await check('seller fulfilment updates enforce valid status transitions and tracking', async () => {
