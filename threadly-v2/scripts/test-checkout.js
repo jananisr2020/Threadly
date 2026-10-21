@@ -274,6 +274,20 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin data and mutation actions require an admin session', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = 'offline-admin-authorization-secret';
+      const sellerToken = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'seller@example.com' }, process.env.JWT_SECRET);
+      try {
+        await assert.rejects(() => admin({ action: 'load' }, { headers: {} }), /Session expired/i);
+        await assert.rejects(() => admin({ action: 'saveProduct', product: { name: 'Attempted', price: 100, mrp: 100 } }, { headers: {} }), /Session expired/i);
+        await assert.rejects(() => admin({ action: 'setSellerProductStatus', id: 'SP-ONE', status: 'Approved' }, { headers: { authorization: 'Bearer ' + sellerToken } }), /Session expired/i);
+        await assert.rejects(() => admin({ action: 'refund', orderId: 'ORDER-1' }, { headers: { authorization: 'Bearer ' + sellerToken } }), /Session expired/i);
+      } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin product editor accepts the ₹500 price ceiling', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousAppends = appendedRows.length;
