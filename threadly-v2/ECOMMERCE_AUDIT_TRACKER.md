@@ -167,3 +167,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 refund/admin workflow tests: Commit `2e3275e9` tests Razorpay refund initiation with the exact amount, duplicate-retry prevention, and failed-gateway handling without falsely changing the order payment status. Combined with the signed refund webhook/ledger-review test and return-status gate, this covers the server-side refund workflow. [Checkout tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39600982022), [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39600981759). Backlog commit `5ad35a77` marks T40 and T76 complete; progress is 33 confirmed complete and 47 open. Live Razorpay test-mode refunds and configured email delivery remain release smoke tests.
+
+
+2026-10-21 storefront browser testing: Added a Playwright Chromium smoke suite in `scripts/test-storefront-e2e.js` and GitHub workflow `Storefront browser tests`. The first successful run verifies the product grid, search suggestions, keyboard selection, and no-match state. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39601848786). Commit `3160d81b` marks T13 complete. The suite is being expanded to cover category/price filtering, all sort modes, cart/wishlist persistence/removal, compare attributes, and mobile layouts.
