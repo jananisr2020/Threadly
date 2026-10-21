@@ -284,6 +284,30 @@ async function rejectsWith(items, pattern) {
         else process.env.JWT_SECRET = previousSecret;
       }
     });
+    await check('admin cannot manually mark an order as COD or alter payment status', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-payment-status-secret';
+      mockedSheets = {
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          ['ORDER-1', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 39, 139, 'UPI', 'Pending', '', '', 'New', '', '']
+        ]
+      };
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+      try {
+        await assert.rejects(
+          () => admin({ action: 'updateOrder', id: 'ORDER-1', pay: 'COD - collect on delivery' }, { headers: { authorization: 'Bearer ' + token } }),
+          /Payment status is controlled by verified Razorpay events/i
+        );
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'Orders').length, 0);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('admin data and mutation actions require an admin session', async () => {
       const previousSecret = process.env.JWT_SECRET;
       process.env.JWT_SECRET = 'offline-admin-authorization-secret';
