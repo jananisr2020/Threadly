@@ -161,3 +161,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 partial inventory-write test: Commit `6a8eeb4c` adds a simulated Google Sheets stock-write failure test. It confirms the paid order is retained, stock is not silently changed, the order is flagged `STOCK_RECONCILIATION_REQUIRED`, and the API tells the customer not to pay again. [Checkout tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39600689047), [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39600689054). T27 remains open because safe automated retry/reconciliation for partial multi-row writes is not yet implemented.
+
+
+2026-10-21 admin product workflow: Commit `223680d6` adds regression coverage for admin product creation, updating an existing seller product without changing seller ownership/approval status, and hiding a listing. [Checkout tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39600820216), [Security checks passed](https://github.com/jananisr2020/Threadly/actions/runs/39600820291). Backlog commit `59ab5ed4` marks T74 complete. Juno uses hide/soft-delete rather than permanent deletion so order-history references remain valid; progress is 31 confirmed complete and 49 open.
