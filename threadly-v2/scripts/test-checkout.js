@@ -36,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, addReview, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -170,6 +170,33 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('reviews enforce one-per-product and record verified purchases', async () => {
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      mockedSheets = {
+        Reviews: [['Review ID', 'Product ID', 'Name', 'Email', 'Rating', 'Comment', 'Date', 'Verified', 'Status']],
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          ['ORDER-REVIEW', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Basic scrunchie x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_review', '', 'Delivered', '', 'STOCK_SYNCED']
+        ],
+        Users: [
+          ['Name', 'Email', 'Password Hash', 'Phone', 'Created', 'Last Login', 'Login Count'],
+          ['Buyer Name', 'buyer@example.com', 'hash', '', '', '', 1]
+        ]
+      };
+      const user = { email: 'buyer@example.com' };
+      try {
+        await assert.rejects(() => addReview({ pid: 'JN0001', rating: 6, comment: 'Great item' }, { headers: {} }, user), /Pick a star rating/i);
+        const result = await addReview({ pid: 'JN0001', rating: 5, comment: 'Nice quality and value' }, { headers: {} }, user);
+        assert.equal(result.ok, true);
+        const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Reviews');
+        assert.ok(saved, 'expected review to be saved');
+        assert.equal(saved.row[7], 'Yes');
+        assert.equal(saved.row[8], 'Approved');
+        await assert.rejects(() => addReview({ pid: 'JN0001', rating: 4, comment: 'Another review' }, { headers: {} }, user), /already reviewed this product/i);
+      } finally {
+        mockedSheets = previousSheets;
       }
     });
     await check('cancellation and return requests enforce order-state rules', async () => {
