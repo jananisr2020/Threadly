@@ -62,7 +62,7 @@ const server = http.createServer((req, res) => {
     const context = await browser.newContext({ viewport: { width: 1365, height: 900 } });
     const page = await context.newPage();
     page.on('pageerror', error => pageErrors.push(error.message));
-    await page.goto(\`http://127.0.0.1:\${address.port}/\`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelectorAll('#grid .p').length > 0, null, { timeout: 15000 });
     assert.ok(await page.locator('#grid .p').count() >= 12, 'storefront should render a useful product grid');
 
@@ -124,10 +124,10 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     const ids = await page.locator('#grid .p').evaluateAll(cards => cards.slice(0, 4).map(card => card.getAttribute('data-id')));
     assert.ok(ids.length >= 4, 'compare test requires four products');
-    for (const id of ids.slice(0, 3)) await page.locator(\`#grid [data-cmp="\${id}"]\`).click();
+    for (const id of ids.slice(0, 3)) await page.locator(`#grid [data-cmp="${id}"]`).click();
     await page.waitForSelector('#cmpbar');
     assert.match(await page.locator('#cmpbar').textContent(), /Compare \(3\)/);
-    await page.locator(\`#grid [data-cmp="\${ids[3]}"]\`).click();
+    await page.locator(`#grid [data-cmp="${ids[3]}"]`).click();
     assert.match(await page.locator('#cmpbar').textContent(), /Compare \(3\)/, 'compare selection must remain capped at three products');
 
     // Mobile layout must not overflow the viewport.
