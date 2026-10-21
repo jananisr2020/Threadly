@@ -162,6 +162,22 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     assert.equal(overflow, false, 'mobile storefront should not have horizontal page overflow');
+    await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#grid .p');
+    await page.locator('#grid .p').first().locator('[data-qa]').click();
+    if (await page.locator('#mov.show').count()) {
+      const mobileSize = page.locator('#modal .sz button').first();
+      if (await mobileSize.count()) await mobileSize.click();
+      await page.locator('#add').click();
+    }
+    await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile product/cart state should not overflow');
+    await page.locator('#cb').click();
+    await page.waitForSelector('#cov.show');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile cart drawer should not overflow');
+    await page.locator('#co').click();
+    await page.waitForFunction(() => !!document.querySelector('#aov.show') || !!document.querySelector('#pov.show'));
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile checkout/login step should not overflow');
     await page.goto(`http://127.0.0.1:${address.port}/sell-on-juno.html`, { waitUntil: 'domcontentloaded' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller application page should fit mobile viewport');
     await page.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
