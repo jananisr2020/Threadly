@@ -21,8 +21,8 @@ let mockedSheets = {};
 const appendedRows = [];
 const updatedRows = [];
 sheets.read = async tab => {
-  if (tab === 'Products') return rows;
   if (Object.prototype.hasOwnProperty.call(mockedSheets, tab)) return mockedSheets[tab];
+  if (tab === 'Products') return rows;
   throw new Error('Unexpected sheet read in offline checkout test: ' + tab);
 };
 sheets.append = async (tab, row) => { appendedRows.push({ tab, row }); if (Array.isArray(mockedSheets[tab])) mockedSheets[tab].push(row); };
@@ -159,6 +159,49 @@ async function rejectsWith(items, pattern) {
           /Seller order not found/i
         );
         assert.equal(mockedSheets.SellerOrders[2][16], 'New', 'another seller order must remain unchanged');
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('seller can edit only owned products and edits return to moderation', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-product-edit-secret';
+      mockedSheets = {
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active', '', ''],
+          ['JSRSELLER2', 'APP2', 'Seller Two', 'two@example.com', 'hash', 'Coimbatore', 'Jewellery', 'Active', '', '']
+        ],
+        Products: [
+          ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
+          ['SP-ONE', 'Original clip', 'Hair accessories', 'Unisex', 100, 80, 'Original details', '', 'https://example.com/one.jpg', 3, 'No', 0, 'Yes', 'JSRSELLER1', 'Approved'],
+          ['SP-TWO', 'Other seller ring', 'Jewellery', 'Unisex', 150, 120, 'Ring details', '', 'https://example.com/two.jpg', 2, 'No', 0, 'Yes', 'JSRSELLER2', 'Approved']
+        ]
+      };
+      const token = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'one@example.com' }, process.env.JWT_SECRET);
+      const product = { id: 'SP-ONE', name: 'Updated clip', cat: 'Hair accessories', price: 90, mrp: 120, stock: 7, image: 'https://example.com/updated.jpg', sizes: 'Pink, black', details: 'Updated product details' };
+      try {
+        await assert.rejects(
+          () => sellerProducts({ action: 'update', product: { ...product, id: 'SP-TWO' } }, { headers: { authorization: 'Bearer ' + token } }),
+          /Product not found in your seller account/i
+        );
+        assert.equal(updatedRows.slice(previousUpdates).filter(x => x.tab === 'Products').length, 0, 'cross-seller edit must not write any product row');
+        const result = await sellerProducts({ action: 'update', product }, { headers: { authorization: 'Bearer ' + token } });
+        assert.equal(result.ok, true);
+        assert.equal(result.status, 'Pending');
+        const saved = updatedRows.slice(previousUpdates).find(x => x.tab === 'Products');
+        assert.ok(saved, 'expected an owned product update');
+        assert.equal(saved.row[0], 'SP-ONE');
+        assert.equal(saved.row[1], 'Updated clip');
+        assert.equal(saved.row[5], 90);
+        assert.equal(saved.row[9], 7);
+        assert.equal(saved.row[12], 'No', 'edited product must be hidden pending review');
+        assert.equal(saved.row[13], 'JSRSELLER1', 'seller ownership must not change');
+        assert.equal(saved.row[14], 'Pending', 'edited product must return to moderation');
       } finally {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
