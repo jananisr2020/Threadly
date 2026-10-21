@@ -187,3 +187,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 branding and SEO checks: Added the Juno favicon to Admin Product Studio, the offline page and Seller Studio. The homepage now includes Organization and WebSite JSON-LD; CI checks all public HTML titles/favicons, canonical/OG URL consistency, structured data presence, sitemap/robots redirects and Netlify build paths. [Validate Juno storefront passed](https://github.com/jananisr2020/Threadly/actions/runs/39603188137). Backlog commit `86c51d72` marks T66 and T68 complete; progress is 44 confirmed complete and 36 open. Live domain endpoints still need a post-deploy smoke test.
+
+
+2026-10-21 service-worker release check: CI now verifies stale `juno-shell-*`/legacy `threadly-shell-*` caches are deleted on activation, API routes remain network-only, and `/catalog.json` is refreshed with `no-store`. [Validate Juno storefront passed](https://github.com/jananisr2020/Threadly/actions/runs/39603337509). Backlog commit `8fbabd83` marks T65 complete; progress is 45 confirmed complete and 35 open.
