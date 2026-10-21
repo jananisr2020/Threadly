@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **15 confirmed complete** (code/test/CI evidence listed below)
-- **65 open** (implementation, verification, external setup, or release acceptance still required)
+- **16 confirmed complete** (code/test/CI evidence listed below)
+- **64 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -31,7 +31,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T08** Verify live `/api/health` and error behavior without exposing secrets. (0.5 day)
 - [ ] **T09** Verify production `SHEET_ID`, service-account access and required sheet names/headers privately. (0.5–1 day; owner setup may block)
 - [ ] **T10** Verify catalogue API/Sheet data path, empty state, failure state and no misleading stale/fallback catalogue. (1 day)
-- [ ] **T11** Verify every displayed price/discount is truthful, positive, and capped at ₹500 for customer-visible listings. (0.5–1 day)
+- [x] **T11** Preserve Sheet selling prices/MRPs instead of silently rewriting them; filter any price above ₹500 from public listings, sitemap and checkout; admin/seller saves enforce the same ceiling. CI now validates all 604 bundled products have positive prices ≤₹500, MRP ≥ selling price, and discount percentages consistent with those values. Tests passed for commit `3f7f861c`; catalogue invariant check added in `9b5e759f`. (0.5–1 day)
 - [x] **T12** Hidden and pending products are filtered from the public CSV catalogue and sitemap ID list, and checkout already rejects hidden/unapproved items. The public CSV blanks seller IDs and approval statuses so internal marketplace metadata is not exposed. Regression tests passed in CI for commit `73844422`. (0.5 day)
 - [ ] **T13** Test search query, suggestions, no-result state and keyboard interaction. (0.5–1 day)
 - [ ] **T14** Test category navigation and filter combinations on real catalogue data. (0.5–1 day)
