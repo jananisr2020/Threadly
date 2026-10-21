@@ -4,6 +4,7 @@
 // Offline regression tests for server-side checkout pricing and cart validation.
 // Run from threadly-v2 with: npm test
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const sheets = require('../netlify/lib/sheets');
 const jwt = require('jsonwebtoken');
 const coupons = require('../netlify/lib/coupons');
@@ -419,6 +420,40 @@ async function rejectsWith(items, pattern) {
       const result = await _t.price([{ id: 'JN0002', n: 1 }], '');
       assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
       assert.equal(result.itemDetails[0].unitPrice, 100);
+    });
+    await check('signed refund webhook updates order status and flags seller ledger review', async () => {
+      const previousSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      const previousSheets = mockedSheets;
+      const previousUpdates = updatedRows.length;
+      const secret = 'offline-refund-webhook-secret';
+      process.env.RAZORPAY_WEBHOOK_SECRET = secret;
+      mockedSheets = {
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          ['ORDER-REFUND', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 39, 139, 'UPI', 'Refund initiated', 'pay_refund_1', '', 'New', '', '']
+        ],
+        SellerLedger: [
+          ['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes'],
+          ['LEDGER-1', 'SO-1', 'ORDER-REFUND', 'pay_refund_1', 'JSRSELLER1', 'Seller One', 100, 0, 0, 0, 100, 'INR', 'READY_FOR_REVIEW', '', '', '', '']
+        ]
+      };
+      const body = JSON.stringify({ event: 'refund.processed', payload: { refund: { entity: { payment_id: 'pay_refund_1' } } } });
+      const signature = crypto.createHmac('sha256', secret).update(body).digest('hex');
+      try {
+        const result = await webhook({}, { body, headers: { 'x-razorpay-signature': signature } });
+        assert.equal(result.ok, true);
+        assert.equal(mockedSheets.Orders[1][14], 'Refunded');
+        assert.equal(mockedSheets.SellerLedger[1][12], 'REFUND_REVIEW');
+        assert.match(mockedSheets.SellerLedger[1][16], /reconcile refund allocation/i);
+        const beforeRetry = appendedRows.length;
+        await webhook({}, { body, headers: { 'x-razorpay-signature': signature } });
+        assert.equal(mockedSheets.Orders[1][14], 'Refunded');
+        assert.equal(appendedRows.length, beforeRetry, 'replayed refund webhook must not append duplicate records');
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.RAZORPAY_WEBHOOK_SECRET;
+        else process.env.RAZORPAY_WEBHOOK_SECRET = previousSecret;
+      }
     });
     await check('rejects webhook events when the webhook secret is missing', async () => {
       const previous = process.env.RAZORPAY_WEBHOOK_SECRET;
