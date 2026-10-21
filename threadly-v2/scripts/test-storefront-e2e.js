@@ -74,6 +74,10 @@ const server = http.createServer((req, res) => {
     await page.locator('#q').press('Enter');
     await page.waitForTimeout(300);
     assert.ok(await page.locator('#grid .p').count() > 0, 'keyboard search selection should render results');
+    await page.locator('#q').fill('zz-no-such-juno-product-934');
+    await page.waitForTimeout(400);
+    assert.equal(await page.locator('#grid .p').count(), 0, 'unmatched search should show an empty state');
+    assert.match(await page.locator('#grid').textContent(), /No matches/i);
 
     // Category navigation and sort should keep the grid functional.
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -111,6 +115,12 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
     const cart = await page.evaluate(() => JSON.parse(localStorage.getItem('tl_cart') || '[]'));
     assert.equal(cart.reduce((sum, item) => sum + Number(item.n || 0), 0), 1, 'cart quantity should persist across reload');
+    await page.locator('#cb').click();
+    await page.waitForSelector('#cov.show');
+    await page.locator('#cart [data-u]').first().click();
+    await page.waitForFunction(() => document.querySelector('#cc').textContent === '2');
+    await page.locator('#cart [data-d]').first().click();
+    await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
 
     // Product details and compare limit/summary.
     await page.reload({ waitUntil: 'domcontentloaded' });
