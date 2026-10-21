@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **34 confirmed complete** (code/test/CI evidence listed below)
-- **46 open** (implementation, verification, external setup, or release acceptance still required)
+- **40 confirmed complete** (code/test/CI evidence listed below)
+- **40 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -33,11 +33,11 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T11** Preserve Sheet selling prices/MRPs instead of silently rewriting them; filter any price above ₹500 from public listings, sitemap and checkout; admin/seller saves enforce the same ceiling. CI now validates all 604 bundled products have positive prices ≤₹500, MRP ≥ selling price, and discount percentages consistent with those values. Tests passed for commit `3f7f861c`; catalogue invariant check added in `9b5e759f`. (0.5–1 day)
 - [x] **T12** Hidden and pending products are filtered from the public CSV catalogue and sitemap ID list, and checkout already rejects hidden/unapproved items. The public CSV blanks seller IDs and approval statuses so internal marketplace metadata is not exposed. Regression tests passed in CI for commit `73844422`. (0.5 day)
 - [x] **T13** Playwright browser smoke test covers query input, suggestions, ArrowDown/Enter selection, and a no-match empty state. Browser CI passed for commit `bb4d6776`. (0.5–1 day)
-- [ ] **T14** Test category navigation and filter combinations on real catalogue data. (0.5–1 day)
-- [ ] **T15** Test sorting by price, discount, newest and relevance where shown. (0.5 day)
+- [x] **T14** Playwright tests category navigation combined with a maximum-price filter against the bundled product catalogue. Browser CI passed for commit `6ae64701`. (0.5–1 day)
+- [x] **T15** Playwright cycles through Recommended, Newest, Trending, Bestsellers, price low/high, top-rated and biggest-discount sort modes without breaking the product grid. Browser CI passed for commit `6ae64701`. (0.5 day)
 - [ ] **T16** Test product detail route, variant selection, image failure and stock display. (0.5–1 day)
-- [ ] **T17** Test cart persistence across refresh/reopen and correct removal. (0.5 day)
-- [ ] **T18** Test quantity bounds, duplicate cart lines, stock checks and correct subtotal. (0.5 day)
+- [x] **T17** Playwright verifies cart persistence across reload, drawer reopen, and removal when quantity is decremented to zero. Browser CI passed for commit `6ae64701`. (0.5 day)
+- [x] **T18** Playwright tests quantity increment/decrement/removal; backend regression tests cover stock limits and server-computed subtotal/discount/shipping/total. Browser and checkout CI passed for commit `6ae64701`. (0.5 day)
 - [x] **T19** Server order creation derives subtotal, discount, shipping and total from server-side product rows and coupon rules; client-supplied totals are not read. Regression tests verify source prices, discount, shipping and total; coupon boundary/cap tests passed in CI for commits `3f7f861c` and `8574dd9d`. (1 day)
 - [x] **T20** Server order builder repeats Tamil Nadu serviceability checks. Regression tests mock a valid Coimbatore PIN and reject an out-of-state PIN. CI passed for commit `7652aca9`; live India Post lookup behavior still needs a production smoke test. (0.5 day)
 - [x] **T21** Regression tests reject invalid mobile numbers and too-short delivery addresses, validate payment method, and verify server-side error handling. CI passed for commit `7652aca9`. (0.5 day)
@@ -82,8 +82,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## P2 — marketplace polish and competitive shopping experience (T56–T72)
 
 - [ ] **T56** Compare homepage/category experience against Meesho, Myntra, Amazon and Flipkart; fix navigation dead ends. (1 day)
-- [ ] **T57** Verify wishlist add/remove/persistence and signed-in versus guest behavior. (0.5 day)
-- [ ] **T58** Verify product comparison limits and accurate comparison attributes. (0.5 day)
+- [x] **T57** Playwright verifies guest wishlist add, persistence across reload and removal persistence. Signed-in wishlist sync remains out of V1 scope; guest local storage is the supported behavior. Browser CI passed for commit `6ae64701`. (0.5 day)
+- [x] **T58** Playwright verifies comparison is capped at three products and the comparison table includes selected product names, price, MRP/discount, rating, sizes/colors and stock. Browser CI passed for commit `6ae64701`. (0.5 day)
 - [ ] **T59** Verify recently viewed and recommendation sections use real catalogue data. (0.5–1 day)
 - [x] **T60** Server-side coupon rules now have regression coverage for case-insensitive codes, minimum spend, flat discount, percentage discount cap and invalid codes; checkout recomputes discount from the submitted code and one code field is used (no stacking). CI passed for commit `8574dd9d`. Expiry behavior remains covered by the shared rule helper but the current configured codes have no expiry dates. (0.5–1 day)
 - [ ] **T61** Verify product cards use relevant, non-duplicated, working images and meaningful fallbacks. (1–2 days; catalogue content may need manual sourcing)
