@@ -72,6 +72,14 @@ jobs:
           if (catalogue.productCount !== catalogue.products.length) {
             throw new Error('Bundled catalogue productCount does not match products array');
           }
+          for (const product of catalogue.products) {
+            const price = Number(product.price), mrp = Number(product.mrp), off = Number(product.off);
+            if (!(price > 0 && price <= 500)) throw new Error('Bundled product price is outside the ₹1–₹500 range: ' + product.id);
+            if (!(mrp >= price)) throw new Error('Bundled product MRP is below its selling price: ' + product.id);
+            const expectedOff = mrp > 0 ? Math.max(0, Math.round((mrp - price) / mrp * 100)) : 0;
+            if (off !== expectedOff) throw new Error('Bundled product discount does not match MRP and selling price: ' + product.id);
+          }
+          console.log('Bundled catalogue prices, MRPs and discount percentages are internally consistent');
           console.log('Bundled catalogue contains ' + catalogue.products.length + ' products');
           const config = fs.readFileSync('netlify.toml', 'utf8');
           if (!/base\s*=\s*"threadly-v2"/.test(config) || !/publish\s*=\s*"public"/.test(config)) {
