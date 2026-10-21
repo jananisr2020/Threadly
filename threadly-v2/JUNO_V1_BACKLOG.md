@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **23 confirmed complete** (code/test/CI evidence listed below)
-- **57 open** (implementation, verification, external setup, or release acceptance still required)
+- **24 confirmed complete** (code/test/CI evidence listed below)
+- **56 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -65,7 +65,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T39** Test return-request eligibility, time window, admin decision and customer-visible status. (0.5–1 day)
 - [ ] **T40** Test Razorpay refund request, webhook update and retry/error recovery. (1 day)
 - [ ] **T41** Verify stock reconciliation for cancelled/returned orders and prevent overselling. (0.5–1 day)
-- [ ] **T42** Test review submission, one-review rule, verified-purchase flag and moderation. (0.5 day)
+- [x] **T42** Regression tests cover rating validation, one review per customer/product, verified-purchase flagging from order history, and approved review persistence; admin can hide/show reviews. CI passed for commit `d4ca4e6e`. (0.5 day)
 - [ ] **T43** Ticket validation, persistence and admin reply updates are CI-tested in commit `cba779e4`; customer/support email delivery still needs configured Brevo/MAIL_FROM and a deployed smoke test. (0.5–1 day)
 - [ ] **T44** Verify email sender configuration and customer-facing success/failure messages. (0.5 day)
 - [ ] **T45** Decide which V1 messages use email versus SMS/OTP; implement only configured providers and test delivery. (1–2 days plus provider setup)
