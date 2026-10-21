@@ -688,8 +688,8 @@ const admin = async (b, e) => {
   const u = bearer(e); if (!u || !u.admin) throw new E('Session expired. Log in again.', 401);
   if (b.action === 'load') {
     await ensureMarketplaceTabs();
-    const [o, p, us, rv, rq, tk, so, sl] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => [])]);
-    return { sellerLedger: sl.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 17 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
+    const [o, p, us, rv, rq, tk, so, sl, sellers] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => []), sheets.read('Sellers').catch(() => [])]);
+    return { sellers: sellers.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 10 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerLedger: sl.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 17 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
   }
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
@@ -732,6 +732,15 @@ const admin = async (b, e) => {
     row[8] = b.status; row[9] = reply; row[10] = now(); await sheets.update('Tickets', i + 1, row);
     let emailed = false; if (changed && row[4]) emailed = await tryMail(row[4], `Update on your ticket ${row[0]}: ${b.status}`, `<p>Hi ${clean(row[3])},</p><p>Your ticket <b>${row[0]}</b> is now <b>${b.status}</b>.</p>${reply ? '<p><b>Our reply:</b><br>' + brk(reply) + '</p>' : ''}<p>Need more help? Call ${PHONE()} or reply to this email.</p>`);
     return { ok: true, emailed };
+  }
+  if (b.action === 'setSellerStatus') {
+    const status = ['Active', 'Suspended'].includes(b.status) ? b.status : '';
+    if (!status) throw new E('Choose Active or Suspended for the seller account.');
+    const rows = await sellerRows(), i = rows.findIndex((r, k) => k > 0 && String(r[0]) === clean(b.id));
+    if (i < 0) throw new E('Seller account not found.', 404);
+    const row = rows[i].slice(); while (row.length < 10) row.push('');
+    row[7] = status; await sheets.update('Sellers', i + 1, row);
+    return { ok: true, id: row[0], status };
   }
   if (b.action === 'setSellerProductStatus') {
     const status = ['Approved', 'Rejected', 'Pending'].includes(b.status) ? b.status : '';
