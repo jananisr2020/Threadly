@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **28 confirmed complete** (code/test/CI evidence listed below)
-- **52 open** (implementation, verification, external setup, or release acceptance still required)
+- **29 confirmed complete** (code/test/CI evidence listed below)
+- **51 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -42,8 +42,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T19** Server order creation derives subtotal, discount, shipping and total from server-side product rows and coupon rules; client-supplied totals are not read. Regression tests verify source prices, discount, shipping and total; coupon boundary/cap tests passed in CI for commits `3f7f861c` and `8574dd9d`. (1 day)
 - [x] **T20** Server order builder repeats Tamil Nadu serviceability checks. Regression tests mock a valid Coimbatore PIN and reject an out-of-state PIN. CI passed for commit `7652aca9`; live India Post lookup behavior still needs a production smoke test. (0.5 day)
 - [x] **T21** Regression tests reject invalid mobile numbers and too-short delivery addresses, validate payment method, and verify server-side error handling. CI passed for commit `7652aca9`. (0.5 day)
-- [ ] **T22** Complete Razorpay test-mode order creation and client checkout integration. (1 day)
-- [ ] **T23** Test payment signature verification and ensure client claims alone cannot mark an order paid. (0.5–1 day)
+- [ ] **T22** Backend order creation is regression-tested with an injected Razorpay test client, including server-calculated amount and Pending-row persistence (commit `8622fbde`). The real Razorpay test account and browser checkout integration still require a configured test key and live test-mode smoke test. (1 day)
+- [x] **T23** Regression tests cover invalid Razorpay signatures, server-side payment fetch, rejection of authorized-but-uncaptured payments, and only recording the order/decrementing stock after a captured payment. CI passed for commit `996039f4`. (0.5–1 day)
 - [ ] **T24** Test signed webhook success/failure/refund events, replay/idempotency and duplicate callbacks. (1 day)
 - [ ] **T25** Define and test inventory decrement/reservation on successful payment without overselling. (1–2 days)
 - [ ] **T26** Define rollback/reconciliation for failed, abandoned and expired payment attempts. (1 day)
