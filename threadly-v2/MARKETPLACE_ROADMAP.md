@@ -9,7 +9,7 @@ This roadmap upgrades the existing Juno storefront in `threadly-v2/`. It does no
 - Checkout: prepaid online payments only; COD is disabled in the storefront, admin UI and server APIs.
 - Selling prices: ₹1–₹500; source-sheet prices are not silently rewritten. Products outside the cap are not publicly listed or purchasable.
 - Seller admission: application review, account activation and product moderation before public publishing.
-- Seller payouts: **disabled** until provider approval, seller KYC, commission/shipping/refund policy and reconciliation are complete.
+- External seller sales and seller payouts: **disabled by default** via `MARKETPLACE_SELLER_SALES_ENABLED=false` until provider approval, seller KYC, commission/shipping/refund policy, inventory safeguards and reconciliation are complete. Seller applications/onboarding can be piloted while sales remain disabled.
 
 ## Phase 1 — Seller application intake (implemented)
 
