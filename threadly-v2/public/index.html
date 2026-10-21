@@ -255,7 +255,8 @@ Object.keys(NM).forEach(c=>{const [sg,g,lo,hi,det,ic,sz,lab]=NM[c];for(let i=0;i
 /* ---- Google Sheet / products.csv loader ---- */
 function parseCSV(t){const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=h}else if(h==='"')q=true;else if(h===','){r.push(c);c=''}else if(h==='\n'||h==='\r'){if(h==='\r'&&t[i+1]==='\n')i++;r.push(c);rows.push(r);r=[];c=''}else c+=h}if(c||r.length){r.push(c);rows.push(r)}return rows}
 const imgUrl=u=>{u=(u||'').trim();if(!u)return'';const m=u.match(/drive\.google\.com\/file\/d\/([^/]+)/)||u.match(/drive\.google\.com\/open\?id=([^&]+)/);if(m)return'https://drive.google.com/uc?export=view&id='+m[1];return/^(https?:|data:|\/)/.test(u)?u:CFG.IMG_BASE+u};
-let catalogueReady=false,bundledProductsCache=null;
+let catalogueReady=false,catalogueLive=false,bundledProductsCache=null;
+function setCatalogueNotice(fallback){catalogueLive=!fallback;let n=document.getElementById('catalogue-sync-notice');if(!fallback){if(n)n.remove();return}if(!n){n=document.createElement('div');n.id='catalogue-sync-notice';n.setAttribute('role','status');n.style.cssText='margin:10px 16px;padding:12px 14px;border:1px solid #e6b86a;border-radius:10px;background:#fff7e6;color:#714b08;font-size:14px';n.textContent='Browsing the saved catalogue only. Live stock and checkout are temporarily unavailable while the catalogue service reconnects.';(document.querySelector('main')||document.body).prepend(n)}}
 async function getBundledProducts(){
   if(bundledProductsCache)return bundledProductsCache;
   try{const r=await fetch('/catalog.json',{cache:'no-store'});if(!r.ok)throw new Error('Catalogue HTTP '+r.status);const d=await r.json();bundledProductsCache=Array.isArray(d.products)?d.products:[]}catch(e){console.warn('Could not preload bundled catalogue images',e);bundledProductsCache=[]}
@@ -270,10 +271,10 @@ async function loadSheet(){
       if(!local.ok)throw new Error('Bundled catalogue returned HTTP '+local.status);
       const data=await local.json();
       if(!Array.isArray(data.products)||!data.products.length)throw new Error('Bundled catalogue contains no products');
-      P.length=0;P.push(...data.products);catalogueReady=true;
+      P.length=0;P.push(...data.products);catalogueReady=true;setCatalogueNotice(true);
       console.info('Loaded '+P.length+' products and their catalogue images from /catalog.json.');
     }catch(e){
-      catalogueReady=false;P.length=0;
+      catalogueReady=false;setCatalogueNotice(true);P.length=0;
       console.error('Juno bundled catalogue could not load:',e);
       toast('Catalogue could not load. Please refresh and try again.');
     }
@@ -286,7 +287,7 @@ async function loadSheet(){
       const cat=v('category')||'More',sizes=v('sizes/colours').split(/[|,]/).map(x=>x.trim()).filter(Boolean),match=byId.get(v('product id').toLowerCase())||byName.get(normProductText(name)),pool=byCat.get(normProductText(cat))||[],used=catUse[normProductText(cat)]||0,categoryMatch=pool.length?pool[used%pool.length]:null;catUse[normProductText(cat)]=used+1;
       const catalogueImage=imgUrl((match&&match.img)||(categoryMatch&&categoryMatch.img)||''),aiImageColumns=k.map((h,j)=>({h,j})).filter(x=>/^ai image [1-5]$/.test(x.h)).sort((a,b)=>Number(a.h.match(/[1-5]/)[0])-Number(b.h.match(/[1-5]/)[0])).map(x=>imgUrl(r[x.j]||'')).filter(Boolean),imageColumns=k.map((h,j)=>({h,j})).filter(x=>/^image\s*(?:url\s*)?(?:[2-6])$/.test(x.h)||/^additional image\s*[1-5]$/.test(x.h)).map(x=>imgUrl(r[x.j]||'')),extraImages=(v('additional images')||v('gallery images')||'').split(/[|;]/).map(imgUrl).filter(Boolean),primaryImage=imgUrl(v('image')||v('image 1')||v('image url')||v('product image')||v('primary image'))||catalogueImage,images=[...new Set((aiImageColumns.length?aiImageColumns:[primaryImage,...imageColumns,...extraImages]).filter(Boolean))].slice(0,5),galleryPrimary=aiImageColumns[0]||primaryImage||catalogueImage;
       out.push({id:v('product id')||'TL'+(i+1),cat,name,brand:v('details'),g:v('for')||'Unisex',mrp,price,off:Math.max(0,Math.round((mrp-price)/mrp*100)),rt:(num(v('rating'))||4.2).toFixed(1),rv:Math.floor(50+(i*137)%2000),col:COL[i%COL.length],sizes:sizes.length?sizes:['One size'],sz:sizes.length>0&&sizes.every(s=>/^(XXS|XS|S|M|L|XL|XXL|3XL|\d{1,2}(-\d{1,2}Y)?)$/i.test(s)),stock:v('stock')===''?99:num(v('stock')),sale:/^y/i.test(v('flash sale')),img:galleryPrimary,images,fallbackImg:catalogueImage,material:v('material'),style:v('style'),occasion:v('occasion'),type:v('product type')||v('type'),ic:ICM[cat]||cat,lab:/case|cover/i.test(cat)?'model':''})});
-    if(!out.length)throw new Error('No published products were returned');P.length=0;P.push(...out);catalogueReady=true}catch(e){console.error('Juno live catalogue unavailable; trying the bundled database catalogue:',e);try{const local=await fetch('/catalog.json',{cache:'no-store'});if(!local.ok)throw new Error('Bundled catalogue returned HTTP '+local.status);const data=await local.json();if(!Array.isArray(data.products)||!data.products.length)throw new Error('Bundled catalogue contains no products');P.length=0;P.push(...data.products);catalogueReady=true;console.warn('Loaded '+P.length+' products from the bundled catalogue. Live sheet sync is still unavailable.');toast('Showing saved catalogue while live data reconnects.')}catch(fallbackError){catalogueReady=false;P.length=0;console.error('Juno catalogue fallback failed:',fallbackError);toast('Catalogue could not load. Please try again shortly.')}}}
+    if(!out.length)throw new Error('No published products were returned');P.length=0;P.push(...out);catalogueReady=true;setCatalogueNotice(false)}catch(e){console.error('Juno live catalogue unavailable; trying the bundled database catalogue:',e);try{const local=await fetch('/catalog.json',{cache:'no-store'});if(!local.ok)throw new Error('Bundled catalogue returned HTTP '+local.status);const data=await local.json();if(!Array.isArray(data.products)||!data.products.length)throw new Error('Bundled catalogue contains no products');P.length=0;P.push(...data.products);catalogueReady=true;setCatalogueNotice(true);console.warn('Loaded '+P.length+' products from the bundled catalogue. Live sheet sync is still unavailable.');toast('Showing saved catalogue while live data reconnects.')}catch(fallbackError){catalogueReady=false;setCatalogueNotice(true);P.length=0;console.error('Juno catalogue fallback failed:',fallbackError);toast('Catalogue could not load. Please try again shortly.')}}}
 
 /* ---- delivery estimate ---- */
 const pin=()=>ST.get('tl_pin')||'';
@@ -677,7 +678,7 @@ $('#ub').onclick=()=>user?acct():authUI('in');
 $('#aov').onclick=e=>{const t=e.target;if(t.dataset.invoice){invoice(t.dataset.invoice);return}else if(t.id==='aov'||t.dataset.x)show('#aov',false);else if(t.dataset.tk!==undefined){show('#aov',false);openTicket()}else if(t.dataset.rq)reqUI(t.dataset.rq,t.dataset.o);else if(t.id==='rsend')sendReq();else if(t.id==='rback')acct();else if(t.dataset.m)t.dataset.m==='fp'?forgotUI():authUI(t.dataset.m);else if(t.id==='fgo')doForgot();else if(t.id==='rgo')doReset();else if(t.id==='go')doAuth($('#an')?'up':'in');else if(t.id==='lo'){user=null;ST.set('tl_session',null);ubtn();show('#aov',false);toast('Logged out')}};
 
 /* ---- checkout & payment ---- */
-function checkoutStart(){if(LIVE&&!catalogueReady)return toast('Live products are unavailable right now. Please try again shortly.');if(!S.cart.length)return toast('Your cart is empty');if(!user){S.pc=1;authUI('in')}else openPay()}
+function checkoutStart(){if(LIVE&&(!catalogueReady||!catalogueLive))return toast('Live stock and checkout are unavailable while the catalogue service reconnects. Please try again shortly.');if(!S.cart.length)return toast('Your cart is empty');if(!user){S.pc=1;authUI('in')}else openPay()}
 function addressKey(){return 'juno_addresses_'+String(user&&user.email||'guest').toLowerCase()}
 function addressBook(){const a=ST.get(addressKey());return Array.isArray(a)?a.filter(x=>x&&x.id):[]}
 function writeAddressBook(a){ST.set(addressKey(),a)}
