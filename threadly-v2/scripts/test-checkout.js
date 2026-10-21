@@ -36,7 +36,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -170,6 +170,39 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('cancellation and return requests enforce order-state rules', async () => {
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length, previousUpdates = updatedRows.length;
+      const orderRow = (id, status) => [id, '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Clip x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_' + id.toLowerCase(), '', status, '', ''];
+      mockedSheets = {
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          orderRow('ORDER-NEW', 'New'),
+          orderRow('ORDER-PACKED', 'Packed'),
+          orderRow('ORDER-SHIPPED', 'Shipped'),
+          orderRow('ORDER-DELIVERED', 'Delivered')
+        ],
+        Requests: [['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes']]
+      };
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.31' } }, user = { email: 'buyer@example.com' };
+      try {
+        const cancelled = await returnRequest({ type: 'Cancel', orderId: 'ORDER-NEW', reason: 'Changed my mind' }, event, user);
+        assert.equal(cancelled.status, 'Approved');
+        assert.equal(mockedSheets.Orders[1][17], 'Cancelled');
+        assert.match(cancelled.message, /review the refund/i);
+        assert.doesNotMatch(cancelled.message, /refund is processed/i);
+        const packed = await returnRequest({ type: 'Cancel', orderId: 'ORDER-PACKED', reason: 'Changed my mind' }, event, user);
+        assert.equal(packed.status, 'Requested');
+        await assert.rejects(() => returnRequest({ type: 'Cancel', orderId: 'ORDER-SHIPPED', reason: 'Changed my mind' }, event, user), /already shipped/i);
+        await assert.rejects(() => returnRequest({ type: 'Cancel', orderId: 'ORDER-DELIVERED', reason: 'Changed my mind' }, event, user), /request a return/i);
+        await assert.rejects(() => returnRequest({ type: 'Return', orderId: 'ORDER-PACKED', reason: 'Item issue' }, event, user), /after delivery/i);
+        const returned = await returnRequest({ type: 'Return', orderId: 'ORDER-DELIVERED', reason: 'Item issue' }, event, user);
+        assert.equal(returned.status, 'Requested');
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Requests').length, 3);
+        assert.ok(updatedRows.slice(previousUpdates).some(x => x.tab === 'Orders' && x.row[17] === 'Cancelled'));
+      } finally {
+        mockedSheets = previousSheets;
       }
     });
     await check('support tickets persist and admin replies update the ticket record', async () => {
