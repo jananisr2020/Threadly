@@ -38,8 +38,9 @@ jobs:
           let count = 0;
           for (const page of pages) {
             const html = fs.readFileSync(path.join(dir, page), 'utf8');
-            const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
-              .map(match => match[1])
+            const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+              .filter(match => !/application\/ld\+json/i.test(match[1]))
+              .map(match => match[2])
               .filter(script => script.trim());
             scripts.forEach((script, index) => {
               const safePage = page.replace(/[^a-z0-9_-]/gi, '_');
