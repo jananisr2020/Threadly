@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **11 confirmed complete** (code/test/CI evidence listed below)
-- **69 open** (implementation, verification, external setup, or release acceptance still required)
+- **12 confirmed complete** (code/test/CI evidence listed below)
+- **68 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -102,7 +102,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 
 ## P3 — admin, marketplace finance, release and handover (T73–T80)
 
-- [ ] **T73** Verify admin authentication, session handling, rate limits and authorization for every admin action. (1 day)
+- [x] **T73** Verify admin authentication, session handling, rate limits and authorization for every admin action. Code review confirms a 12-hour admin token and rate-limited login; regression tests confirm data/mutation actions reject missing admin sessions and seller-role tokens. CI passed for commit `8426f0bf`. (1 day)
 - [ ] **T74** Test admin product create/update/hide/delete behavior and audit invalid inputs. (0.5–1 day)
 - [ ] **T75** Test admin seller review, suspension, product approval and seller-order oversight. (0.5–1 day)
 - [ ] **T76** Test admin order, return/refund, review and support-ticket workflows end to end. (1 day)
