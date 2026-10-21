@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **44 confirmed complete** (code/test/CI evidence listed below)
-- **36 open** (implementation, verification, external setup, or release acceptance still required)
+- **45 confirmed complete** (code/test/CI evidence listed below)
+- **35 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -90,7 +90,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T62** Playwright mobile viewport tests cover home, product details, cart drawer, checkout/login step, seller application and Seller Studio without horizontal overflow. Browser CI passed for commit `7d3a5f04`. (1 day)
 - [ ] **T63** Verify seller application and Seller Studio mobile layouts. (0.5 day)
 - [ ] **T64** Verify PWA manifest, install prompt and app icons on Android browsers. (0.5 day)
-- [ ] **T65** Verify service-worker cache invalidation so old storefront code does not persist after deploy. (0.5–1 day)
+- [x] **T65** Service worker deletes stale Juno/Threadly shell caches on activation, keeps APIs network-only, and refreshes `/catalog.json` with `no-store`; CI now asserts these invariants. [Validate Juno storefront passed](https://github.com/jananisr2020/Threadly/actions/runs/39603337509). (0.5–1 day)
 - [x] **T66** Juno titles and favicon are now present on every public HTML page; CI enforces no stale Threadly titles. Fixed missing favicons on Admin Product Studio, offline page and Seller Studio. CI passed for commit `de9e42c1`. (0.5 day)
 - [ ] **T67** Check keyboard navigation, visible focus, form labels, contrast and accessible status messages. (1 day)
 - [x] **T68** Homepage includes Organization/WebSite JSON-LD; CI validates schema presence, canonical/OG URL consistency, sitemap.xml and robots.txt redirects, and Netlify base/publish paths. CI passed for commit `de9e42c1`. Production URLs still need a post-deploy smoke test. (0.5–1 day)
