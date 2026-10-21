@@ -131,6 +131,37 @@ async function rejectsWith(items, pattern) {
         for (const [key, value] of Object.entries(previousEnv)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
       }
     });
+    await check('seller activation is one-time and expired activation links are rejected', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-activation-secret';
+      mockedSheets = {
+        Requests: [
+          ['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes'],
+          ['APP-1', '', '', 'approved@example.com', 'Seller application', 'Store review', JSON.stringify({ storeName: 'Approved Clips', city: 'Coimbatore', category: 'Hair accessories' }), 'Approved', '']
+        ],
+        Sellers: [['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login']]
+      };
+      const payload = { purpose: 'seller-activate', email: 'approved@example.com', applicationId: 'APP-1' };
+      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const expiredToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: -1 });
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.11' } };
+      try {
+        const result = await sellerActivate({ token, password: 'Strong!123' }, event);
+        assert.equal(result.ok, true);
+        assert.equal(result.seller.email, 'approved@example.com');
+        const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Sellers');
+        assert.ok(saved, 'expected activated seller account to be saved');
+        assert.equal(saved.row[7], 'Active');
+        assert.notEqual(saved.row[4], 'Strong!123', 'password must be stored as a hash');
+        await assert.rejects(() => sellerActivate({ token, password: 'Strong!123' }, event), /seller account already exists/i);
+        await assert.rejects(() => sellerActivate({ token: expiredToken, password: 'Strong!123' }, event), /activation link expired/i);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
     await check('seller product API rejects prices above ₹500', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousAppends = appendedRows.length;
