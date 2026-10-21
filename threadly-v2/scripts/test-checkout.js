@@ -800,6 +800,55 @@ async function rejectsWith(items, pattern) {
       assert.equal(result.itemDetails[0].sellerId, 'JSRSELLER1');
       assert.equal(result.itemDetails[0].unitPrice, 100);
     });
+    await check('signed payment-captured webhook records paid orders and is replay-safe', async () => {
+      const previousEnv = {
+        JWT_SECRET: process.env.JWT_SECRET,
+        RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
+        RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
+        RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
+        WEBHOOK_DELAY_MS: process.env.WEBHOOK_DELAY_MS
+      };
+      const previousSheets = mockedSheets, previousFetch = global.fetch;
+      process.env.JWT_SECRET = 'offline-captured-webhook-jwt';
+      process.env.RAZORPAY_KEY_ID = 'rzp_test_juno';
+      process.env.RAZORPAY_KEY_SECRET = 'razorpay-test-secret';
+      process.env.RAZORPAY_WEBHOOK_SECRET = 'offline-captured-webhook-secret';
+      process.env.WEBHOOK_DELAY_MS = '0';
+      mockedSheets = {
+        Products: [
+          ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
+          ['JN0001', 'Basic scrunchie', 'Hair accessories', 'Unisex', 130, 100, 'Soft fabric scrunchie', 'Pink', '', 5, 'No', 4.5, 'Yes', '', 'Approved']
+        ],
+        Orders: [['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes']],
+        Pending: [
+          ['Razorpay Order ID', 'Order Data', 'Created', 'Status'],
+          ['order_rzp_hook', JSON.stringify({ id: 'JN-HOOK-1', email: 'buyer@example.com', addr: { name: 'Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'UPI', eta: '2-4 days', lines: 'Basic scrunchie x1', count: 1, sub: 100, disc: 10, ship: 39, total: 129, qty: [['JN0001', 1]], itemDetails: [{ productId: 'JN0001', name: 'Basic scrunchie', unitPrice: 100, quantity: 1, sellerId: '' }] }), '', 'pending']
+        ],
+        Sellers: [['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login']],
+        SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID']],
+        SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
+      };
+      _t.setRazorpayOverride({ payments: { fetch: async id => ({ id, order_id: 'order_rzp_hook', status: 'captured', amount: 12900, currency: 'INR' }) } });
+      const body = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: { id: 'pay_hook_1', order_id: 'order_rzp_hook' } } } });
+      const signature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET).update(body).digest('hex');
+      const event = { body, headers: { 'x-razorpay-signature': signature } };
+      try {
+        const result = await webhook({}, event);
+        assert.equal(result.ok, true);
+        assert.equal(mockedSheets.Orders[1][14], 'Paid');
+        assert.equal(mockedSheets.Orders[1][15], 'pay_hook_1');
+        assert.equal(mockedSheets.Products[1][9], 4);
+        assert.equal(mockedSheets.Pending[1][3], 'recorded');
+        await webhook({}, event);
+        assert.equal(mockedSheets.Orders.length, 2, 'replayed captured webhook must not create a duplicate order');
+        assert.equal(mockedSheets.Products[1][9], 4, 'replayed captured webhook must not decrement stock twice');
+      } finally {
+        _t.setRazorpayOverride(null);
+        global.fetch = previousFetch;
+        mockedSheets = previousSheets;
+        for (const [key, value] of Object.entries(previousEnv)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    });
     await check('signed refund webhook updates order status and flags seller ledger review', async () => {
       const previousSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
       const previousSheets = mockedSheets;
