@@ -702,19 +702,44 @@ const admin = async (b, e) => {
     const row = Array.from({ length: 9 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[8] = b.status === 'Hidden' ? 'Hidden' : 'Approved'; await sheets.update('Reviews', i + 1, row); return { ok: true };
   }
   if (b.action === 'updateRequest') {
-    const ST = ['Requested', 'Approved', 'Rejected', 'Pickup scheduled', 'Refunded', 'Closed']; if (!ST.includes(b.status)) throw new E('Bad status.');
-    const rows = await sheets.read('Requests'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Request not found.', 404);
-    const row = Array.from({ length: 9 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[7] = b.status; row[8] = clean(b.notes); await sheets.update('Requests', i + 1, row);
-    if (String(row[4] || '').toLowerCase() === 'seller application' && b.status === 'Approved' && String(rows[i][7] || '') !== 'Approved') {
-      if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM) throw new E('Application saved as Approved, but email is not configured. Set BREVO_API_KEY and MAIL_FROM, then contact the seller with a fresh activation link.', 500);
+    const ST = ['Requested', 'Approved', 'Rejected', 'Pickup scheduled', 'Refunded', 'Closed'];
+    if (!ST.includes(b.status)) throw new E('Bad status.');
+    const rows = await sheets.read('Requests'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id);
+    if (i < 0) throw new E('Request not found.', 404);
+    const row = Array.from({ length: 9 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
+    const oldStatus = String(row[7] || 'Requested'), type = String(row[4] || '').toLowerCase();
+    const approvingSeller = type === 'seller application' && b.status === 'Approved' && oldStatus !== 'Approved';
+    if (approvingSeller && (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM)) {
+      throw new E('Configure BREVO_API_KEY and MAIL_FROM before approving this seller application so Juno can send the activation link.', 500);
+    }
+    const want = type === 'cancel' && b.status === 'Approved' ? 'Cancelled' : type === 'return' && b.status === 'Refunded' ? 'Returned' : '';
+    let orderRows = null, orderIndex = -1, orderRow = null;
+    if (want) {
+      orderRows = await sheets.read('Orders');
+      orderIndex = orderRows.findIndex((r, n) => n > 0 && r[0] === row[2]);
+      if (orderIndex < 0) throw new E('Related order not found.', 404);
+      orderRow = padOrder(orderRows[orderIndex]);
+      if (want === 'Returned' && orderRow[OIDX.pay] !== 'Refunded') {
+        throw new E('Complete the Razorpay refund and wait for the verified refund webhook before marking this return as Refunded.');
+      }
+    }
+    row[7] = b.status; row[8] = clean(b.notes);
+    await sheets.update('Requests', i + 1, row);
+    if (approvingSeller) {
       let details = {}; try { details = JSON.parse(row[6] || '{}') } catch (x) {}
       const activation = sign({ purpose: 'seller-activate', email: String(row[3]).toLowerCase(), applicationId: row[0] }, '24h');
       const base = process.env.URL || ('https://' + ((e.headers || {}).host || ''));
       const link = base + '/seller-studio.html?activate=' + encodeURIComponent(activation);
-      await mail(String(row[3]), 'Your Juno seller application is approved', '<p>Hi ' + clean(details.ownerName || details.storeName || 'there') + ',</p><p>Your seller application for <b>' + clean(details.storeName || row[5]) + '</b> has been approved.</p><p><a href="' + link + '" style="background:#d9186c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Activate seller account</a></p><p>This secure link expires in 24 hours. If it expires, contact Juno support. Do not share it.</p>');
+      try {
+        await mail(String(row[3]), 'Your Juno seller application is approved', '<p>Hi ' + clean(details.ownerName || details.storeName || 'there') + ',</p><p>Your seller application for <b>' + clean(details.storeName || row[5]) + '</b> has been approved.</p><p><a href="' + link + '" style="background:#d9186c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Activate seller account</a></p><p>This secure link expires in 24 hours. If it expires, contact Juno support. Do not share it.</p>');
+      } catch (mailError) {
+        const rollback = row.slice(); rollback[7] = oldStatus;
+        try { await sheets.update('Requests', i + 1, rollback); }
+        catch (rollbackError) { console.error('Could not roll back seller approval after activation email failure', row[0], rollbackError && rollbackError.message); }
+        throw new E('Could not send the seller activation email. Check Brevo/MAIL_FROM, then retry approval. The application status was restored when possible.', 502);
+      }
     }
-    const want = row[4] === 'Cancel' && b.status === 'Approved' ? 'Cancelled' : row[4] === 'Return' && b.status === 'Refunded' ? 'Returned' : '';
-    if (want) { const o = await sheets.read('Orders'), k = o.findIndex((r, n) => n > 0 && r[0] === row[2]); if (k > 0) { const orow = padOrder(o[k]); orow[OIDX.status] = want; await sheets.update('Orders', k + 1, orow) } }
+    if (want) { orderRow[OIDX.status] = want; await sheets.update('Orders', orderIndex + 1, orderRow); }
     return { ok: true };
   }
   if (b.action === 'refund') {
