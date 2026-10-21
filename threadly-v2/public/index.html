@@ -14,9 +14,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fff5f9;--card:#fff;--ink:#16162e;--mut:#6b6d85;--line:#f1dbe6;--acc:#d9186c;--acc2:#7b3fe4;--ok:#0f9d58;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14101c;--card:#1e1830;--ink:#f4f0fa;--mut:#a59fbd;--line:#322a4a}}
-:root[data-theme="dark"]{--bg:#14101c;--card:#1e1830;--ink:#f4f0fa;--mut:#a59fbd;--line:#322a4a}
+:root{--bg:#fff5f9;--card:#fff;--ink:#16162e;--mut:#6b6d85;--line:#f1dbe6;--acc:#d9186c;--acc2:#7b3fe4;--ok:#087443;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14101c;--card:#1e1830;--ink:#f4f0fa;--mut:#a59fbd;--line:#322a4a;--ok:#55d18d}}
+:root[data-theme="dark"]{--bg:#14101c;--card:#1e1830;--ink:#f4f0fa;--mut:#a59fbd;--line:#322a4a;--ok:#55d18d}
 *{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,-apple-system,Segoe UI,sans-serif}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -139,7 +139,7 @@ footer a{color:var(--acc2)}footer{text-align:center;color:var(--mut);font-size:1
   <a class="logo" href="/" aria-label="Juno home"><svg class='lg' aria-hidden='true' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ff7eb6'/><stop offset='.55' stop-color='#f0287a'/><stop offset='1' stop-color='#7b3fe4'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='url(#g)'/><path d='M34 26H70V58C70 78 57 82 43 71' fill='none' stroke='#fff' stroke-width='12' stroke-linecap='round' stroke-linejoin='round'/><path d='M31 60C14 62 17 80 32 77' fill='none' stroke='#fff' stroke-opacity='.75' stroke-width='3.5' stroke-linecap='round' stroke-dasharray='1 7'/><circle cx='32' cy='77' r='4' fill='#fff' fill-opacity='.9'/></svg><span>Juno</span></a>
   <div class="search"><input id="q" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sg" aria-autocomplete="list" placeholder="Search claw clips, phone cases, tote bags, earrings" aria-label="Search products"><div class="sg" id="sg" role="listbox"></div></div>
   <input class="pin" id="pin" data-pin autocomplete="off" maxlength="30" placeholder="📍 Pincode or area" aria-label="Delivery pincode or area">
-  <button class="ib" id="ub">Login</button><button class="ib" id="wb" aria-label="Wishlist">♡ <b id="wc">0</b></button><button class="ib" id="cb" aria-label="Cart">🛒 Cart <b id="cc">0</b></button>
+  <button class="ib" id="ub">Login</button><button class="ib" id="wb" aria-label="♡ Wishlist">♡ <b id="wc">0</b></button><button class="ib" id="cb" aria-label="🛒 Cart">🛒 Cart <b id="cc">0</b></button>
 </div>
 <nav id="nav" aria-label="Shop by category"><ul class="nv" id="navl"></ul></nav>
 <div class="seller-promo"><span>Have a small accessories business?</span><a href="/sell-on-juno.html">Sell on Juno <span aria-hidden="true">→</span></a><small>Free seller onboarding</small></div>
