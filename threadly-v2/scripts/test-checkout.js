@@ -5,6 +5,7 @@
 // Run from threadly-v2 with: npm test
 const assert = require('node:assert/strict');
 const sheets = require('../netlify/lib/sheets');
+const jwt = require('jsonwebtoken');
 const rows = [
   ['Product ID', 'Product Name', 'Category', 'Selling Price', 'Stock', 'Show on site', 'Seller ID', 'Approval Status'],
   ['JN0001', 'Basic scrunchie', 'Hair accessories', 100, 5, 'Yes', '', 'Approved'],
@@ -31,7 +32,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, admin } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -72,6 +73,22 @@ async function rejectsWith(items, pattern) {
     });
     await check('server-side COD handler always rejects direct calls', async () => {
       await assert.rejects(() => placeCod({}, { headers: {} }, { email: 'buyer@example.com' }), /Cash on delivery is not available/i);
+    });
+    await check('admin product editor rejects selling prices above ₹500', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      const previousAppends = appendedRows.length;
+      process.env.JWT_SECRET = 'offline-admin-regression-secret';
+      try {
+        const token = jwt.sign({ admin: true }, process.env.JWT_SECRET);
+        await assert.rejects(
+          () => admin({ action: 'saveProduct', product: { name: 'Over budget accessory', price: 501, mrp: 600 } }, { headers: { authorization: 'Bearer ' + token } }),
+          /₹500 or less/i
+        );
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Products').length, 0);
+      } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
