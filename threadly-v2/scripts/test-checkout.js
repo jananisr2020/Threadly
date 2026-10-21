@@ -31,7 +31,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -69,6 +69,9 @@ async function rejectsWith(items, pattern) {
       const row = appendedRows.slice(previous).find(x => x.tab === 'WebsiteActivity');
       assert.ok(row, 'expected WebsiteActivity append after consent');
       assert.equal(row.row[3], 'page_view');
+    });
+    await check('server-side COD handler always rejects direct calls', async () => {
+      await assert.rejects(() => placeCod({}, { headers: {} }, { email: 'buyer@example.com' }), /Cash on delivery is not available/i);
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
