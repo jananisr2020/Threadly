@@ -842,6 +842,11 @@ async function rejectsWith(items, pattern) {
         await webhook({}, event);
         assert.equal(mockedSheets.Orders.length, 2, 'replayed captured webhook must not create a duplicate order');
         assert.equal(mockedSheets.Products[1][9], 4, 'replayed captured webhook must not decrement stock twice');
+        const failedBody = JSON.stringify({ event: 'payment.failed', payload: { payment: { entity: { error_description: 'declined by issuer' } } } });
+        const failedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET).update(failedBody).digest('hex');
+        await webhook({}, { body: failedBody, headers: { 'x-razorpay-signature': failedSignature } });
+        assert.equal(mockedSheets.Orders.length, 2, 'failed payment webhook must not create an order');
+        assert.equal(mockedSheets.Products[1][9], 4, 'failed payment webhook must not alter stock');
       } finally {
         _t.setRazorpayOverride(null);
         global.fetch = previousFetch;
