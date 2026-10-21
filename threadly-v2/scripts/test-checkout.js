@@ -699,6 +699,18 @@ async function rejectsWith(items, pattern) {
           () => _t.buildOrder({ addr: { name: 'Test Buyer', phone: '9876543210', line: '123 Test Street', pin: '400001' }, method: 'UPI', items: [{ id: 'JN0001', n: 1 }], total: 1 }, { email: 'buyer@example.com' }),
           /deliver only in Tamil Nadu/i
         );
+        await assert.rejects(
+          () => _t.buildOrder({ addr: { name: 'Test Buyer', phone: '123', line: '123 Test Street', pin: '641001' }, method: 'UPI', items: [{ id: 'JN0001', n: 1 }] }, { email: 'buyer@example.com' }),
+          /check your delivery details/i
+        );
+        await assert.rejects(
+          () => _t.buildOrder({ addr: { name: 'Test Buyer', phone: '9876543210', line: 'short', pin: '641001' }, method: 'UPI', items: [{ id: 'JN0001', n: 1 }] }, { email: 'buyer@example.com' }),
+          /check your delivery details/i
+        );
+        await assert.rejects(
+          () => _t.buildOrder({ addr: { name: 'Test Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'COD', items: [{ id: 'JN0001', n: 1 }] }, { email: 'buyer@example.com' }),
+          /choose a payment method/i
+        );
       } finally {
         global.fetch = previousFetch;
       }
