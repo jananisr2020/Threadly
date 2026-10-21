@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **46 confirmed complete** (code/test/CI evidence listed below)
-- **34 open** (implementation, verification, external setup, or release acceptance still required)
+- **47 confirmed complete** (code/test/CI evidence listed below)
+- **33 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -92,7 +92,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T64** Verify PWA manifest, install prompt and app icons on Android browsers. (0.5 day)
 - [x] **T65** Service worker deletes stale Juno/Threadly shell caches on activation, keeps APIs network-only, and refreshes `/catalog.json` with `no-store`; CI now asserts these invariants. [Validate Juno storefront passed](https://github.com/jananisr2020/Threadly/actions/runs/39603337509). (0.5–1 day)
 - [x] **T66** Juno titles and favicon are now present on every public HTML page; CI enforces no stale Threadly titles. Fixed missing favicons on Admin Product Studio, offline page and Seller Studio. CI passed for commit `de9e42c1`. (0.5 day)
-- [ ] **T67** Check keyboard navigation, visible focus, form labels, contrast and accessible status messages. (1 day)
+- [x] **T67** Playwright/axe WCAG 2.1 A/AA scan now checks the storefront, seller application and Seller Studio for critical/serious blockers. Fixed discount contrast, wishlist/cart accessible names (including live counts), and seller form label associations. Browser CI passed for commit `b11029ca`. Keyboard search and visible-focus styles are also covered. (1 day)
 - [x] **T68** Homepage includes Organization/WebSite JSON-LD; CI validates schema presence, canonical/OG URL consistency, sitemap.xml and robots.txt redirects, and Netlify base/publish paths. CI passed for commit `de9e42c1`. Production URLs still need a post-deploy smoke test. (0.5–1 day)
 - [ ] **T69** Run mobile performance checks; optimize oversized assets and unnecessary script work. (1 day)
 - [ ] **T70** Test loading, empty, offline, timeout and retry states on major pages. (0.5–1 day)
