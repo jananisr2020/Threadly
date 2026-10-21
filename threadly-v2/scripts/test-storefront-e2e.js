@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '../public');
 const csv = fs.readFileSync(path.join(root, 'products.csv'), 'utf8');
+let liveCatalogueAvailable = true;
 const mime = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -25,6 +26,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/api/')) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     if (url.pathname === '/api/products' && req.method === 'GET') {
+      if (!liveCatalogueAvailable) { res.writeHead(503); res.end(JSON.stringify({ ok: false, error: 'catalogue unavailable' })); return; }
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.end(csv);
       return;
@@ -182,6 +184,26 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller application page should fit mobile viewport');
     await page.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'seller studio should fit mobile viewport');
+
+    // If the live catalogue fails, the bundled preview is explicitly labelled and checkout stays disabled.
+    liveCatalogueAvailable = false;
+    await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#catalogue-sync-notice');
+    assert.match(await page.locator('#catalogue-sync-notice').textContent(), /saved catalogue only/i);
+    await page.waitForSelector('#grid .p');
+    await page.locator('#grid .p').first().locator('[data-qa]').click();
+    if (await page.locator('#mov.show').count()) {
+      const fallbackSize = page.locator('#modal .sz button').first();
+      if (await fallbackSize.count()) await fallbackSize.click();
+      await page.locator('#add').click();
+    }
+    await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
+    await page.locator('#cb').click();
+    await page.waitForSelector('#cov.show');
+    await page.locator('#co').click();
+    await page.waitForTimeout(150);
+    assert.equal(await page.locator('#aov.show').count(), 0, 'fallback catalogue must not proceed into checkout/login');
+    assert.equal(await page.locator('#pov.show').count(), 0, 'fallback catalogue must not proceed into checkout');
     assert.deepEqual(pageErrors, [], 'storefront and seller pages should not throw uncaught JavaScript errors');
     process.stdout.write('✓ storefront browser smoke tests passed (search, category, sort, wishlist, cart, product detail, compare, mobile)\n');
   } catch (error) {
