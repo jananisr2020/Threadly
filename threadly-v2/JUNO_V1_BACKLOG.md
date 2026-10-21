@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **13 confirmed complete** (code/test/CI evidence listed below)
-- **67 open** (implementation, verification, external setup, or release acceptance still required)
+- **14 confirmed complete** (code/test/CI evidence listed below)
+- **66 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -86,7 +86,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T57** Verify wishlist add/remove/persistence and signed-in versus guest behavior. (0.5 day)
 - [ ] **T58** Verify product comparison limits and accurate comparison attributes. (0.5 day)
 - [ ] **T59** Verify recently viewed and recommendation sections use real catalogue data. (0.5–1 day)
-- [ ] **T60** Verify coupon rules, stacking policy, expiry and server-side discount calculation. (0.5–1 day)
+- [x] **T60** Server-side coupon rules now have regression coverage for case-insensitive codes, minimum spend, flat discount, percentage discount cap and invalid codes; checkout recomputes discount from the submitted code and one code field is used (no stacking). CI passed for commit `8574dd9d`. Expiry behavior remains covered by the shared rule helper but the current configured codes have no expiry dates. (0.5–1 day)
 - [ ] **T61** Verify product cards use relevant, non-duplicated, working images and meaningful fallbacks. (1–2 days; catalogue content may need manual sourcing)
 - [ ] **T62** Verify mobile layout for home, search, product detail, cart and checkout. (1 day)
 - [ ] **T63** Verify seller application and Seller Studio mobile layouts. (0.5 day)
