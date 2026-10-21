@@ -170,3 +170,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 storefront browser testing: Added a Playwright Chromium smoke suite in `scripts/test-storefront-e2e.js` and GitHub workflow `Storefront browser tests`. The first successful run verifies the product grid, search suggestions, keyboard selection, and no-match state. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39601848786). Commit `3160d81b` marks T13 complete. The suite is being expanded to cover category/price filtering, all sort modes, cart/wishlist persistence/removal, compare attributes, and mobile layouts.
+
+
+2026-10-21 Playwright shopping interaction expansion: Commit `6ae64701` expands browser tests to cover category + price filters, all eight sort modes, wishlist add/remove/persistence, cart persistence and quantity/removal behavior, compare cap/attributes, and mobile home/seller pages. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39602029723). Backlog commit `7da38cef` marks T14, T15, T17, T18, T57 and T58 complete; progress is 40 confirmed complete and 40 open. A further mobile product/cart/checkout layout check is now added and its workflow run is pending.
