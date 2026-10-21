@@ -196,3 +196,6 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 accessibility checks: The Playwright suite now runs axe WCAG 2.1 A/AA scans on the storefront, seller application and Seller Studio and fails on critical/serious violations. Fixed discount text contrast, visible-text/accessibility-name mismatch for wishlist/cart buttons (including live counts), and Seller Studio form labels. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39604355076). Backlog commit `0272e78f` marks T67 complete; progress is 47 confirmed complete and 33 open.
+
+
+2026-10-21 product detail browser tests: Playwright adds a deterministic product with a broken image URL and low stock. The test verifies the broken image is hidden gracefully, `Only 2 left` is shown, the product detail opens, and colour variants can be selected. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39604587125). Backlog commit `69f39265` marks T16 complete; progress is 48 confirmed complete and 32 open.
