@@ -673,6 +673,36 @@ async function rejectsWith(items, pattern) {
     });
     await check('rejects an empty cart', () => rejectsWith([], /cart is empty/i));
     await check('rejects a product that does not exist', () => rejectsWith([{ id: 'UNKNOWN', n: 1 }], /no longer available/i));
+    await check('order builder validates Tamil Nadu serviceability and ignores client totals', async () => {
+      const previousFetch = global.fetch;
+      global.fetch = async url => ({
+        ok: true,
+        json: async () => [{ Status: 'Success', PostOffice: [{ State: 'Tamil Nadu', District: 'Coimbatore', Name: 'Coimbatore' }] }]
+      });
+      try {
+        const order = await _t.buildOrder({
+          addr: { name: 'Test Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' },
+          method: 'UPI',
+          items: [{ id: 'JN0001', n: 1 }],
+          coupon: 'JUNO10',
+          sub: 1,
+          disc: 999,
+          ship: 0,
+          total: 1
+        }, { email: 'buyer@example.com' });
+        assert.equal(order.sub, 100);
+        assert.equal(order.disc, 10);
+        assert.equal(order.ship, 39);
+        assert.equal(order.total, 129);
+        assert.notEqual(order.total, 1);
+        await assert.rejects(
+          () => _t.buildOrder({ addr: { name: 'Test Buyer', phone: '9876543210', line: '123 Test Street', pin: '400001' }, method: 'UPI', items: [{ id: 'JN0001', n: 1 }], total: 1 }, { email: 'buyer@example.com' }),
+          /deliver only in Tamil Nadu/i
+        );
+      } finally {
+        global.fetch = previousFetch;
+      }
+    });
     await check('checkout rejects products priced above ₹500 instead of silently repricing them', () => rejectsWith([{ id: 'JN0005', n: 1 }], /no longer available/i));
     await check('rejects zero quantity', () => rejectsWith([{ id: 'JN0001', n: 0 }], /no longer available/i));
     await check('rejects more than 20 units on one cart line', () => rejectsWith([{ id: 'JN0001', n: 21 }], /no longer available/i));
