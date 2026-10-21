@@ -92,6 +92,15 @@ jobs:
           console.log('Bundled catalogue prices, MRPs and discount percentages are internally consistent');
           console.log('Bundled catalogue contains ' + catalogue.products.length + ' products');
           const config = fs.readFileSync('netlify.toml', 'utf8');
+          if (!html.includes('"@type":"Organization"') || !html.includes('"@type":"WebSite"')) {
+            throw new Error('Juno Organization and WebSite structured data is required');
+          }
+          if (!html.includes('canonical" href="https://threadly-fashion.netlify.app/"') || !html.includes('property="og:url" content="https://threadly-fashion.netlify.app/"')) {
+            throw new Error('Canonical and social URLs must match the configured production URL');
+          }
+          if (!config.includes('from = "/sitemap.xml"') || !config.includes('from = "/robots.txt"')) {
+            throw new Error('Sitemap and robots.txt routes must be configured');
+          }
           if (!/base\s*=\s*"threadly-v2"/.test(config) || !/publish\s*=\s*"public"/.test(config)) {
             throw new Error('Netlify must build and publish from threadly-v2');
           }
