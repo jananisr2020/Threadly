@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **40 confirmed complete** (code/test/CI evidence listed below)
-- **40 open** (implementation, verification, external setup, or release acceptance still required)
+- **41 confirmed complete** (code/test/CI evidence listed below)
+- **39 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -87,7 +87,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T59** Verify recently viewed and recommendation sections use real catalogue data. (0.5–1 day)
 - [x] **T60** Server-side coupon rules now have regression coverage for case-insensitive codes, minimum spend, flat discount, percentage discount cap and invalid codes; checkout recomputes discount from the submitted code and one code field is used (no stacking). CI passed for commit `8574dd9d`. Expiry behavior remains covered by the shared rule helper but the current configured codes have no expiry dates. (0.5–1 day)
 - [ ] **T61** Verify product cards use relevant, non-duplicated, working images and meaningful fallbacks. (1–2 days; catalogue content may need manual sourcing)
-- [ ] **T62** Verify mobile layout for home, search, product detail, cart and checkout. (1 day)
+- [x] **T62** Playwright mobile viewport tests cover home, product details, cart drawer, checkout/login step, seller application and Seller Studio without horizontal overflow. Browser CI passed for commit `7d3a5f04`. (1 day)
 - [ ] **T63** Verify seller application and Seller Studio mobile layouts. (0.5 day)
 - [ ] **T64** Verify PWA manifest, install prompt and app icons on Android browsers. (0.5 day)
 - [ ] **T65** Verify service-worker cache invalidation so old storefront code does not persist after deploy. (0.5–1 day)
