@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "threadly-v2/public/index.html"
+      - "threadly-v2/public/**"
       - "threadly-v2/public/catalog.json"
       - "threadly-v2/public/images/categories/**"
       - "threadly-v2/public/manifest.webmanifest"
@@ -28,17 +28,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Check storefront JavaScript syntax
+      - name: Check inline JavaScript syntax on all public HTML pages
         run: |
           node <<'NODE'
           const fs = require('fs');
-          const html = fs.readFileSync('threadly-v2/public/index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
-            .map(match => match[1])
-            .filter(script => script.trim());
-          if (!scripts.length) throw new Error('No inline JavaScript found in storefront');
-          scripts.forEach((script, index) => fs.writeFileSync('/tmp/juno-inline-' + index + '.js', script));
-          console.log('Extracted ' + scripts.length + ' script block(s)');
+          const path = require('path');
+          const dir = 'threadly-v2/public';
+          const pages = fs.readdirSync(dir).filter(name => name.endsWith('.html'));
+          let count = 0;
+          for (const page of pages) {
+            const html = fs.readFileSync(path.join(dir, page), 'utf8');
+            const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)]
+              .map(match => match[1])
+              .filter(script => script.trim());
+            scripts.forEach((script, index) => {
+              const safePage = page.replace(/[^a-z0-9_-]/gi, '_');
+              fs.writeFileSync('/tmp/juno-inline-' + safePage + '-' + index + '.js', script);
+              count++;
+            });
+          }
+          if (!count) throw new Error('No inline JavaScript found in public HTML pages');
+          console.log('Extracted ' + count + ' inline script block(s) from ' + pages.length + ' HTML pages');
           NODE
           for file in /tmp/juno-inline-*.js; do node --check "$file"; done
       - name: Check Juno payment and deployment invariants
