@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **6 confirmed complete** (code/test/CI evidence listed below)
-- **74 open** (implementation, verification, external setup, or release acceptance still required)
+- **8 confirmed complete** (code/test/CI evidence listed below)
+- **72 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -23,10 +23,11 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T04** Seller product API rejects a selling price above ₹500; regression test passes in CI.
 - [x] **T05** Latest Checkout regression, Security checks and historical secret scan pass for commit `2bf380ce3e57f5cc4c740c3f4d0f4f992406b9f5`.
 - [x] **T06** Repository audit tracker and benchmark scope are committed in `ECOMMERCE_AUDIT_TRACKER.md`.
+- [x] **T07** Automated CI passed `npm test`, `npm run check`, and `npm run check:security` for commit `e240dd85`; Security checks also completed `npm audit --omit=dev --audit-level=high` successfully. Evidence: [Checkout regression tests](https://github.com/jananisr2020/Threadly/actions/runs/39595985008), [Security checks](https://github.com/jananisr2020/Threadly/actions/runs/39595985438), [Historical secret scan](https://github.com/jananisr2020/Threadly/actions/runs/39595984980).
 
 ## P0 — launch-blocking functionality and data integrity (T07–T30)
 
-- [ ] **T07** Run `npm run check`, `npm run check:security` and `npm test` from `threadly-v2/`; record exact logs on the latest main commit. (0.5 day)
+- [x] **T07** Run `npm run check`, `npm run check:security` and `npm test` from `threadly-v2/`; record exact logs on the latest main commit. (0.5 day)
 - [ ] **T08** Verify live `/api/health` and error behavior without exposing secrets. (0.5 day)
 - [ ] **T09** Verify production `SHEET_ID`, service-account access and required sheet names/headers privately. (0.5–1 day; owner setup may block)
 - [ ] **T10** Verify catalogue API/Sheet data path, empty state, failure state and no misleading stale/fallback catalogue. (1 day)
@@ -71,7 +72,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T46** Test seller application validation, consent, duplicate submissions and rate limiting. (0.5 day)
 - [ ] **T47** Test admin review/approval and seller activation link expiry and one-time use. (0.5–1 day)
 - [ ] **T48** Test seller login, account suspension, session expiry and logout. (0.5–1 day)
-- [ ] **T49** Prove seller A cannot list/read/update seller B's products or orders; add regression tests. (1 day)
+- [x] **T49** Prove seller A cannot list/read/update seller B's products or orders; add regression tests. (1 day)
 - [ ] **T50** Add safe seller product editing/stock updates for owned products, with server-side validation. (1–2 days)
 - [ ] **T51** Verify product moderation and approval-state changes are admin-only and immediately affect public visibility. (0.5–1 day)
 - [ ] **T52** Test multi-seller cart order splitting and seller-specific fulfilment records. (1–2 days)
