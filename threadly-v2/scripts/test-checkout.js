@@ -38,7 +38,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -296,6 +296,33 @@ async function rejectsWith(items, pattern) {
       } finally {
         mockedSheets = previousSheets;
         for (const [key, value] of Object.entries(previousEnv)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    });
+    await check('seller login validates credentials, updates last-login and rejects expired sessions', async () => {
+      const previousSecret = process.env.JWT_SECRET, previousSheets = mockedSheets, previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-seller-login-secret';
+      const hash = await bcrypt.hash('Strong!123', 10);
+      mockedSheets = { Sellers: [
+        ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login'],
+        ['JSRLOGIN1', 'APP-LOGIN', 'Login Clips', 'login-seller@example.com', hash, 'Coimbatore', 'Hair accessories', 'Active', '', '']
+      ] };
+      const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.12' } };
+      try {
+        await assert.rejects(() => sellerLogin({ email: 'login-seller@example.com', password: 'Wrong!123' }, event), /incorrect or the account is not active/i);
+        const result = await sellerLogin({ email: 'login-seller@example.com', password: 'Strong!123' }, event);
+        assert.equal(result.seller.id, 'JSRLOGIN1');
+        assert.ok(result.token);
+        assert.ok(mockedSheets.Sellers[1][9], 'successful login should update Last Login');
+        assert.ok(updatedRows.slice(previousUpdates).some(x => x.tab === 'Sellers'));
+        const expired = jwt.sign({ seller: true, sellerId: 'JSRLOGIN1', email: 'login-seller@example.com' }, process.env.JWT_SECRET, { expiresIn: -1 });
+        await assert.rejects(
+          () => sellerProducts({ action: 'profile' }, { headers: { authorization: 'Bearer ' + expired } }),
+          /Please sign in to your seller account/i
+        );
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
       }
     });
     await check('seller activation is one-time and expired activation links are rejected', async () => {
