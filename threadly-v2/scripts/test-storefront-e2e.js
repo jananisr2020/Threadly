@@ -87,7 +87,7 @@ const server = http.createServer((req, res) => {
     for (const iconPath of ['/icon-192.png', '/icon-512.png']) {
       const iconResponse = await page.request.get(`http://127.0.0.1:${address.port}${iconPath}`);
       assert.equal(iconResponse.status(), 200, iconPath + ' should exist');
-      assert.match(iconResponse.headers()['content-type'] || '', /image\\/png/i, iconPath + ' should be served as PNG');
+      assert.ok((iconResponse.headers()['content-type'] || '').includes('image/png'), iconPath + ' should be served as PNG');
     }
     // Broken image fallback, low-stock messaging and product variant selection.
     await page.locator('#q').fill('E2E Broken Image Hair Clip');
