@@ -211,6 +211,43 @@ const server = http.createServer((req, res) => {
     for (const item of compareData.slice(0, 3)) assert.ok(comparison.includes(item.name), 'comparison should include ' + item.name);
     for (const field of ['Price', 'MRP', 'Rating', 'Sizes/colors', 'Stock']) assert.ok(comparison.includes(field), 'comparison should show ' + field);
 
+    // Address book is device-local, scoped by signed-in email, and supports add/edit/remove/select.
+    const addressPage = await context.newPage();
+    addressPage.on('pageerror', error => pageErrors.push(error.message));
+    await addressPage.addInitScript(() => {
+      localStorage.setItem('tl_cookie', JSON.stringify('all'));
+      localStorage.setItem('tl_session', JSON.stringify({ name: 'E2E Buyer', email: 'buyer@example.com', token: 'e2e-customer-token' }));
+    });
+    await addressPage.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
+    await addressPage.waitForSelector('#grid .p');
+    const addressProductId = await addressPage.locator('#grid .p').first().getAttribute('data-id');
+    await addressPage.evaluate(id => localStorage.setItem('tl_cart', JSON.stringify([{ id, n: 1, s: 'One Size' }])), addressProductId);
+    await addressPage.reload({ waitUntil: 'domcontentloaded' });
+    await addressPage.waitForSelector('#grid .p');
+    await addressPage.locator('#cb').click();
+    await addressPage.waitForSelector('#cov.show');
+    await addressPage.locator('#co').click();
+    await addressPage.waitForSelector('#pov.show');
+    await addressPage.locator('#dn').fill('E2E Buyer');
+    await addressPage.locator('#dp').fill('9876543210');
+    await addressPage.locator('#da').fill('12 Test Street, Coimbatore');
+    await addressPage.locator('#dz').fill('641001');
+    await addressPage.locator('#dlabel').selectOption('Home');
+    await addressPage.locator('#ddefault').check();
+    await addressPage.locator('#addrSave').click();
+    await addressPage.waitForFunction(() => document.querySelector('#saved-addresses')?.textContent.includes('E2E Buyer'));
+    assert.equal(await addressPage.evaluate(() => JSON.parse(localStorage.getItem('juno_addresses_buyer@example.com') || '[]').length), 1, 'saved address should persist under the signed-in email');
+    await addressPage.locator('[data-address-edit]').first().click();
+    await addressPage.locator('#dn').fill('E2E Buyer Updated');
+    await addressPage.locator('#addrSave').click();
+    await addressPage.waitForFunction(() => document.querySelector('#saved-addresses')?.textContent.includes('E2E Buyer Updated'));
+    await addressPage.locator('[data-address-select]').first().click();
+    assert.ok(await addressPage.locator('.addr-card.selected').count() > 0, 'selected address should be visibly indicated');
+    await addressPage.locator('[data-address-delete]').first().click();
+    await addressPage.waitForFunction(() => document.querySelector('#saved-addresses')?.textContent.includes('No saved addresses yet'));
+    assert.equal(await addressPage.evaluate(() => JSON.parse(localStorage.getItem('juno_addresses_buyer@example.com') || '[]').length), 0, 'removed address should be deleted from the local address book');
+    await addressPage.close();
+
     // Mobile layout must not overflow the viewport.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'domcontentloaded' });
