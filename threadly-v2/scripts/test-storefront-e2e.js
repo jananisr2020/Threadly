@@ -227,6 +227,15 @@ const server = http.createServer((req, res) => {
     if (studioBlockers.length) throw new Error('Seller Studio accessibility blockers: ' + JSON.stringify(studioBlockers.map(v => ({ id: v.id, help: v.help, nodes: v.nodes.slice(0, 3).map(n => n.target) }))));
     const sellerSessionPage = await context.newPage();
     sellerSessionPage.on('pageerror', error => pageErrors.push(error.message));
+    await sellerSessionPage.route('**/api/seller-products', async route => {
+      const request = route.request();
+      const body = JSON.parse(request.postData() || '{}');
+      const data = body.action === 'profile'
+        ? { ok: true, seller: { storeName: 'E2E Seller Store' } }
+        : body.action === 'load' ? { ok: true, products: [] } : { ok: true };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
+    });
+    await sellerSessionPage.route('**/api/seller-orders', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, orders: [] }) }));
     await sellerSessionPage.addInitScript(() => sessionStorage.setItem('junoSellerToken', 'e2e-seller-session'));
     await sellerSessionPage.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
     await sellerSessionPage.waitForFunction(() => !document.querySelector('#studio').classList.contains('hidden'));
