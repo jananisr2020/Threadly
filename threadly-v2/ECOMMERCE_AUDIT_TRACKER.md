@@ -1,6 +1,6 @@
 # Juno e-commerce audit and implementation tracker
 
-Last reviewed: 2026-10-21  
+Last reviewed: 2026-10-22  
 Repository: `jananisr2020/Threadly`, application root `threadly-v2/`  
 Production URL: https://threadly-fashion.netlify.app/  
 Comparison set: Meesho, Myntra, Amazon, Flipkart
@@ -206,4 +206,5 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 - Fixed Seller Studio logout browser-test setup so its session seed does not re-run after the page reload. Browser suite passed: https://github.com/jananisr2020/Threadly/actions/runs/39790678230.
 - Added customer order-history regression coverage: results are email-scoped, omit delivery address/phone/PIN/payment ID, and a fresh read reflects current fulfilment status/tracking. Checkout regression suite passed: https://github.com/jananisr2020/Threadly/actions/runs/39790812185.
 - Added explicit allowlist test for activity audit details; password, token, payment ID, phone, address and arbitrary free text are excluded. Security checks passed: https://github.com/jananisr2020/Threadly/actions/runs/39790756393; historical secret scan passed: https://github.com/jananisr2020/Threadly/actions/runs/39790756391.
+- Fixed Android PWA manifest icons to include 192px and 512px PNG assets while retaining the maskable Juno SVG; Playwright verified the manifest, icon URLs and PNG content types. Browser tests passed: https://github.com/jananisr2020/Threadly/actions/runs/39791325093; storefront validator passed after restoring the maskable SVG declaration: https://github.com/jananisr2020/Threadly/actions/runs/39791288977. T64 remains open only for real-device Android install-prompt verification.
 - Backlog updated from 48/80 to 52/80 complete. T37, T48, T54 and T77 are now complete with CI evidence. Production checks remain open: live /api/health, Google Sheets credentials/tab headers, live Razorpay checkout/payment and reconciliation, email delivery, and exact Netlify deployment commit. Seller sales remain disabled until settlement/inventory safeguards are ready; COD remains disabled and the ₹500 ceiling remains enforced.
