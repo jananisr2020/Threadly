@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **52 confirmed complete** (code/test/CI evidence listed below)
-- **28 open** (implementation, verification, external setup, or release acceptance still required)
+- **53 confirmed complete** (code/test/CI evidence listed below)
+- **27 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -84,7 +84,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T56** Compare homepage/category experience against Meesho, Myntra, Amazon and Flipkart; fix navigation dead ends. (1 day)
 - [x] **T57** Playwright verifies guest wishlist add, persistence across reload and removal persistence. Signed-in wishlist sync remains out of V1 scope; guest local storage is the supported behavior. Browser CI passed for commit `6ae64701`. (0.5 day)
 - [x] **T58** Playwright verifies comparison is capped at three products and the comparison table includes selected product names, price, MRP/discount, rating, sizes/colors and stock. Browser CI passed for commit `6ae64701`. (0.5 day)
-- [ ] **T59** Verify recently viewed and recommendation sections use real catalogue data. (0.5–1 day)
+- [x] **T59** Product detail related-item rails are built from live catalogue objects, and Playwright verifies the Recently viewed rail shows the exact product opened after consented local storage and a reload. Browser tests passed: https://github.com/jananisr2020/Threadly/actions/runs/39791808258. (0.5–1 day)
 - [x] **T60** Server-side coupon rules now have regression coverage for case-insensitive codes, minimum spend, flat discount, percentage discount cap and invalid codes; checkout recomputes discount from the submitted code and one code field is used (no stacking). CI passed for commit `8574dd9d`. Expiry behavior remains covered by the shared rule helper but the current configured codes have no expiry dates. (0.5–1 day)
 - [ ] **T61** Audit of `public/catalog.json` confirms 604 unique product names but **0/604 products have an image URL or image array**; the catalogue intentionally keeps images blank until relevant product-specific photos are reviewed. Real, non-duplicated images and meaningful fallbacks still need sourcing/QA—do not fill this with random or unreviewed generated imagery. (1–2 days; catalogue content may need manual sourcing)
 - [x] **T62** Playwright mobile viewport tests cover home, product details, cart drawer, checkout/login step, seller application and Seller Studio without horizontal overflow. Browser CI passed for commit `7d3a5f04`. (1 day)
