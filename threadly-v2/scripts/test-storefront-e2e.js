@@ -77,6 +77,18 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelectorAll('#grid .p').length > 0, null, { timeout: 15000 });
     assert.ok(await page.locator('#grid .p').count() >= 12, 'storefront should render a useful product grid');
+    // Validate installability metadata and both required Android raster icon sizes.
+    const manifestResponse = await page.request.get(`http://127.0.0.1:${address.port}/manifest.webmanifest`);
+    assert.equal(manifestResponse.status(), 200, 'PWA manifest should be served');
+    const manifest = await manifestResponse.json();
+    assert.equal(manifest.display, 'standalone', 'PWA should use standalone display');
+    assert.ok(manifest.icons.some(icon => icon.src === '/icon-192.png' && icon.sizes === '192x192'), 'manifest should declare a 192px Android icon');
+    assert.ok(manifest.icons.some(icon => icon.src === '/icon-512.png' && icon.sizes === '512x512'), 'manifest should declare a 512px Android icon');
+    for (const iconPath of ['/icon-192.png', '/icon-512.png']) {
+      const iconResponse = await page.request.get(`http://127.0.0.1:${address.port}${iconPath}`);
+      assert.equal(iconResponse.status(), 200, iconPath + ' should exist');
+      assert.match(iconResponse.headers()['content-type'] || '', /image\\/png/i, iconPath + ' should be served as PNG');
+    }
     // Broken image fallback, low-stock messaging and product variant selection.
     await page.locator('#q').fill('E2E Broken Image Hair Clip');
     const brokenCard = page.locator('#grid .p[data-id="E2E001"]');
