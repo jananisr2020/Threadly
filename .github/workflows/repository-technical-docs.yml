@@ -13,7 +13,7 @@ permissions:
 jobs:
   technical-guide:
     # The generated documentation commit must not trigger an endless commit loop.
-    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'docs(auto): refresh repository technical guide')
+    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'docs(auto): refresh repository technical guide') }}"
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
