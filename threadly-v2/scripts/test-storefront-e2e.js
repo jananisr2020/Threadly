@@ -236,7 +236,7 @@ const server = http.createServer((req, res) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
     });
     await sellerSessionPage.route('**/api/seller-orders', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, orders: [] }) }));
-    await sellerSessionPage.addInitScript(() => sessionStorage.setItem('junoSellerToken', 'e2e-seller-session'));
+    await sellerSessionPage.addInitScript(() => { if (!sessionStorage.getItem('e2eSellerSessionSeeded')) { sessionStorage.setItem('junoSellerToken', 'e2e-seller-session'); sessionStorage.setItem('e2eSellerSessionSeeded', '1'); } });
     await sellerSessionPage.goto(`http://127.0.0.1:${address.port}/seller-studio.html`, { waitUntil: 'domcontentloaded' });
     await sellerSessionPage.waitForFunction(() => !document.querySelector('#studio').classList.contains('hidden'));
     await sellerSessionPage.locator('#logout').click();
