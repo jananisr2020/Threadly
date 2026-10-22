@@ -223,7 +223,8 @@ const server = http.createServer((req, res) => {
     for (const field of ['Price', 'MRP', 'Rating', 'Sizes/colors', 'Stock']) assert.ok(comparison.includes(field), 'comparison should show ' + field);
 
     // Address book is device-local, scoped by signed-in email, and supports add/edit/remove/select.
-    const addressPage = await context.newPage();
+    const addressContext = await browser.newContext({ viewport: { width: 1365, height: 900 } });
+    const addressPage = await addressContext.newPage();
     addressPage.on('pageerror', error => pageErrors.push(error.message));
     await addressPage.addInitScript(() => {
       localStorage.setItem('tl_cookie', JSON.stringify('all'));
@@ -257,7 +258,7 @@ const server = http.createServer((req, res) => {
     await addressPage.locator('[data-address-delete]').first().click();
     await addressPage.waitForFunction(() => document.querySelector('#saved-addresses')?.textContent.includes('No saved addresses yet'));
     assert.equal(await addressPage.evaluate(() => JSON.parse(localStorage.getItem('juno_addresses_buyer@example.com') || '[]').length), 0, 'removed address should be deleted from the local address book');
-    await addressPage.close();
+    await addressContext.close();
 
     // Mobile layout must not overflow the viewport.
     await page.setViewportSize({ width: 390, height: 844 });
