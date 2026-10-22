@@ -579,7 +579,7 @@ const padOrder = r => Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r
 const returnRequest = async (b, e, u) => {
   limit('rq:' + u.email, 10, 36e5);
   const type = b.type === 'Return' ? 'Return' : b.type === 'Cancel' ? 'Cancel' : null; if (!type) throw new E('Choose cancel or return.');
-  const reason = clean(b.reason).slice(0, 100), details = clean(b.details).slice(0, 400); if (!reason) throw new E('Please choose a reason.');
+  const reason = clean(b.reason).slice(0, 100); let details = clean(b.details).slice(0, 400); if (!reason) throw new E('Please choose a reason.');
   const orders = await sheets.read('Orders'), i = orders.findIndex((r, k) => k > 0 && r[0] === clean(b.orderId) && String(r[3]).toLowerCase() === u.email); if (i < 0) throw new E('Order not found.', 404);
   const st = orders[i][17] || 'New';
   if (st === 'Cancelled' || st === 'Returned') throw new E('This order is already ' + st.toLowerCase() + '.');
