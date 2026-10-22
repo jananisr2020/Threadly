@@ -14,6 +14,7 @@ const e2eCsv = csv.trimEnd() + '\nE2E001,E2E Broken Image Hair Clip,Hair Clips,W
 const bundledCatalogue = JSON.parse(fs.readFileSync(path.join(root, 'catalog.json'), 'utf8'));
 const catalogueIds = new Set([...e2eCsv.trim().split('\n').slice(1).map(row => row.split(',')[0]), ...(bundledCatalogue.products || []).map(product => product.id)]);
 let liveCatalogueAvailable = true;
+let catalogueResponseDelayMs = 0;
 const mime = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -32,7 +33,9 @@ const server = http.createServer((req, res) => {
     if (url.pathname === '/api/products' && req.method === 'GET') {
       if (!liveCatalogueAvailable) { res.writeHead(503); res.end(JSON.stringify({ ok: false, error: 'catalogue unavailable' })); return; }
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.end(e2eCsv);
+      if (catalogueResponseDelayMs > 0) {
+        setTimeout(() => { if (!res.destroyed && !res.writableEnded) res.end(e2eCsv); }, catalogueResponseDelayMs);
+      } else res.end(e2eCsv);
       return;
     }
     if (url.pathname === '/api/pincode') {
@@ -337,6 +340,16 @@ const server = http.createServer((req, res) => {
     await page.locator('#retry-live-catalogue').click();
     await page.waitForFunction(() => !document.querySelector('#catalogue-sync-notice'));
     assert.ok(await page.locator('#grid .p').count() > 0, 'catalogue retry should restore products');
+    // A slow catalogue request must time out to the saved preview rather than hang indefinitely.
+    catalogueResponseDelayMs = 600;
+    await page.addInitScript(() => { window.JUNO_CATALOGUE_TIMEOUT_MS = 250; });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#catalogue-sync-notice');
+    assert.match(await page.locator('#catalogue-sync-notice').textContent(), /saved catalogue only/i);
+    await page.waitForSelector('#grid .p');
+    catalogueResponseDelayMs = 0;
+    await page.locator('#retry-live-catalogue').click();
+    await page.waitForFunction(() => !document.querySelector('#catalogue-sync-notice'));
     assert.deepEqual(pageErrors, [], 'storefront and seller pages should not throw uncaught JavaScript errors');
     process.stdout.write('✓ storefront browser smoke tests passed (search, category, sort, wishlist, cart, product detail, compare, mobile)\n');
   } catch (error) {
