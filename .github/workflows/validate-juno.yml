@@ -61,6 +61,16 @@ jobs:
           if (/cash\s*on\s*delivery|\bCOD\b/i.test(html)) {
             throw new Error('Cash on delivery must remain disabled in the storefront');
           }
+          const policyDir = 'threadly-v2/public';
+          const policyText = ['shipping-policy.html', 'refund-policy.html', 'terms.html']
+            .map(name => fs.readFileSync(path.join(policyDir, name), 'utf8')).join('\n');
+          if (/cash on delivery is available|or by cash on delivery|for cash on delivery|refunded by UPI or bank transfer/i.test(policyText)) {
+            throw new Error('Shipping, refund and terms policies must not promise unavailable COD');
+          }
+          if (!/prepaid payments/i.test(fs.readFileSync(path.join(policyDir, 'shipping-policy.html'), 'utf8')) ||
+              !/does not offer cash on delivery/i.test(fs.readFileSync(path.join(policyDir, 'terms.html'), 'utf8'))) {
+            throw new Error('Policies must explicitly explain Juno prepaid-only checkout');
+          }
           const manifest = JSON.parse(fs.readFileSync('threadly-v2/public/manifest.webmanifest', 'utf8'));
           const sw = fs.readFileSync('threadly-v2/public/sw.js', 'utf8');
           if (!sw.includes('caches.delete(key)') || !sw.includes('key !== CACHE_NAME')) {
