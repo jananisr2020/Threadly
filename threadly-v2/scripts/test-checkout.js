@@ -83,6 +83,17 @@ async function rejectsWith(items, pattern) {
         else process.env.MARKETPLACE_SELLER_SALES_ENABLED = previousFlag;
       }
     });
+    await check('activity audit payload uses an allowlist and excludes credentials and personal delivery data', async () => {
+      const details = JSON.parse(_t.safeActivityDetails({
+        action: 'login', orderId: 'JN-123', password: 'DO_NOT_LOG', token: 'DO_NOT_LOG',
+        paymentId: 'pay_secret', phone: '9876543210', address: 'private address', card: '4111111111111111',
+        email: 'buyer@example.com', details: 'free text should not be logged'
+      }));
+      assert.deepEqual(details, { action: 'login', orderId: 'JN-123' });
+      assert.equal(JSON.stringify(details).includes('DO_NOT_LOG'), false);
+      assert.equal(JSON.stringify(details).includes('private address'), false);
+      assert.equal(JSON.stringify(details).includes('pay_secret'), false);
+    });
     await check('website activity endpoint rejects events without explicit consent', async () => {
       const previous = appendedRows.length;
       await assert.rejects(() => trackWebsiteActivity({ event: 'page_view', sessionId: 'test_session_123', page: '/' }, { headers: {} }), /explicit consent/i);
