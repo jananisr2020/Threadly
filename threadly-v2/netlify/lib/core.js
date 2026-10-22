@@ -4,6 +4,17 @@ class E extends Error { constructor(m, code = 400) { super(m); this.code = code 
 const json = (code, obj, extra = {}) => ({ statusCode: code, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra }, body: JSON.stringify(obj) });
 const parse = e => { try { return JSON.parse(e.body || '{}') } catch (x) { return {} } };
 const clean = t => String(t == null ? '' : t).replace(/[<>]/g, '').trim().slice(0, 300);
+const noteMarker = (note, key) => {
+  const prefix = key + '=';
+  const entry = String(note || '').split('|').map(s => s.trim()).find(s => s.startsWith(prefix));
+  return entry ? entry.slice(prefix.length).trim() : '';
+};
+const setNoteMarker = (note, key, value) => {
+  const prefix = key + '=';
+  const parts = String(note || '').split('|').map(s => s.trim()).filter(s => s && !s.startsWith(prefix));
+  parts.push(prefix + String(value || ''));
+  return parts.join(' | ').slice(0, 500);
+};
 const hits = new Map();
 const ip = e => String((e.headers || {})['x-nf-client-connection-ip'] || (e.headers || {})['x-forwarded-for'] || '?').split(',')[0].trim();
 const limit = (key, max, ms) => { const t = Date.now(), a = (hits.get(key) || []).filter(x => t - x < ms); if (a.length >= max) { hits.set(key, a); throw new E('Too many attempts. Please wait a few minutes and try again.', 429) } a.push(t); hits.set(key, a); if (hits.size > 5000) hits.clear() };
@@ -578,7 +589,37 @@ const returnRequest = async (b, e, u) => {
     if (st === 'New') { const row = padOrder(orders[i]); row[OIDX.status] = 'Cancelled'; await sheets.update('Orders', i + 1, row); status = 'Approved'; message = 'Order cancelled. If you paid online, Juno will review the refund and update its status.' }
     else if (st === 'Packed') message = 'Your order is already packed. We will try to stop it and confirm shortly.';
     else throw new E(st === 'Delivered' ? 'This order was delivered. You can request a return instead.' : 'This order has already shipped, so it cannot be cancelled. You can request a return after delivery.');
-  } else if (st !== 'Delivered') throw new E('Returns can be requested after delivery.');
+  } else {
+    if (st !== 'Delivered') throw new E('Returns can be requested after delivery.');
+    const deliveredText = noteMarker(orders[i][19], 'DELIVERED_AT');
+    const deliveredAt = deliveredText ? Date.parse(deliveredText) : NaN;
+    let reviewNote = '';
+    let itemCategories = [];
+    try {
+      const pending = await sheets.read('Pending');
+      const pendingRow = pending.slice(1).find(r => { try { return String(JSON.parse(r[1] || '{}').id || '') === String(orders[i][0]); } catch (x) { return false; } });
+      if (pendingRow) {
+        const saved = JSON.parse(pendingRow[1] || '{}');
+        itemCategories = Array.isArray(saved.itemDetails) ? saved.itemDetails.map(it => String(it.category || '')) : [];
+      }
+    } catch (x) { /* older orders may not have a pending checkout row; route them for manual review */ }
+    const exceptionReason = /damaged|defective|wrong item|not as shown/i.test(reason);
+    if (Number.isFinite(deliveredAt)) {
+      const age = Date.now() - deliveredAt;
+      if (age < -5 * 60 * 1000) throw new E('Delivery timestamp is invalid. Please contact support.', 409);
+      if (exceptionReason && age > 48 * 60 * 60 * 1000) throw new E('Damaged, defective or wrong-item reports must be submitted within 48 hours of delivery. Please contact support if you need an exception.');
+      if (age > 7 * 24 * 60 * 60 * 1000) throw new E('Return requests must be submitted within 7 days of delivery. Please contact support if you need an exception.');
+    } else {
+      reviewNote = 'Manual eligibility review required: delivery timestamp is unavailable.';
+    }
+    if (itemCategories.length) {
+      const hygieneSensitive = itemCategories.some(cat => /earring|hair.?accessor|hair.?clip|claw.?clip|hair.?band|scrunchie|ring|jewell?ry/i.test(cat));
+      if (hygieneSensitive && !exceptionReason) throw new E('This item is hygiene-sensitive and can be returned only if damaged, defective or the wrong item.');
+    } else {
+      reviewNote = [reviewNote, 'Manual eligibility review required: product categories are unavailable.'].filter(Boolean).join(' ');
+    }
+    details = [details, reviewNote].filter(Boolean).join(' | ').slice(0, 400);
+  }
   await sheets.append('Requests', ['RQ' + Date.now().toString().slice(-8), now(), orders[i][0], u.email, type, reason, details, status, '']);
   return { ok: true, status, message };
 };
@@ -713,7 +754,17 @@ const admin = async (b, e) => {
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
     const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
-    if (b.status != null) row[OIDX.status] = clean(b.status); if (b.tracking != null) row[OIDX.track] = clean(b.tracking); if (b.pay != null) throw new E('Payment status is controlled by verified Razorpay events and cannot be edited manually.'); if (b.notes != null) row[OIDX.notes] = clean(b.notes);
+    const oldStatus = String(row[OIDX.status] || 'New');
+    if (b.status != null) row[OIDX.status] = clean(b.status);
+    if (b.tracking != null) row[OIDX.track] = clean(b.tracking);
+    if (b.pay != null) throw new E('Payment status is controlled by verified Razorpay events and cannot be edited manually.');
+    if (b.notes != null) row[OIDX.notes] = clean(b.notes);
+    const deliveredMarker = noteMarker(rows[i][OIDX.notes], 'DELIVERED_AT');
+    if (row[OIDX.status] === 'Delivered' && oldStatus !== 'Delivered') {
+      row[OIDX.notes] = setNoteMarker(row[OIDX.notes], 'DELIVERED_AT', new Date().toISOString());
+    } else if (deliveredMarker && !noteMarker(row[OIDX.notes], 'DELIVERED_AT')) {
+      row[OIDX.notes] = setNoteMarker(row[OIDX.notes], 'DELIVERED_AT', deliveredMarker);
+    }
     await sheets.update('Orders', i + 1, row); return { ok: true };
   }
   if (b.action === 'setReview') {

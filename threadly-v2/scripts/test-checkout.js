@@ -259,6 +259,39 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
       }
     });
+    await check('return policy enforces delivery windows and hygiene-sensitive item rules', async () => {
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      const delivered = ageDays => new Date(Date.now() - ageDays * 86400000).toISOString();
+      const order = (id, note) => [id, '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Accessory x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_' + id.toLowerCase(), '', 'Delivered', '', note];
+      mockedSheets = {
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          order('ORDER-OLD-RETURN', 'DELIVERED_AT=' + delivered(8)),
+          order('ORDER-LATE-DAMAGE', 'DELIVERED_AT=' + delivered(3)),
+          order('ORDER-HAIR-CHANGE', 'DELIVERED_AT=' + delivered(1)),
+          order('ORDER-BAG-RETURN', 'DELIVERED_AT=' + delivered(3))
+        ],
+        Pending: [
+          ['Razorpay Order ID', 'Order Data', 'Created', 'Status'],
+          ['rzp-old', JSON.stringify({ id: 'ORDER-OLD-RETURN', itemDetails: [{ category: 'Bags and purses' }] }), '', 'recorded'],
+          ['rzp-damage', JSON.stringify({ id: 'ORDER-LATE-DAMAGE', itemDetails: [{ category: 'Bags and purses' }] }), '', 'recorded'],
+          ['rzp-hair', JSON.stringify({ id: 'ORDER-HAIR-CHANGE', itemDetails: [{ category: 'Hair Accessories' }] }), '', 'recorded'],
+          ['rzp-bag', JSON.stringify({ id: 'ORDER-BAG-RETURN', itemDetails: [{ category: 'Bags and purses' }] }), '', 'recorded']
+        ],
+        Requests: [['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes']]
+      };
+      try {
+        const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.91' } }, user = { email: 'buyer@example.com' };
+        await assert.rejects(() => returnRequest({ type: 'Return', orderId: 'ORDER-OLD-RETURN', reason: 'Changed my mind' }, event, user), /within 7 days/i);
+        await assert.rejects(() => returnRequest({ type: 'Return', orderId: 'ORDER-LATE-DAMAGE', reason: 'Damaged or defective' }, event, user), /within 48 hours/i);
+        await assert.rejects(() => returnRequest({ type: 'Return', orderId: 'ORDER-HAIR-CHANGE', reason: 'Changed my mind' }, event, user), /hygiene-sensitive/i);
+        const ok = await returnRequest({ type: 'Return', orderId: 'ORDER-BAG-RETURN', reason: 'Changed my mind' }, event, user);
+        assert.equal(ok.status, 'Requested');
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Requests').length, 1);
+      } finally {
+        mockedSheets = previousSheets;
+      }
+    });
     await check('support tickets persist and admin replies update the ticket record', async () => {
       const previousSecret = process.env.JWT_SECRET;
       const previousSheets = mockedSheets, previousAppends = appendedRows.length;
