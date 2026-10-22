@@ -47,7 +47,7 @@ function symbolInventory(p, source){
  const out=[], seen=new Set();
  const add=(kind,name,sig)=>{const k=kind+':'+name;if(!seen.has(k)){seen.add(k);out.push({kind,name,sig:String(sig||'').replace(/\s+/g,' ').trim().slice(0,180)})}};
  const ext=path.extname(p);
- const jsSource=ext==='.html'?[...source.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)].filter(m=>!/application\\/ld\\+json/i.test(m[1])).map(m=>m[2]).join('\\n'):source;
+ const jsSource=ext==='.html'?[...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(m=>!/application\/ld\+json/i.test(m[1])).map(m=>m[2]).join('\n'):source;
  if(['.js','.cjs','.mjs','.html'].includes(ext)){
   const patterns=[
    ['class',/^\s*(?:export\s+)?class\s+([A-Za-z_$][\w$]*)\s*(?:extends\s+[^{]+)?/gm],
