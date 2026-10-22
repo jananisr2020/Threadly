@@ -60,7 +60,7 @@ const wrap = (method, fn, auth) => async e => {
   }
   let u = null;
   try {
-    if (auth === 'user') { u = bearer(e); if (!u || !u.email || u.admin || u.purpose || u.o) throw new E('Please log in again.', 401) }
+    if (auth === 'user') { u = bearer(e); if (!u || !u.email || u.admin || u.seller || u.sellerId || u.purpose || u.o) throw new E('Please log in again.', 401) }
     const r = await fn(b, e, u);
     const response = r && r.__raw ? r.__raw : json(200, r);
     const responseStatus = response.statusCode || 200;
