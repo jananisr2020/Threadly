@@ -43,7 +43,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds, myOrders } = require('../netlify/lib/core');
+const { _t, wrap, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds, myOrders } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -69,6 +69,23 @@ async function rejectsWith(items, pattern) {
     });
     await check('security diagnostics require an admin session', async () => {
       await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
+    });
+    await check('expired customer sessions and seller-role tokens cannot access customer-only endpoints', async () => {
+      const previousSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = 'offline-customer-session-expiry-secret';
+      try {
+        const expired = jwt.sign({ email: 'buyer@example.com' }, process.env.JWT_SECRET, { expiresIn: -1 });
+        const sellerToken = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'seller@example.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const handler = wrap('GET', myOrders, 'user');
+        const expiredResponse = await handler({ httpMethod: 'GET', headers: { authorization: 'Bearer ' + expired }, body: '' });
+        assert.equal(expiredResponse.statusCode, 401);
+        assert.match(JSON.parse(expiredResponse.body).error, /log in again/i);
+        const sellerResponse = await handler({ httpMethod: 'GET', headers: { authorization: 'Bearer ' + sellerToken }, body: '' });
+        assert.equal(sellerResponse.statusCode, 401, 'seller sessions must not be accepted as customer sessions');
+      } finally {
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
     });
     await check('public catalogue hides external seller products until the sales feature flag is enabled', async () => {
       const previousFlag = process.env.MARKETPLACE_SELLER_SALES_ENABLED;
