@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **54 confirmed complete** (code/test/CI evidence listed below)
-- **26 open** (implementation, verification, external setup, or release acceptance still required)
+- **55 confirmed complete** (code/test/CI evidence listed below)
+- **25 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -106,7 +106,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T75** Admin now returns seller-account rows to the dashboard and supports Active/Suspended status changes; suspended accounts are denied seller product/order API access. Seller sales are disabled by default; product approval is blocked unless `MARKETPLACE_SELLER_SALES_ENABLED=true` is deliberately set after payment settlement/inventory safeguards are ready. Regression tests passed for commits `2786a1ed` and `00c7a114`; seller order oversight is present in Admin > Seller orders. (0.5–1 day)
 - [x] **T76** Regression coverage now spans admin order status/tracking updates, return/refund gating, Razorpay refund initiation/error handling, review submission/moderation, and support-ticket persistence/admin replies. CI passed for commits `8c5b0e1a` and `2e3275e9`. Provider email delivery and live gateway smoke tests remain external release checks. (1 day)
 - [x] **T77** Security CI verifies required browser security headers, admin-only diagnostics, dependency audit and an explicit safe-field allowlist for activity logs; a regression test proves passwords, tokens, payment IDs, phone/address and arbitrary free text are excluded. Security checks and historical secret scan passed for `042a6d80`. (1 day)
-- [ ] **T78** Validate seller ledger/commission/refund allocation with mixed-seller test orders; keep automatic payouts disabled until provider onboarding, KYC, commission policy and reconciliation are approved. (1–3 days for ledger tests; provider approval excluded)
+- [x] **T78** Validated mixed-seller seller-order/ledger creation, proportional order-discount allocation, commission rounding, net payable calculation, replay idempotency, and refund-webhook review flagging. Regression test confirms ledger entries remain `READY_FOR_REVIEW` with no payout reference; automatic seller transfers remain disabled pending provider onboarding, KYC, approved commission policy and reconciliation. Checkout CI passed on commit `68ce608c913acd432efe13935048e1bdd8d88705`: https://github.com/jananisr2020/Threadly/actions/runs/39821286343. (1–3 days for ledger tests; provider approval excluded)
 - [ ] **T79** Run final GitHub Actions, production deploy and smoke tests against the exact deployed commit. (1 day plus external access)
 - [ ] **T80** Complete release acceptance: evidence for each P0, known-issues list, rollback steps, owner handover and tracker update. (0.5–1 day)
 
@@ -131,3 +131,6 @@ A task moves to complete only when the relevant code and tests or live evidence 
 - **2026-10-22 security-check hardening:** Commit `6acbfb72ced30ffe1368d9f3fa0f8058d41810b2` corrected the escaped-dot regex in the public-health secret scan so `process.env` is actually matched as intended. GitHub Actions run: https://github.com/jananisr2020/Threadly/actions/runs/39798076206 (queued at tracker update time). This is a test-quality fix, not a production verification or task-count increase.
 
 - **2026-10-22 bug found and fixed:** Checkout CI on commit `6acbfb72` exposed a real return/cancel request bug: the return-policy path appends manual-review notes by reassigning a `const details`, producing `Assignment to constant variable` for cancellation/return and return-policy tests. Commit `28b62ddbe1339a2000987ebfa1674695364c9dc7` changes this to a mutable `let`; the regression is now fixed. Checkout regression CI passed on commit `28b62ddbe1339a2000987ebfa1674695364c9dc7` (https://github.com/jananisr2020/Threadly/actions/runs/39820444667), and security CI passed (https://github.com/jananisr2020/Threadly/actions/runs/39820444720). T55 remains open because the release gate also requires shipping/contact/seller terms verification.
+
+
+- **2026-10-22 task completion — T78 DONE:** Added a mixed-seller ledger regression for a ₹300 subtotal with ₹30 discount split proportionally across two sellers, 5% commission and replay safety. Verified seller net calculations, no payout reference, and review-only status. Checkout CI passed: https://github.com/jananisr2020/Threadly/actions/runs/39821286343. Tracker is now **55/80 complete, 25 open**. This does not authorize or enable seller payouts.
