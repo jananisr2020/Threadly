@@ -198,6 +198,17 @@ const server = http.createServer((req, res) => {
     const recentlyViewed = page.locator('section[aria-label="Recently viewed"] .p');
     await recentlyViewed.first().waitFor({ timeout: 5000 });
     assert.ok(await page.locator(`section[aria-label="Recently viewed"] .p[data-id="${viewedId}"]`).count() > 0, 'recently viewed rail should show the actual product opened');
+    for (const railName of ['Everyday essentials', 'Bestsellers', 'New arrivals']) {
+      const railCards = page.locator(`section[aria-label="${railName}"] .p`);
+      const count = await railCards.count();
+      if (count) {
+        const ids = await railCards.evaluateAll(cards => cards.map(card => card.getAttribute('data-id')));
+        assert.equal(new Set(ids).size, ids.length, railName + ' must not repeat a product within its rail');
+        for (const id of ids) {
+          assert.ok(id && await page.locator(`#grid .p[data-id="${id}"]`).count() > 0, railName + ' must use a real catalogue product ID');
+        }
+      }
+    }
     const compareData = await page.locator('#grid .p').evaluateAll(cards => cards.slice(0, 4).map(card => ({ id: card.getAttribute('data-id'), name: card.querySelector('h3')?.textContent.trim() })));
     assert.ok(compareData.length >= 4, 'compare test requires four products');
     for (const item of compareData.slice(0, 3)) await page.locator(`#grid [data-cmp="${item.id}"]`).click();
