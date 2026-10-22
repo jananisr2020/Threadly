@@ -613,7 +613,7 @@ const returnRequest = async (b, e, u) => {
       reviewNote = 'Manual eligibility review required: delivery timestamp is unavailable.';
     }
     if (itemCategories.length) {
-      const hygieneSensitive = itemCategories.some(cat => /earring|hair.?accessor|hair.?clip|claw.?clip|hair.?band|scrunchie|ring|jewell?ry/i.test(cat));
+      const hygieneSensitive = itemCategories.some(cat => /earring|hair.?accessor|hair.?clip|claw.?clip|hair.?band|scrunchie|ring|jewel/i.test(cat));
       if (hygieneSensitive && !exceptionReason) throw new E('This item is hygiene-sensitive and can be returned only if damaged, defective or the wrong item.');
     } else {
       reviewNote = [reviewNote, 'Manual eligibility review required: product categories are unavailable.'].filter(Boolean).join(' ');
