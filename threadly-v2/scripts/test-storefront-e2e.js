@@ -201,13 +201,13 @@ const server = http.createServer((req, res) => {
     assert.equal(overflow, false, 'mobile storefront should not have horizontal page overflow');
     await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
-    await page.locator('#grid .p').first().locator('[data-qa]').click();
-    if (await page.locator('#mov.show').count()) {
-      const mobileSize = page.locator('#modal .sz button').first();
-      if (await mobileSize.count()) await mobileSize.click();
-      await page.locator('#add').click();
-    }
-    await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
+    // Open the product card itself so the test exercises the same detail flow as a shopper.
+    await page.locator('#grid .p').first().click();
+    await page.waitForSelector('#mov.show');
+    const mobileSize = page.locator('#modal .sz button').first();
+    if (await mobileSize.count()) await mobileSize.click();
+    await page.locator('#add').click();
+    await page.waitForFunction(() => document.querySelector('#cc').textContent === '1', null, { timeout: 5000 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile product/cart state should not overflow');
     await page.locator('#cb').click();
     await page.waitForSelector('#cov.show');
