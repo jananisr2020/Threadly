@@ -1208,6 +1208,51 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
       }
     });
+    await check('mixed-seller ledger allocates order discounts and commission deterministically without payouts', async () => {
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      const previousBps = process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+      mockedSheets = {
+        Orders: [
+          ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+          ['JUNO-MIXED-LEDGER', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Mixed seller items', 2, 300, 30, 39, 309, 'UPI', 'Paid', 'pay_mixed_ledger', '', 'New', '', 'STOCK_SYNCED']
+        ],
+        Sellers: [
+          ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status'],
+          ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active'],
+          ['JSRSELLER2', 'APP2', 'Seller Two', 'two@example.com', 'hash', 'Coimbatore', 'Jewellery', 'Active']
+        ],
+        SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID']],
+        SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
+      };
+      process.env.JUNO_MARKETPLACE_COMMISSION_BPS = '500';
+      const order = {
+        id: 'JUNO-MIXED-LEDGER', total: 309, sub: 300, disc: 30,
+        addr: { name: 'Buyer', phone: '9876543210', line: 'Test address', pin: '641001' },
+        email: 'buyer@example.com',
+        itemDetails: [
+          { productId: 'SP-1', name: 'Seller One clip', unitPrice: 100, quantity: 1, sellerId: 'JSRSELLER1' },
+          { productId: 'SP-2', name: 'Seller Two jewellery', unitPrice: 200, quantity: 1, sellerId: 'JSRSELLER2' }
+        ]
+      };
+      try {
+        assert.equal(await _t.recordPaid(order, 'pay_mixed_ledger', 'order_rzp_mixed_ledger'), true);
+        assert.equal(mockedSheets.SellerLedger.length, 3);
+        const entries = mockedSheets.SellerLedger.slice(1);
+        assert.deepEqual(entries.map(row => Number(row[7])), [10, 20], 'order discount should be allocated proportionally');
+        assert.deepEqual(entries.map(row => Number(row[9])), [5, 9], '5% commission should be rounded per seller');
+        assert.deepEqual(entries.map(row => Number(row[10])), [85, 171], 'net seller amounts should match allocated discount less commission');
+        assert.ok(entries.every(row => row[12] === 'READY_FOR_REVIEW'), 'ledger entries are review-only');
+        assert.ok(entries.every(row => !String(row[13] || '').trim()), 'no payout reference may be created');
+        assert.equal(await _t.recordPaid(order, 'pay_mixed_ledger', 'order_rzp_mixed_ledger'), true);
+        assert.equal(mockedSheets.SellerLedger.length, 3, 'replay must not duplicate ledger rows');
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerOrders').length, 2);
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousBps === undefined) delete process.env.JUNO_MARKETPLACE_COMMISSION_BPS;
+        else process.env.JUNO_MARKETPLACE_COMMISSION_BPS = previousBps;
+      }
+    });
+
     await check('paid orders are retained and flagged when inventory writes partially fail', async () => {
       const previousSheets = mockedSheets, previousAppends = appendedRows.length;
       mockedSheets = {
