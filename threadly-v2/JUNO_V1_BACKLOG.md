@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **57 confirmed complete** (code/test/CI evidence listed below)
-- **23 open** (implementation, verification, external setup, or release acceptance still required)
+- **58 confirmed complete** (code/test/CI evidence listed below)
+- **22 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -97,7 +97,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T69** Run mobile performance checks; optimize oversized assets and unnecessary script work. (1 day)
 - [ ] **T70** Test loading, empty, offline, timeout and retry states on major pages. (0.5–1 day)
 - [x] **T71** Privacy policy documents optional activity events, the consent choice, retention, and deletion rights; activity payload excludes raw search terms/passwords/payment data. Regression tests reject tracking without explicit consent and verify consented events are recorded. CI passed in the checkout/security suite for commit `d4ca4e6e`. (0.5–1 day)
-- [ ] **T72** Confirm customer notifications never expose payment secrets or sensitive address/payment details. (0.5 day)
+- [x] **T72** Added a regression test around the customer support receipt email with a mocked mail provider. It asserts the customer notification includes the ticket reference but excludes the submitted phone, order ID, address, payment identifier and gateway-secret-shaped values. Checkout CI and Security CI passed for commit `2671e14ab45166161db696fd19e60b3a260b8dd6`: https://github.com/jananisr2020/Threadly/actions/runs/39824632865 and https://github.com/jananisr2020/Threadly/actions/runs/39824633039. Actual email delivery is still a live provider check under T43–T45. (0.5 day)
 
 ## P3 — admin, marketplace finance, release and handover (T73–T80)
 
