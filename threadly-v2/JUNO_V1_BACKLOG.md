@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **56 confirmed complete** (code/test/CI evidence listed below)
-- **24 open** (implementation, verification, external setup, or release acceptance still required)
+- **57 confirmed complete** (code/test/CI evidence listed below)
+- **23 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -57,7 +57,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T32** Regression tests cover invalid credentials and successful login/token issuance; code review confirms per-IP/email login rate limiting and login metadata updates. CI passed for commit `15eff8ec`. Live session-expiry smoke testing remains in T34. (0.5 day)
 - [ ] **T33** Password reset token expiry, one-time use and password-policy behavior are CI-tested in commit `be0b3ab3`; live reset-email delivery still requires Brevo/MAIL_FROM configuration and a deployed smoke test. (0.5–1 day)
 - [x] **T34** Session regression coverage verifies seller logout clears the session token in browser CI, expired customer/seller sessions are rejected, seller-role tokens cannot call customer-only endpoints, and suspended sellers lose API access. A test exposed and fixed a real authorization gap: the shared customer auth guard previously accepted seller JWTs. Fix and checkout/security/storefront CI passed on `4770a876a73049f7930ec527280a8476c77ed5b5`: checkout https://github.com/jananisr2020/Threadly/actions/runs/39821632609, security https://github.com/jananisr2020/Threadly/actions/runs/39821632933, storefront validation https://github.com/jananisr2020/Threadly/actions/runs/39821632793. (0.5 day)
-- [ ] **T35** Verify customer profile data is read/written only for the authenticated customer. (0.5 day)
+- [x] **T35** Added authenticated `GET /api/customer-profile` and `POST /api/customer-profile-update` endpoints. Reads and updates are keyed exclusively by the verified JWT email; client-supplied email/password fields are ignored, credential/contact columns are never returned or overwritten, and another customer's row remains unchanged. Regression test passed in checkout CI on `bacf50dbec5f8545c727aaf994a74e6b5cc4e405`: https://github.com/jananisr2020/Threadly/actions/runs/39822230244. (0.5 day)
 - [x] **T36** Address book is explicitly device-local, scoped to the signed-in email key, and browser-tested for add/edit/remove/select behavior in an isolated browser context. Storefront browser tests passed for commit `0d8a323e`: https://github.com/jananisr2020/Threadly/actions/runs/39792986810. (0.5–1 day)
 - [x] **T37** Customer order history is scoped to the authenticated email and excludes phone/address/payment identifiers; a regression test also verifies a fresh request reflects updated fulfilment status and tracking. Checkout regression CI passed for commit `e603a3d3`. (0.5 day)
 - [x] **T38** Regression tests cover cancellation of New orders, cancellation requests for Packed orders, rejection after shipment/delivery, and return eligibility only after delivery. Cancellation messaging no longer promises a refund before it is processed. CI passed for commit `9fd1d38b`. (0.5–1 day)
@@ -137,3 +137,6 @@ A task moves to complete only when the relevant code and tests or live evidence 
 
 
 - **2026-10-22 task completion — T34 DONE:** Added expired-customer-session and cross-role access regressions. The new test caught seller JWTs being accepted by customer-only endpoints; fixed the shared auth guard to reject seller/sellerId claims. Checkout, security and storefront CI passed on `4770a876a73049f7930ec527280a8476c77ed5b5`. Tracker is now **56/80 complete, 24 open**. Production session smoke tests remain part of final live release acceptance.
+
+
+- **2026-10-22 task completion — T35 DONE:** Added customer profile read/update endpoints with JWT identity scoping and regression coverage for cross-account isolation, password-hash preservation and rejection of seller tokens. Checkout and security CI passed on `bacf50dbec5f8545c727aaf994a74e6b5cc4e405`. Tracker is now **57/80 complete, 23 open**. Frontend profile-form integration and live deployed smoke tests remain to be checked before calling the customer profile workflow fully production-ready.
