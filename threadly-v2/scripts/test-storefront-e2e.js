@@ -185,6 +185,9 @@ const server = http.createServer((req, res) => {
     // Product details and compare limit/summary.
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
+    // Consent to optional local storage in this test so recently viewed data persists across reload.
+    await page.evaluate(() => localStorage.setItem('tl_cookie', JSON.stringify('all')));
+    const viewedId = await page.locator('#grid .p').first().getAttribute('data-id');
     await page.locator('#grid .p').first().click();
     await page.waitForSelector('#mov.show');
     assert.ok((await page.locator('#modal h2').first().textContent()).trim().length > 0, 'product details should open');
@@ -192,6 +195,9 @@ const server = http.createServer((req, res) => {
     await page.locator('#mov [data-close]').click();
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
+    const recentlyViewed = page.locator('section[aria-label="Recently viewed"] .p');
+    await recentlyViewed.first().waitFor({ timeout: 5000 });
+    assert.ok(await recentlyViewed.locator(`[data-id="${viewedId}"]`).count() > 0, 'recently viewed rail should show the actual product opened');
     const compareData = await page.locator('#grid .p').evaluateAll(cards => cards.slice(0, 4).map(card => ({ id: card.getAttribute('data-id'), name: card.querySelector('h3')?.textContent.trim() })));
     assert.ok(compareData.length >= 4, 'compare test requires four products');
     for (const item of compareData.slice(0, 3)) await page.locator(`#grid [data-cmp="${item.id}"]`).click();
