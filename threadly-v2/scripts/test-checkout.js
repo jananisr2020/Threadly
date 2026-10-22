@@ -1216,6 +1216,7 @@ async function rejectsWith(items, pattern) {
           ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
           ['JUNO-MIXED-LEDGER', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Mixed seller items', 2, 300, 30, 39, 309, 'UPI', 'Paid', 'pay_mixed_ledger', '', 'New', '', 'STOCK_SYNCED']
         ],
+        Pending: [['Razorpay Order ID', 'Order JSON', 'Created', 'Status'], ['order_rzp_mixed_ledger', '{}', '', 'pending']],
         Sellers: [
           ['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status'],
           ['JSRSELLER1', 'APP1', 'Seller One', 'one@example.com', 'hash', 'Coimbatore', 'Hair accessories', 'Active'],
@@ -1236,15 +1237,15 @@ async function rejectsWith(items, pattern) {
       };
       try {
         assert.equal(await _t.recordPaid(order, 'pay_mixed_ledger', 'order_rzp_mixed_ledger'), true);
-        assert.equal(mockedSheets.SellerLedger.length, 3);
-        const entries = mockedSheets.SellerLedger.slice(1);
+        const entries = appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerLedger').map(x => x.row);
+        assert.equal(entries.length, 2);
         assert.deepEqual(entries.map(row => Number(row[7])), [10, 20], 'order discount should be allocated proportionally');
         assert.deepEqual(entries.map(row => Number(row[9])), [5, 9], '5% commission should be rounded per seller');
         assert.deepEqual(entries.map(row => Number(row[10])), [85, 171], 'net seller amounts should match allocated discount less commission');
         assert.ok(entries.every(row => row[12] === 'READY_FOR_REVIEW'), 'ledger entries are review-only');
         assert.ok(entries.every(row => !String(row[13] || '').trim()), 'no payout reference may be created');
         assert.equal(await _t.recordPaid(order, 'pay_mixed_ledger', 'order_rzp_mixed_ledger'), true);
-        assert.equal(mockedSheets.SellerLedger.length, 3, 'replay must not duplicate ledger rows');
+        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerLedger').length, 2, 'replay must not duplicate ledger rows');
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'SellerOrders').length, 2);
       } finally {
         mockedSheets = previousSheets;
