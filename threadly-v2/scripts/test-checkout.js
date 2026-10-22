@@ -38,7 +38,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds } = require('../netlify/lib/core');
+const { _t, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds, myOrders } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -323,6 +323,25 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('customer order history is email-scoped and never returns delivery phone or address fields', async () => {
+      const previousSheets = mockedSheets;
+      mockedSheets = { Orders: [
+        ['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'PIN', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'],
+        ['JN-OWN-1', '10/21/2026', 'Buyer One', 'buyer.one@example.com', '9876543210', 'Private address one', '641001', 'Clip (₹100) x1', 1, 100, 0, 40, 140, 'UPI', 'Paid', 'pay_own', '2-4 days', 'Shipped', 'TRACK-OWN', ''],
+        ['JN-OTHER-1', '10/21/2026', 'Buyer Two', 'buyer.two@example.com', '9876543211', 'Private address two', '600001', 'Clip (₹100) x1', 1, 100, 0, 40, 140, 'UPI', 'Paid', 'pay_other', '2-4 days', 'New', '', '']
+      ] };
+      try {
+        const result = await myOrders({}, {}, { email: 'buyer.one@example.com' });
+        assert.equal(result.length, 1);
+        assert.equal(result[0].id, 'JN-OWN-1');
+        assert.equal(result[0].tracking, 'TRACK-OWN');
+        for (const key of ['email', 'phone', 'address', 'pin', 'paymentId']) assert.equal(Object.hasOwn(result[0], key), false, 'customer history must not expose ' + key);
+        assert.equal(JSON.stringify(result).includes('Private address'), false);
+        assert.equal(JSON.stringify(result).includes('9876543210'), false);
+      } finally {
+        mockedSheets = previousSheets;
       }
     });
     await check('seller activation is one-time and expired activation links are rejected', async () => {
