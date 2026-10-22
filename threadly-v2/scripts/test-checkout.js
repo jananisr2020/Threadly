@@ -768,6 +768,9 @@ async function rejectsWith(items, pattern) {
         assert.equal(mockedSheets.Orders[1][18], 'TRK-123');
         assert.equal(mockedSheets.Orders[1][19], 'Packed safely');
         assert.equal(mockedSheets.Orders[1][14], 'Paid', 'fulfilment updates must not alter payment status');
+        await admin({ action: 'updateOrder', id: 'ORDER-ADMIN', status: 'Delivered' }, { headers: { authorization: 'Bearer ' + token } });
+        assert.equal(mockedSheets.Orders[1][17], 'Delivered');
+        assert.match(mockedSheets.Orders[1][19], /Packed safely \| DELIVERED_AT=\d{4}-\d{2}-\d{2}T/);
       } finally {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
