@@ -11,6 +11,7 @@ Juno is a budget-fashion storefront for women, men and kids, with accessories, a
 ## Contents
 
 - [Architecture](#architecture)
+- [Complete technical reference — every tracked file, directory, API handler, configuration variable and workflow](docs/REPOSITORY_TECHNICAL_GUIDE.md)
 - [Catalogue and data flow](#catalogue-and-data-flow)
 - [Repository layout](#repository-layout)
 - [Run locally](#run-locally)
