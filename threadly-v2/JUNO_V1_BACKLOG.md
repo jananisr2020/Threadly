@@ -1,6 +1,6 @@
 # Juno Version 1 — fixed-scope delivery backlog
 
-Last reviewed: 2026-10-21
+Last reviewed: 2026-10-22
 Repository: `jananisr2020/Threadly`, app root `threadly-v2/`
 Target: a launchable accessories marketplace inspired by the common shopping features of Meesho, Myntra, Amazon and Flipkart. This is not a promise to reproduce every enterprise-scale feature of those platforms.
 
@@ -117,3 +117,10 @@ V1 should match the common customer-facing patterns users expect from large mark
 ## Progress rule
 
 A task moves to complete only when the relevant code and tests or live evidence are recorded. “Code exists” and “CI passes” do not prove a feature is correctly configured in production. Keep this file updated as work progresses; do not ask the user to type “Next” to advance the queue.
+
+
+## Batch execution log — 2026-10-22
+
+- Started batch execution instead of requiring one-task-at-a-time prompts. The first code change in this batch is commit `49a2190dc79ad7aa3d8f7a2cb1ba54b01949c5b6`, which expands `scripts/check-security-config.js` with checks that the public health function is GET-only, does not directly read environment variables/credentials, and that `/api/*` is routed to Netlify functions.
+- This is static configuration/code evidence only. **T08 remains open** until the deployed `/api/health` HTTP response and failure behavior are checked against the actual Netlify deployment. No task count is increased by this change alone.
+- Next batch priorities: inventory reservation/reconciliation and payment lifecycle tests (T25–T27, T41); customer/seller privacy and session checks (T34–T37, T48, T54); image/catalogue and mobile/performance/loading audits (T56, T59, T61, T69–T70); then the remaining production credentials, live checkout, deploy and release gates (T08–T10, T22, T29–T30, T33, T43–T45, T55, T64, T72, T77–T80).
