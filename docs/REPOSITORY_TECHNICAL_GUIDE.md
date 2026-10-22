@@ -137,7 +137,7 @@ Route names follow Netlify function naming. Check handlers for exact method, aut
 
 ## 6. Complete tracked-file catalogue
 
-Every tracked file is listed below except package lockfiles and this generated guide. Purpose, file type, size and line count are listed for each. Symbol hints are deliberately omitted rather than guessed; inspect source for complete behavior.
+Every tracked file is listed below except package lockfiles and this generated guide. Code files include statically detected function/class/method names, import dependencies and export hints. Detection is heuristic (not a full AST); dynamic dispatch and browser inline code need manual tracing.
 
 ### `.github/workflows/build-threadly-android.yml`
 
@@ -207,22 +207,54 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `scripts/generate_repository_docs.js`
 
 - **Purpose:** Repository maintenance automation.
-- **Type:** js; **size:** 13,389 bytes; **lines:** 67.
+- **Type:** js; **size:** 18,132 bytes; **lines:** 97.
+- **Imports/dependencies:** `node:fs`, `node:path`, `node:child_process`.
+- **Detected symbols (8):**
+  - `function files`
+  - `function read(p)`
+  - `function role(p)`
+  - `function table(rows)`
+  - `function symbolInventory(p, source)`
+  - `function commentFor(source, symbol)`
+  - `function main`
+  - `function add(kind,name,sig)`
 
 ### `scripts/update_product_tracker.py`
 
 - **Purpose:** Repository maintenance automation.
 - **Type:** py; **size:** 11,502 bytes; **lines:** 196.
+- **Imports/dependencies:** `csv, datetime as dt, json, os, subprocess`, `pathlib`.
+- **Detected symbols (7):**
+  - `function git(*args)`
+  - `function parse_date(value)`
+  - `function load_catalog_at(sha)`
+  - `function stock(product)`
+  - `function val(product, key)`
+  - `function main`
+  - `function event(kind, pid, old, new)`
 
 ### `scripts/update_project_tracker.py`
 
 - **Purpose:** Repository maintenance automation.
 - **Type:** py; **size:** 9,369 bytes; **lines:** 161.
+- **Imports/dependencies:** `csv, datetime as dt, os, re, subprocess`, `pathlib`.
+- **Detected symbols (7):**
+  - `function git(*args)`
+  - `function clean(s)`
+  - `function summary(subject, body, paths)`
+  - `function date(value)`
+  - `function md_escape(s)`
+  - `function commits_from_git`
+  - `function main`
 
 ### `scripts/update_runtime_trackers.py`
 
 - **Purpose:** Repository maintenance automation.
 - **Type:** py; **size:** 7,398 bytes; **lines:** 51.
+- **Imports/dependencies:** `pathlib`, `datetime`, `openpyxl`, `openpyxl.styles`, `openpyxl.utils`.
+- **Detected symbols (2):**
+  - `function build_doc`
+  - `function build_workbook`
 
 ### `threadly-android/README.md`
 
@@ -304,220 +336,452 @@ Every tracked file is listed below except package lockfiles and this generated g
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 83 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/admin.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 72 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/ai-product-views.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 5,478 bytes; **lines:** 91.
+- **Exports:** `handler`.
+- **Detected symbols (2):**
+  - `function json(statusCode, payload)`
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/coupons.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 272 bytes; **lines:** 11.
+- **Imports/dependencies:** `../lib/coupons`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/create-order.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 85 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/customer-profile-update.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 101 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/customer-profile.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 94 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/forgot.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 73 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/health.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 72 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/login.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 72 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/my-orders.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 81 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/my-requests.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 83 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/my-tickets.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 82 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/pincode.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 73 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/place-cod.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 82 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/product-image-scheduler.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 5,627 bytes; **lines:** 117.
+- **Imports/dependencies:** `../lib/sheets`.
+- **Exports:** `config`, `handler`.
+- **Detected symbols (6):**
+  - `function norm(value)`
+  - `function response(statusCode, body)`
+  - `function col(name)`
+  - `function hasAllImages(row)`
+  - `export config`
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/product-image-worker-background.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 8,255 bytes; **lines:** 157.
+- **Imports/dependencies:** `@netlify/blobs`, `../lib/sheets`.
+- **Exports:** `handler`.
+- **Detected symbols (8):**
+  - `function openAiEdit({ apiKey, sourceBytes, contentType, productName, category, view })`
+  - `function getProductRow(productId)`
+  - `function norm(value)`
+  - `function json(statusCode, body)`
+  - `function safe(value)`
+  - `function normalizeImageUrl(value)`
+  - `function ensure(name)`
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/product-image.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 1,453 bytes; **lines:** 37.
+- **Imports/dependencies:** `@netlify/blobs`.
+- **Exports:** `handler`.
+- **Detected symbols (2):**
+  - `function json(statusCode, body)`
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/products.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 74 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/razorpay-webhook.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 74 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/reset.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 72 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/return-request.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 87 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/reviews.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 73 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/security-health.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 85 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/seller-activate.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 86 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/seller-apply.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 83 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/seller-login.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 83 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/seller-orders.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 84 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/seller-products.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 86 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/seo.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 1,124 bytes; **lines:** 10.
 - **Core delegate:** `core.visibleIds`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (2):**
+  - `function esc(t)`
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/signals.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 73 bytes; **lines:** 3.
 - **Wrapper hint:** `GET`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/signup.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 73 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/ticket.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 73 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/verify-payment.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 87 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/functions/website-activity.js`
 
 - **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
 - **Type:** js; **size:** 87 bytes; **lines:** 3.
 - **Wrapper hint:** `POST`.
+- **Imports/dependencies:** `../lib/core`.
+- **Exports:** `handler`.
+- **Detected symbols (1):**
+  - `export handler`
 
 ### `threadly-v2/netlify/lib/core.js`
 
 - **Purpose:** Shared server business rules: auth, validation, customer accounts, checkout, Razorpay verification, orders, inventory sync, support, sellers and admin.
 - **Type:** js; **size:** 78,732 bytes; **lines:** 884.
+- **Imports/dependencies:** `./sheets`, `bcryptjs`, `jsonwebtoken`, `crypto`, `razorpay`, `./coupons`.
+- **Detected symbols (82):**
+  - `class E`
+  - `function publicProductRows(force = false)`
+  - `function catalogue(force = false)`
+  - `function price(items, coupon)`
+  - `function buildOrder(b, u)`
+  - `function record(o, payStatus, payId)`
+  - `function markPending(id, status)`
+  - `function ensureSellerOrders(o, payId)`
+  - `function ensureSellerLedger(parentOrderId)`
+  - `function recordPaid(o, payId, rzpId)`
+  - `function pinApi(path)`
+  - `function tnPin(pin)`
+  - `function json(code, obj, extra = {})`
+  - `function parse(e)`
+  - `function clean(t)`
+  - `function noteMarker(note, key)`
+  - `function setNoteMarker(note, key, value)`
+  - `function ip(e)`
+  - `function limit(key, max, ms)`
+  - `function sleep(ms)`
+  - `function now`
+  - `function secret`
+  - `function sign(p, exp)`
+  - `function bearer(e)`
+  - `function safeActivityDetails(b)`
+  - `function writeActivity(e, fn, b, user, outcome, status)`
+  - `function wrap(method, fn, auth)`
+  - `function trackWebsiteActivity(b, e)`
+  - `function referrerOrigin(()`
+  - `function nk(h)` — ---------- products ----------
+  - `function productRows(force)`
+  - `function invalidate`
+  - `function csv(rows)`
+  - `function products`
+  - `function productObjs(rows)`
+  - `function num(v)`
+  - `function marketplaceSellerSalesEnabled`
+  - `function findUser(email)` — ---------- users ----------
+  - `function cred(b)`
+  - `function sellerApply(b, e)` — ---------- marketplace: seller applications ----------
+  - `function ensureMarketplaceTabs`
+  - `function sellerRows`
+  - `function sellerByEmail(email)`
+  - `function sellerPublic(v)`
+  - `function sellerActivate(b, e)`
+  - `function sellerLogin(b, e)`
+  - `function sellerOrders(b, e)`
+  - `function sellerProducts(b, e)`
+  - `function passwordPolicyError(pw)`
+  - `function signup(b, e)`
+  - `function customerProfile(b, e, u)`
+  - `function updateCustomerProfile(b, e, u)`
+  - `function login(b, e)`
+  - `function placeCod`
+  - `function rz`
+  - `function createOrder(b, e, u)`
+  - `function verifyPayment(b, e, u)`
+  - `function webhook(b, e)` — Razorpay webhook: records paid orders even if the customer closed the page, and marks refunds
+  - `function mail(to, subject, html)` — Password reset by email (Brevo)
+  - `function forgot(b, e)`
+  - … 22 additional symbols omitted from this file entry; use the linked source.
+- **Module role map:** API handlers and business rules for customer auth/profile/password reset; product visibility/pricing and stock validation; Razorpay order creation, signature/webhook processing and refunds; customer order history/returns; seller applications/accounts/catalogue/orders; admin order/product/review/ticket/request operations; consent-based activity logging; pincode lookup and support tickets. Confirm each handler body and the exported API below in source.
 
 ### `threadly-v2/netlify/lib/coupons.js`
 
 - **Purpose:** Central coupon definitions and discount calculations.
 - **Type:** js; **size:** 1,108 bytes; **lines:** 26.
+- **Detected symbols (3):**
+  - `function discount(code, subtotal)`
+  - `function active(rule)`
+  - `function publicList`
 
 ### `threadly-v2/netlify/lib/sheets.js`
 
 - **Purpose:** Google Sheets persistence adapter used by backend handlers.
 - **Type:** js; **size:** 2,185 bytes; **lines:** 46.
+- **Imports/dependencies:** `google-auth-library`.
+- **Exports:** `read`, `append`, `update`, `ensureTab`.
+- **Detected symbols (7):**
+  - `function c`
+  - `function base`
+  - `function meta`
+  - `export read`
+  - `export append`
+  - `export update`
+  - `export ensureTab`
 
 ### `threadly-v2/package.json`
 
@@ -694,41 +958,102 @@ Every tracked file is listed below except package lockfiles and this generated g
 
 - **Purpose:** Product image generation/preparation workflow; check dependencies before running.
 - **Type:** py; **size:** 9,982 bytes; **lines:** 214.
+- **Imports/dependencies:** `__future__`, `argparse, base64, io, json, os, re, subprocess, time`, `pathlib`, `urllib.parse`, `requests`, `PIL`, `torch`, `diffusers`, `openpyxl`.
+- **Detected symbols (13):**
+  - `function safe(value)`
+  - `function prompt_for(product, view)`
+  - `class Pollinations`
+  - `function __init__(self, delay=3)`
+  - `function __call__(self, prompt, seed)`
+  - `class OpenAIImages`
+  - `class Local`
+  - `class Mock`
+  - `function update_workbook(path, products)`
+  - `function ensure(name)`
+  - `function run(args, backend)`
+  - `function git_push`
+  - `function main`
 
 ### `threadly-v2/scripts/check-links.js`
 
 - **Purpose:** Static repository, route, catalogue and policy consistency checks.
 - **Type:** js; **size:** 3,863 bytes; **lines:** 39.
+- **Imports/dependencies:** `fs`, `path`.
+- **Detected symbols (2):**
+  - `function isFile(p)`
+  - `function route(u)`
 
 ### `threadly-v2/scripts/check-security-config.js`
 
 - **Purpose:** Static checks for security configuration and headers.
 - **Type:** js; **size:** 3,346 bytes; **lines:** 34.
+- **Imports/dependencies:** `node:fs`, `node:path`.
 
 ### `threadly-v2/scripts/generate_product_views.py`
 
 - **Purpose:** Product-view image generation workflow.
 - **Type:** py; **size:** 17,038 bytes; **lines:** 329.
+- **Imports/dependencies:** `__future__`, `argparse`, `base64`, `json`, `os`, `re`, `sys`, `time`, `pathlib`, `typing`, `urllib.parse`, `requests`, `dotenv`, `openpyxl`.
+- **Detected symbols (8):**
+  - `function safe_name(value: Any)`
+  - `function load_catalog(path: Path)`
+  - `function source_url(product: dict[str, Any])`
+  - `function download_source(url: str, timeout: int = 45)`
+  - `function generate_image(api_key: str, image_bytes: bytes, extension: str, product: dict[str, Any], view: str, model: str, timeout: int)`
+  - `function generate_image_from_prompt(api_key: str, product: dict[str, Any], view: str, model: str, timeout: int)`
+  - `function update_workbook(path: Path, catalog_products: list[dict[str, Any]], output: Path)`
+  - `function main`
 
 ### `threadly-v2/scripts/generate_product_views_local.py`
 
 - **Purpose:** Local product-view generation workflow.
 - **Type:** py; **size:** 8,979 bytes; **lines:** 176.
+- **Imports/dependencies:** `__future__`, `argparse, io, json, re, sys`, `pathlib`, `requests`, `torch`, `PIL`, `diffusers`.
+- **Detected symbols (6):**
+  - `function safe(value)`
+  - `function read_catalog(path)`
+  - `function write_catalog(path, data)`
+  - `function get_source(product)`
+  - `function load_pipeline(cls, model, dtype)`
+  - `function main`
 
 ### `threadly-v2/scripts/sync_sheet_product_images.py`
 
 - **Purpose:** Synchronizes image references with catalogue/Sheet data.
 - **Type:** py; **size:** 11,492 bytes; **lines:** 242.
+- **Imports/dependencies:** `__future__`, `json, os, re, subprocess, sys, time`, `pathlib`, `urllib.parse`, `requests`, `google.oauth2.service_account`, `google.auth.transport.requests`, `argparse`.
+- **Detected symbols (13):**
+  - `function norm(value)`
+  - `function col(headers, key)`
+  - `function value(row, index)`
+  - `function safe_id(value)`
+  - `function load_auth`
+  - `function sheets_request(session, url, method="GET", payload=None)`
+  - `function read_sheet(session, sheet_id, tab)`
+  - `function update_row(session, sheet_id, tab, row_number, row)`
+  - `function ensure_headers(session, sheet_id, tab, rows)`
+  - `function upsert_catalog_product(data, row, headers)`
+  - `function git_publish(product_ids)`
+  - `function run_once(session, sheet_id, tab, site_url)`
+  - `function main`
 
 ### `threadly-v2/scripts/test-checkout.js`
 
 - **Purpose:** Backend/checkout regression suite.
 - **Type:** js; **size:** 103,214 bytes; **lines:** 1442.
+- **Imports/dependencies:** `node:assert/strict`, `node:crypto`, `../netlify/lib/sheets`, `jsonwebtoken`, `bcryptjs`, `../netlify/lib/coupons`, `../netlify/lib/core`.
+- **Detected symbols (5):**
+  - `function check(name, fn)`
+  - `function rejectsWith(items, pattern)`
+  - `function orderRow(id, status)`
+  - `function delivered(ageDays)`
+  - `function order(id, note)`
 
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
 - **Purpose:** Browser tests for storefront and seller flows.
 - **Type:** js; **size:** 24,746 bytes; **lines:** 363.
+- **Imports/dependencies:** `node:assert/strict`, `node:fs`, `node:http`, `node:path`, `playwright`, `@axe-core/playwright`.
 
 ## 7. GitHub Actions index
 
@@ -742,7 +1067,15 @@ Every tracked file is listed below except package lockfiles and this generated g
 | `.github/workflows/storefront-e2e.yml` | Storefront browser tests |
 | `.github/workflows/validate-juno.yml` | Validate Juno storefront |
 
-## 8. Safe change workflow
+## 8. Function-level documentation: how to read the inventory
+
+- **Detected symbols** are static name/signature hints, not authoritative semantic contracts. Read the implementation and call sites before changing behavior.
+- A nearby comment is shown only when a clear adjacent comment can be associated with the symbol. Missing descriptions mean the source has no nearby comment or static matching could not safely identify one.
+- **Imports/dependencies** show direct CommonJS requires or Python imports; runtime-loaded modules and browser CDN dependencies may not be captured.
+- **Exports** are static CommonJS export assignments; object-literal export maps may require reading the final module.exports statement.
+- Inline JavaScript in HTML is counted but is not yet split into independent function entries.
+
+## 9. Safe change workflow
 
 1. Trace the browser page, API handler, shared core function and persistence adapter.
 2. Add regression coverage in threadly-v2/scripts/test-checkout.js or threadly-v2/scripts/test-storefront-e2e.js.
@@ -750,14 +1083,16 @@ Every tracked file is listed below except package lockfiles and this generated g
 4. Regenerate this guide after changes. Main-branch automation commits refreshed docs; PRs should include the generated guide.
 5. Test real Sheets, Razorpay, email, deployed Netlify behavior and Android separately.
 
-## 9. Known limitations
+## 10. Known limitations
 
+- Symbol extraction uses regular expressions, not a language parser; signatures and nested methods may be missed or misidentified.
+- The inventory gives function names/signatures, direct dependency hints and adjacent comments; it does not automatically prove complete function semantics, call graphs, data contracts or side effects.
 - Google Sheets reads/writes are not transactions or unique constraints.
 - Inventory reservation/restock and partial-failure recovery require concurrency-safe/idempotent design.
 - Payment verification/webhooks require replay and late-event tests.
 - Seller transfers must remain disabled until provider approval and reconciliation.
 - Image workflows may require optional packages, models, compute or external services.
-- This is a technical index, not a formal complete call graph, security audit or production-readiness certificate.
+- This is a detailed generated technical reference, not a formal security audit or production-readiness certificate.
 
 _Generated automatically by scripts/generate_repository_docs.js from the current checkout._
 
