@@ -25,6 +25,8 @@ let mockedSheets = {};
 const appendedRows = [];
 const updatedRows = [];
 let failProductUpdate = false;
+let failProductUpdateAfter = 0;
+let productUpdateAttempts = 0;
 sheets.read = async tab => {
   if (Object.prototype.hasOwnProperty.call(mockedSheets, tab)) return mockedSheets[tab];
   if (tab === 'Products') return rows;
@@ -32,7 +34,10 @@ sheets.read = async tab => {
 };
 sheets.append = async (tab, row) => { appendedRows.push({ tab, row }); if (Array.isArray(mockedSheets[tab])) mockedSheets[tab].push(row); };
 sheets.update = async (tab, rowNum, row) => {
-  if (failProductUpdate && tab === 'Products') throw new Error('simulated stock write failure');
+  if (tab === 'Products') {
+    const attempt = productUpdateAttempts++;
+    if (failProductUpdate && attempt >= failProductUpdateAfter) throw new Error('simulated stock write failure');
+  }
   updatedRows.push({ tab, rowNum, row });
   if (mockedSheets[tab] && mockedSheets[tab][rowNum - 1]) mockedSheets[tab][rowNum - 1] = row;
 };
@@ -1172,7 +1177,8 @@ async function rejectsWith(items, pattern) {
       mockedSheets = {
         Products: [
           ['Product ID', 'Product Name', 'Category', 'Gender', 'MRP', 'Selling Price', 'Details', 'Sizes', 'Image', 'Stock', 'On Sale', 'Rating', 'Show on site', 'Seller ID', 'Approval Status'],
-          ['JN0001', 'Basic scrunchie', 'Hair accessories', 'Unisex', 130, 100, 'Soft fabric scrunchie', 'Pink', '', 5, 'No', 4.5, 'Yes', '', 'Approved']
+          ['JN0001', 'Basic scrunchie', 'Hair accessories', 'Unisex', 130, 100, 'Soft fabric scrunchie', 'Pink', '', 5, 'No', 4.5, 'Yes', '', 'Approved'],
+          ['JN0006', 'Basic hair clip', 'Hair accessories', 'Unisex', 130, 100, 'Metal hair clip', 'Pink', '', 5, 'No', 4.5, 'Yes', '', 'Approved']
         ],
         Orders: [['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes']],
         Sellers: [['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login']],
@@ -1180,15 +1186,20 @@ async function rejectsWith(items, pattern) {
         SellerLedger: [['Ledger ID', 'Seller Order ID', 'Parent Order ID', 'Payment ID', 'Seller ID', 'Store Name', 'Gross Item Subtotal', 'Allocated Discount', 'Commission BPS', 'Commission Amount', 'Net Seller Amount', 'Currency', 'Ledger Status', 'Payout Reference', 'Created', 'Updated', 'Notes']]
       };
       failProductUpdate = true;
-      const order = { id: 'JN-PARTIAL-1', email: 'buyer@example.com', addr: { name: 'Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'UPI', eta: '2-4 days', lines: 'Basic scrunchie x1', count: 1, sub: 100, disc: 0, ship: 39, total: 139, qty: [['JN0001', 1]], itemDetails: [{ productId: 'JN0001', name: 'Basic scrunchie', unitPrice: 100, quantity: 1, sellerId: '' }] };
+      failProductUpdateAfter = 1;
+      productUpdateAttempts = 0;
+      const order = { id: 'JN-PARTIAL-1', email: 'buyer@example.com', addr: { name: 'Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'UPI', eta: '2-4 days', lines: 'Basic scrunchie x1', count: 1, sub: 100, disc: 0, ship: 39, total: 139, qty: [['JN0001', 1], ['JN0006', 1]], itemDetails: [{ productId: 'JN0001', name: 'Basic scrunchie', unitPrice: 100, quantity: 1, sellerId: '' }, { productId: 'JN0006', name: 'Basic hair clip', unitPrice: 100, quantity: 1, sellerId: '' }] };
       try {
         await assert.rejects(() => _t.recordPaid(order, 'pay_partial_1', 'order_rzp_partial'), /Payment was recorded, but Juno could not finish updating stock/i);
         assert.equal(mockedSheets.Orders.length, 2, 'paid order must be preserved even when stock update fails');
         assert.match(mockedSheets.Orders[1][19], /STOCK_RECONCILIATION_REQUIRED: simulated stock write failure/i);
-        assert.equal(mockedSheets.Products[1][9], 5, 'failed stock write must not silently change stock');
+        assert.equal(mockedSheets.Products[1][9], 4, 'first stock write should demonstrate a partial update before the second write fails');
+        assert.equal(mockedSheets.Products[2][9], 5, 'second product should remain unchanged after its write fails');
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Orders').length, 1);
       } finally {
         failProductUpdate = false;
+        failProductUpdateAfter = 0;
+        productUpdateAttempts = 0;
         mockedSheets = previousSheets;
       }
     });
