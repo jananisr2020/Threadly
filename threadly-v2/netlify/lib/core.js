@@ -329,6 +329,23 @@ const signup = async (b, e) => {
   const nm = name || email.split('@')[0]; await sheets.append('Users', [nm, email, await bcrypt.hash(pw, 10), '', now(), now(), 1]);
   const u = { name: nm, email }; return { user: u, token: sign(u, '30d') };
 };
+const customerProfile = async (b, e, u) => {
+  const f = await findUser(String(u.email || '').toLowerCase());
+  if (!f) throw new E('Customer account not found.', 404);
+  return { user: { name: String(f.v[0] || ''), email: String(f.v[1] || '').toLowerCase() } };
+};
+const updateCustomerProfile = async (b, e, u) => {
+  const name = clean(b.name).slice(0, 80);
+  if (name.length < 2) throw new E('Enter a name with at least 2 characters.');
+  const f = await findUser(String(u.email || '').toLowerCase());
+  if (!f) throw new E('Customer account not found.', 404);
+  const row = f.v.slice();
+  while (row.length < 7) row.push('');
+  row[0] = name;
+  // The email and credential columns always come from the authenticated account row.
+  await sheets.update('Users', f.row, row);
+  return { ok: true, user: { name, email: String(row[1] || '').toLowerCase() } };
+};
 const login = async (b, e) => {
   const { email, pw } = cred(b); limit('li:' + ip(e) + email, 8, 9e5); const f = await findUser(email);
   if (!f || !(await bcrypt.compare(pw, String(f.v[2] || '')))) throw new E('Wrong email or password.');
@@ -863,4 +880,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, setRazorpayOverride: client => { razorpayOverride = client || null }, safeActivityDetails } };
+module.exports = { E, json, wrap, products, signup, login, customerProfile, updateCustomerProfile, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, setRazorpayOverride: client => { razorpayOverride = client || null }, safeActivityDetails } };
