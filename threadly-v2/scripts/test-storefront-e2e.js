@@ -197,7 +197,7 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     const recentlyViewed = page.locator('section[aria-label="Recently viewed"] .p');
     await recentlyViewed.first().waitFor({ timeout: 5000 });
-    assert.ok(await recentlyViewed.locator(`[data-id="${viewedId}"]`).count() > 0, 'recently viewed rail should show the actual product opened');
+    assert.ok(await page.locator(`section[aria-label="Recently viewed"] .p[data-id="${viewedId}"]`).count() > 0, 'recently viewed rail should show the actual product opened');
     const compareData = await page.locator('#grid .p').evaluateAll(cards => cards.slice(0, 4).map(card => ({ id: card.getAttribute('data-id'), name: card.querySelector('h3')?.textContent.trim() })));
     assert.ok(compareData.length >= 4, 'compare test requires four products');
     for (const item of compareData.slice(0, 3)) await page.locator(`#grid [data-cmp="${item.id}"]`).click();
