@@ -140,3 +140,4 @@ A task moves to complete only when the relevant code and tests or live evidence 
 
 
 - **2026-10-22 task completion — T35 DONE:** Added customer profile read/update endpoints with JWT identity scoping and regression coverage for cross-account isolation, password-hash preservation and rejection of seller tokens. Checkout and security CI passed on `bacf50dbec5f8545c727aaf994a74e6b5cc4e405`. Tracker is now **57/80 complete, 23 open**. Frontend profile-form integration and live deployed smoke tests remain to be checked before calling the customer profile workflow fully production-ready.
+- **2026-10-22 release preparation:** Added `JUNO_RELEASE_RUNBOOK.md` with private environment checks, the production smoke-test matrix, inventory/payment launch blockers, rollback steps and sign-off fields. This prepares T79/T80 but does **not** complete either: production access and exact-deployed-commit acceptance are still required.
