@@ -43,7 +43,7 @@ sheets.update = async (tab, rowNum, row) => {
 };
 sheets.ensureTab = async () => true;
 
-const { _t, wrap, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds, myOrders } = require('../netlify/lib/core');
+const { _t, wrap, webhook, verifyPayment, securityHealth, health, trackWebsiteActivity, placeCod, createOrder, admin, signup, login, reset, sellerProducts, sellerOrders, sellerLogin, sellerApply, sellerActivate, ticket, returnRequest, myRequests, addReview, products, visibleIds, myOrders, customerProfile, updateCustomerProfile } = require('../netlify/lib/core');
 const cases = [];
 async function check(name, fn) {
   try {
@@ -385,6 +385,41 @@ async function rejectsWith(items, pattern) {
           () => sellerProducts({ action: 'profile' }, { headers: { authorization: 'Bearer ' + expired } }),
           /Please sign in to your seller account/i
         );
+      } finally {
+        mockedSheets = previousSheets;
+        if (previousSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousSecret;
+      }
+    });
+    await check('customer profile read/update is scoped to the authenticated email and never returns credential fields', async () => {
+      const previousSheets = mockedSheets, previousSecret = process.env.JWT_SECRET, previousUpdates = updatedRows.length;
+      process.env.JWT_SECRET = 'offline-customer-profile-isolation-secret';
+      mockedSheets = { Users: [
+        ['Name', 'Email', 'Password Hash', 'Phone', 'Created', 'Last Login', 'Login Count'],
+        ['Buyer One', 'buyer.one@example.com', 'HASH_ONE', '9876543210', 'created', 'login', 1],
+        ['Buyer Two', 'buyer.two@example.com', 'HASH_TWO', '9876543211', 'created', 'login', 1]
+      ] };
+      try {
+        const token = jwt.sign({ name: 'Buyer One', email: 'buyer.one@example.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const headers = { authorization: 'Bearer ' + token };
+        const get = wrap('GET', customerProfile, 'user');
+        const post = wrap('POST', updateCustomerProfile, 'user');
+        const profileResponse = await get({ httpMethod: 'GET', headers, body: '' });
+        assert.equal(profileResponse.statusCode, 200);
+        const profile = JSON.parse(profileResponse.body);
+        assert.deepEqual(profile.user, { name: 'Buyer One', email: 'buyer.one@example.com' });
+        assert.doesNotMatch(JSON.stringify(profile), /HASH_ONE|9876543210|password/i);
+        const updateResponse = await post({ httpMethod: 'POST', headers, body: JSON.stringify({ name: 'Updated Buyer', email: 'buyer.two@example.com', password: 'attacker-value' }) });
+        assert.equal(updateResponse.statusCode, 200);
+        assert.deepEqual(JSON.parse(updateResponse.body).user, { name: 'Updated Buyer', email: 'buyer.one@example.com' });
+        assert.equal(mockedSheets.Users[1][0], 'Updated Buyer');
+        assert.equal(mockedSheets.Users[1][1], 'buyer.one@example.com', 'client cannot change the authenticated email');
+        assert.equal(mockedSheets.Users[1][2], 'HASH_ONE', 'profile update cannot change password hash');
+        assert.equal(mockedSheets.Users[2][0], 'Buyer Two', 'another customer profile must remain unchanged');
+        assert.ok(updatedRows.slice(previousUpdates).some(x => x.tab === 'Users'), 'profile change should persist');
+        const sellerToken = jwt.sign({ seller: true, sellerId: 'JSRSELLER1', email: 'seller@example.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const denied = await get({ httpMethod: 'GET', headers: { authorization: 'Bearer ' + sellerToken }, body: '' });
+        assert.equal(denied.statusCode, 401);
       } finally {
         mockedSheets = previousSheets;
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
