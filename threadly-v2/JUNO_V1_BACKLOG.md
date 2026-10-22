@@ -7,8 +7,8 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 ## Fixed planning number
 
 - **80 work items total**
-- **48 confirmed complete** (code/test/CI evidence listed below)
-- **32 open** (implementation, verification, external setup, or release acceptance still required)
+- **52 confirmed complete** (code/test/CI evidence listed below)
+- **28 open** (implementation, verification, external setup, or release acceptance still required)
 - **Estimated effort: 50–70 working days** for one developer, assuming timely access to the Google Sheet, Netlify, Razorpay test/live setup, and email provider.
 - **Calendar estimate: about 10–14 weeks** for one developer at 5 working days/week. External approval, credentials, production access or defects may extend this; the estimate is not a promise that a paid payment provider will approve marketplace payouts by a certain date.
 - Suggested release gate: all P0 tasks passed; P1 tasks required for any feature advertised in V1 passed; no known critical/high security or payment bugs; production smoke test passed.
@@ -59,7 +59,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T34** Test logout, token expiry and access after account/session changes. (0.5 day)
 - [ ] **T35** Verify customer profile data is read/written only for the authenticated customer. (0.5 day)
 - [ ] **T36** Confirm whether addresses are device-local or server-synced; make behavior clear and test it. (0.5–1 day)
-- [ ] **T37** Test order history privacy and status refresh. (0.5 day)
+- [x] **T37** Customer order history is scoped to the authenticated email and excludes phone/address/payment identifiers; a regression test also verifies a fresh request reflects updated fulfilment status and tracking. Checkout regression CI passed for commit `e603a3d3`. (0.5 day)
 - [x] **T38** Regression tests cover cancellation of New orders, cancellation requests for Packed orders, rejection after shipment/delivery, and return eligibility only after delivery. Cancellation messaging no longer promises a refund before it is processed. CI passed for commit `9fd1d38b`. (0.5–1 day)
 - [x] **T39** Regression tests cover return eligibility only after delivery, admin decision visibility in customer requests, and the rule that a return cannot be marked Refunded until the verified Razorpay refund webhook has set the order payment status to Refunded. CI passed for commit `b341c45e`. (0.5–1 day)
 - [x] **T40** Regression tests cover Razorpay refund initiation, exact refund amount, failed-gateway behavior, duplicate-retry rejection, signed refund webhook status update and seller-ledger reconciliation flags. CI passed for commit `2e3275e9`; live Razorpay test-mode refund smoke test remains under T22/T29. (1 day)
@@ -70,13 +70,13 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [ ] **T45** Decide which V1 messages use email versus SMS/OTP; implement only configured providers and test delivery. (1–2 days plus provider setup)
 - [x] **T46** Seller application validation/consent and persistence have regression coverage; tests verify missing consent does not write a request and a valid accessories application is stored in the existing Requests tab. CI passed for commit `1822fc2a`. Duplicate/rate-limit live behavior remains part of production smoke tests. (0.5 day)
 - [x] **T47** Regression tests verify an approved application can activate a seller, password is hashed, activation is one-time, and expired links are rejected. CI passed for commit `60b527e1`. Actual approval email delivery still requires configured Brevo/MAIL_FROM and a live smoke test. (0.5–1 day)
-- [ ] **T48** Test seller login, account suspension, session expiry and logout. (0.5–1 day)
+- [x] **T48** Seller login rejects invalid credentials, updates Last Login, and expired JWTs are rejected; seller suspension is covered by admin/seller access regression tests; Playwright verifies Seller Studio logout clears the session token. Checkout/Security CI passed for `e603a3d3`; browser CI passed for `d316a9fa`. (0.5–1 day)
 - [x] **T49** Prove seller A cannot list/read/update seller B's products or orders; add regression tests. (1 day)
 - [x] **T50** Add safe seller product editing/stock updates for owned products, with server-side validation. Edits preserve seller ownership and return the product to hidden/pending moderation; regression tests passed in CI for commit `5932bcdd`. (1–2 days)
 - [x] **T51** Verify product moderation and approval-state changes are admin-only and immediately affect public visibility. Regression test confirms approval publishes seller products and Juno-owned products cannot be changed through the seller moderation action; CI passed for commit `8c9a65e6`. (0.5–1 day)
 - [x] **T52** Test multi-seller cart order splitting and seller-specific fulfilment records. Regression test creates one fulfilment record per seller for a mixed cart and confirms retry does not duplicate seller orders or ledger rows. CI passed for commit `f63d2522`. Shipping/discount settlement policy remains a separate finance task. (1–2 days)
 - [x] **T53** Test seller fulfilment status transitions and tracking updates; block unauthorized order IDs. Tests reject invalid status jumps, allow New → Accepted, persist tracking, and cross-seller updates are denied. CI passed for commit `f044c952`. (0.5–1 day)
-- [ ] **T54** Review seller/customer personal data exposure; restrict addresses and phone numbers to authorized fulfilment views. (0.5–1 day)
+- [x] **T54** Customer order-history API returns only the signed-in customer's order summary and omits delivery address, phone, PIN and payment ID; seller order access is seller-ID scoped and cross-seller access is regression-tested. Checkout regression CI passed for `e603a3d3`; existing seller-isolation CI evidence is recorded under T49. (0.5–1 day)
 - [ ] **T55** Verify shipping, cancellation, returns, refund, privacy, terms, contact and seller terms match actual operations. (1 day)
 
 ## P2 — marketplace polish and competitive shopping experience (T56–T72)
@@ -105,7 +105,7 @@ Target: a launchable accessories marketplace inspired by the common shopping fea
 - [x] **T74** Regression tests cover admin product creation, update, hide (soft-delete) and preservation of seller ownership/approval status. Price-limit/MRP validation is also covered. CI passed for commit `223680d6`. Permanent hard deletion is intentionally not provided; hiding preserves order-history references. (0.5–1 day)
 - [x] **T75** Admin now returns seller-account rows to the dashboard and supports Active/Suspended status changes; suspended accounts are denied seller product/order API access. Seller sales are disabled by default; product approval is blocked unless `MARKETPLACE_SELLER_SALES_ENABLED=true` is deliberately set after payment settlement/inventory safeguards are ready. Regression tests passed for commits `2786a1ed` and `00c7a114`; seller order oversight is present in Admin > Seller orders. (0.5–1 day)
 - [x] **T76** Regression coverage now spans admin order status/tracking updates, return/refund gating, Razorpay refund initiation/error handling, review submission/moderation, and support-ticket persistence/admin replies. CI passed for commits `8c5b0e1a` and `2e3275e9`. Provider email delivery and live gateway smoke tests remain external release checks. (1 day)
-- [ ] **T77** Verify security headers, dependency advisories, secret scanning and safe logs; remediate findings. (1 day)
+- [x] **T77** Security CI verifies required browser security headers, admin-only diagnostics, dependency audit and an explicit safe-field allowlist for activity logs; a regression test proves passwords, tokens, payment IDs, phone/address and arbitrary free text are excluded. Security checks and historical secret scan passed for `042a6d80`. (1 day)
 - [ ] **T78** Validate seller ledger/commission/refund allocation with mixed-seller test orders; keep automatic payouts disabled until provider onboarding, KYC, commission policy and reconciliation are approved. (1–3 days for ledger tests; provider approval excluded)
 - [ ] **T79** Run final GitHub Actions, production deploy and smoke tests against the exact deployed commit. (1 day plus external access)
 - [ ] **T80** Complete release acceptance: evidence for each P0, known-issues list, rollback steps, owner handover and tracker update. (0.5–1 day)
@@ -124,3 +124,6 @@ A task moves to complete only when the relevant code and tests or live evidence 
 - Started batch execution instead of requiring one-task-at-a-time prompts. The first code change in this batch is commit `49a2190dc79ad7aa3d8f7a2cb1ba54b01949c5b6`, which expands `scripts/check-security-config.js` with checks that the public health function is GET-only, does not directly read environment variables/credentials, and that `/api/*` is routed to Netlify functions.
 - This is static configuration/code evidence only. **T08 remains open** until the deployed `/api/health` HTTP response and failure behavior are checked against the actual Netlify deployment. No task count is increased by this change alone.
 - Next batch priorities: inventory reservation/reconciliation and payment lifecycle tests (T25–T27, T41); customer/seller privacy and session checks (T34–T37, T48, T54); image/catalogue and mobile/performance/loading audits (T56, T59, T61, T69–T70); then the remaining production credentials, live checkout, deploy and release gates (T08–T10, T22, T29–T30, T33, T43–T45, T55, T64, T72, T77–T80).
+
+
+- **2026-10-22 batch update:** Added customer order-history privacy/status-refresh tests (checkout CI: https://github.com/jananisr2020/Threadly/actions/runs/39790812185), seller session/logout coverage (browser CI: https://github.com/jananisr2020/Threadly/actions/runs/39790678230), and sensitive-field exclusion tests for activity logs (security CI: https://github.com/jananisr2020/Threadly/actions/runs/39790756393; historical secret scan: https://github.com/jananisr2020/Threadly/actions/runs/39790756391). Progress is **52/80 complete, 28 open**. Live Sheets, Razorpay, email-provider and Netlify production checks remain open; CI is not proof of production configuration.
