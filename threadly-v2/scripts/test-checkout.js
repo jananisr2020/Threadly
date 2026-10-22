@@ -311,8 +311,14 @@ async function rejectsWith(items, pattern) {
     });
     await check('support tickets persist and admin replies update the ticket record', async () => {
       const previousSecret = process.env.JWT_SECRET;
-      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
+      const previousEnv = { BREVO_API_KEY: process.env.BREVO_API_KEY, MAIL_FROM: process.env.MAIL_FROM, SUPPORT_EMAIL: process.env.SUPPORT_EMAIL };
+      const previousFetch = global.fetch;
+      const previousSheets = mockedSheets, previousAppends = appendedRows.length, mailRequests = [];
       process.env.JWT_SECRET = 'offline-ticket-admin-secret';
+      process.env.BREVO_API_KEY = 'offline-test-key';
+      process.env.MAIL_FROM = 'no-reply@example.com';
+      process.env.SUPPORT_EMAIL = 'support@example.com';
+      global.fetch = async (url, options) => { mailRequests.push(JSON.parse(options.body)); return { ok: true, status: 201 }; };
       mockedSheets = { Tickets: [['Ticket ID', 'Date', 'Type', 'Name', 'Email', 'Phone', 'Order ID', 'Message', 'Status', 'Admin Reply', 'Last Updated']] };
       const event = { headers: { 'x-nf-client-connection-ip': '203.0.113.30' } };
       const adminToken = jwt.sign({ admin: true }, process.env.JWT_SECRET);
@@ -321,6 +327,14 @@ async function rejectsWith(items, pattern) {
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Tickets').length, 0);
         const result = await ticket({ type: 'Query', name: 'Test Buyer', email: 'buyer@example.com', phone: '9876543210', orderId: 'ORDER-1', message: 'Please help me check my order status.' }, event);
         assert.equal(result.ok, true);
+        assert.equal(result.emailed, true);
+        const customerMail = mailRequests.find(x => x.to && x.to[0] && x.to[0].email === 'buyer@example.com');
+        assert.ok(customerMail, 'expected customer receipt email');
+        const customerNotice = customerMail.htmlContent;
+        for (const sensitive of ['9876543210', 'ORDER-1', '123 Test Street', 'pay_sensitive_123', 'rzp_secret_test']) {
+          assert.equal(customerNotice.includes(sensitive), false, 'customer notification must not disclose ' + sensitive);
+        }
+        assert.match(customerNotice, new RegExp(result.id));
         const saved = appendedRows.slice(previousAppends).find(x => x.tab === 'Tickets');
         assert.ok(saved, 'expected ticket row to be saved');
         assert.equal(saved.row[8], 'Open');
@@ -331,6 +345,8 @@ async function rejectsWith(items, pattern) {
         assert.equal(ticketRow[9], 'We are checking the order now.');
       } finally {
         mockedSheets = previousSheets;
+        global.fetch = previousFetch;
+        for (const [key, value] of Object.entries(previousEnv)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
         if (previousSecret === undefined) delete process.env.JWT_SECRET;
         else process.env.JWT_SECRET = previousSecret;
       }
