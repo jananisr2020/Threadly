@@ -18,6 +18,7 @@ const required = [
   ['admin-only diagnostics', core.includes("if (!u || !u.admin) throw new E('Admin login required.', 401)")],
   ['environment values are not returned', core.includes("env[k] = process.env[k] ? 'set' : 'MISSING'")],
   ['non-2xx responses are audited as failures', core.includes("responseStatus >= 400 ? 'failure' : 'success'")],
+  ['audit event details use an explicit safe-field allowlist', core.includes("for (const k of ['action', 'status', 'id', 'orderId', 'applicationId', 'productId', 'type'])")],
   ['website activity requires explicit consent', core.includes("if (b.consent !== 'all') throw new E('Activity tracking requires explicit consent.', 403)")],
   ['checkout is disabled when only the bundled catalogue is available', storefront.includes('if(LIVE&&(!catalogueReady||!catalogueLive))') && storefront.includes('setCatalogueNotice(true)')],
   ['external seller sales are disabled by default until marketplace settlement is ready', envExample.includes('MARKETPLACE_SELLER_SALES_ENABLED=false') && core.includes('marketplaceSellerSalesEnabled') && core.includes('Seller sales are disabled until marketplace payment settlement')],
