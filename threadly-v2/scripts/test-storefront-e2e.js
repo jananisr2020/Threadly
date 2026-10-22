@@ -11,7 +11,8 @@ const AxeBuilder = require('@axe-core/playwright');
 const root = path.resolve(__dirname, '../public');
 const csv = fs.readFileSync(path.join(root, 'products.csv'), 'utf8');
 const e2eCsv = csv.trimEnd() + '\nE2E001,E2E Broken Image Hair Clip,Hair Clips,Women,150,100,Metal acrylic,Pink|Black|Beige,http://127.0.0.1:1/missing.jpg,2,No,4.5,Yes\n';
-const catalogueIds = new Set(e2eCsv.trim().split('\n').slice(1).map(row => row.split(',')[0]));
+const bundledCatalogue = JSON.parse(fs.readFileSync(path.join(root, 'catalog.json'), 'utf8'));
+const catalogueIds = new Set([...e2eCsv.trim().split('\n').slice(1).map(row => row.split(',')[0]), ...(bundledCatalogue.products || []).map(product => product.id)]);
 let liveCatalogueAvailable = true;
 const mime = {
   '.html': 'text/html; charset=utf-8',
