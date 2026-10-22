@@ -1,0 +1,763 @@
+# Juno / Threadly — Repository Technical Reference
+
+> Generated file. Do not hand-edit. Run node scripts/generate_repository_docs.js at repository root. Main-branch GitHub Actions refreshes it after changes. File descriptions are curated; file inventory, sizes, line counts, environment names and package scripts are derived from the checkout.
+
+This describes source code at a revision; it is not proof that production services or credentials have been tested.
+
+## 1. Repository overview
+
+- Main app: threadly-v2/; browser files: threadly-v2/public/.
+- Backend: Netlify Functions in threadly-v2/netlify/functions/.
+- Shared business logic: threadly-v2/netlify/lib/core.js.
+- Persistence: Google Sheets through threadly-v2/netlify/lib/sheets.js.
+- Payments: Razorpay; email depends on provider configuration.
+- Android wrapper: threadly-android/. CI: .github/workflows/.
+- Tracked files: **111**.
+
+### Directory map
+
+| Directory | Purpose |
+|---|---|
+| `.github/` | Contains tracked files; see file catalogue. |
+| `docs/` | Architecture diagrams and technical reference. |
+| `scripts/` | Repository maintenance scripts. |
+| `threadly-android/` | Android wrapper. |
+| `threadly-v2/` | Main Juno application. |
+| `.github/workflows/` | CI validation, tests, security scans and Android build. |
+| `threadly-v2/netlify/` | Contains tracked files; see file catalogue. |
+| `threadly-v2/public/` | Storefront, admin/seller pages, policies, PWA and public data. |
+| `threadly-v2/scripts/` | Tests, validation and image workflows. |
+| `threadly-v2/netlify/functions/` | Serverless API entry points. |
+| `threadly-v2/netlify/lib/` | Shared backend logic and storage adapter. |
+| `threadly-v2/public/images/` | Contains tracked files; see file catalogue. |
+| `threadly-v2/public/images/categories/` | Contains tracked files; see file catalogue. |
+
+## 2. Architecture and data flow
+
+1. Browser pages under threadly-v2/public provide storefront, admin, seller, policy and PWA experiences.
+2. threadly-v2/netlify.toml routes /api/* to Netlify Functions and configures SEO/admin routes.
+3. Function files are API entry points; most delegate shared behavior to netlify/lib/core.js.
+4. netlify/lib/sheets.js centralizes Google Sheets reads/writes. These are not atomic database transactions.
+5. Razorpay order creation, payment verification and webhooks must be tested together; never trust browser totals or payment status.
+6. manifest.webmanifest defines PWA install metadata; sw.js handles shell/offline caching.
+7. CI success does not prove production credentials, deployment, email or payment integrations.
+
+### Invariants
+
+- Cash on delivery stays disabled.
+- Selling prices are capped at ₹500.
+- Payment status is controlled by verified gateway events, not manual admin edits.
+- Keep MARKETPLACE_SELLER_SALES_ENABLED=false until inventory and seller settlement are verified.
+- Never commit secrets or private customer data.
+- Google Sheets read-modify-write does not guarantee concurrent inventory safety or idempotent restocking.
+
+## 3. Developer commands
+
+Run from threadly-v2/: npm ci; npm test; npm run check; npm run check:security.
+At repository root: node scripts/generate_repository_docs.js regenerates this guide; add --check to verify freshness.
+
+### Package scripts
+
+| Package | Script | Command |
+|---|---|---|
+| `threadly-android/package.json` | `npm run android:sync` | `cap sync android` |
+| `threadly-android/package.json` | `npm run android:open` | `cap open android` |
+| `threadly-v2/package.json` | `npm run check` | `node scripts/check-links.js` |
+| `threadly-v2/package.json` | `npm run check:security` | `node scripts/check-security-config.js` |
+| `threadly-v2/package.json` | `npm run test` | `node scripts/test-checkout.js` |
+
+## 4. Environment configuration inventory
+
+Only names are documented. Actual values belong in private local/Netlify settings, never Git.
+
+| Variable | Guidance |
+|---|---|
+| `ADMIN_PASSWORD` | Sensitive credential; keep private and never log it. |
+| `BREVO_API_KEY` | Sensitive credential; keep private and never log it. |
+| `GOOGLE_PRIVATE_KEY` | Sensitive credential; keep private and never log it. |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Review .env.example and source before setting. |
+| `JUNO_AI_STUDIO_TOKEN` | Review .env.example and source before setting. |
+| `JUNO_IMAGE_WORKER_TOKEN` | Review .env.example and source before setting. |
+| `JUNO_MARKETPLACE_COMMISSION_BPS` | Review .env.example and source before setting. |
+| `JWT_SECRET` | Sensitive credential; keep private and never log it. |
+| `MAIL_FROM` | Verified outbound email sender. |
+| `MARKETPLACE_SELLER_SALES_ENABLED` | Keep false until seller safeguards are verified. |
+| `OPENAI_API_KEY` | Sensitive credential; keep private and never log it. |
+| `OPENAI_IMAGE_MODEL` | Review .env.example and source before setting. |
+| `RAZORPAY_KEY_ID` | Review .env.example and source before setting. |
+| `RAZORPAY_KEY_SECRET` | Sensitive credential; keep private and never log it. |
+| `RAZORPAY_WEBHOOK_SECRET` | Sensitive credential; keep private and never log it. |
+| `SHEET_ID` | Target Google spreadsheet. |
+| `SUPPORT_EMAIL` | Customer support contact. |
+| `SUPPORT_PHONE` | Customer support contact. |
+| `URL` | Review .env.example and source before setting. |
+| `WEBHOOK_DELAY_MS` | Review .env.example and source before setting. |
+
+## 5. Serverless endpoint index
+
+Route names follow Netlify function naming. Check handlers for exact method, auth and request/response schemas.
+
+| Handler | Function route | Handler clues |
+|---|---|---|
+- `threadly-v2/netlify/functions/add-review.js` -> `/.netlify/functions/add-review` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/admin.js` -> `/.netlify/functions/admin` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/ai-product-views.js` -> `/.netlify/functions/ai-product-views` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/coupons.js` -> `/.netlify/functions/coupons` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/create-order.js` -> `/.netlify/functions/create-order` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/customer-profile-update.js` -> `/.netlify/functions/customer-profile-update` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/customer-profile.js` -> `/.netlify/functions/customer-profile` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/forgot.js` -> `/.netlify/functions/forgot` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/health.js` -> `/.netlify/functions/health` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/login.js` -> `/.netlify/functions/login` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/my-orders.js` -> `/.netlify/functions/my-orders` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/my-requests.js` -> `/.netlify/functions/my-requests` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/my-tickets.js` -> `/.netlify/functions/my-tickets` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/pincode.js` -> `/.netlify/functions/pincode` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/place-cod.js` -> `/.netlify/functions/place-cod` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/product-image-scheduler.js` -> `/.netlify/functions/product-image-scheduler` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/product-image-worker-background.js` -> `/.netlify/functions/product-image-worker-background` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/product-image.js` -> `/.netlify/functions/product-image` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/products.js` -> `/.netlify/functions/products` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/razorpay-webhook.js` -> `/.netlify/functions/razorpay-webhook` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/reset.js` -> `/.netlify/functions/reset` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/return-request.js` -> `/.netlify/functions/return-request` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/reviews.js` -> `/.netlify/functions/reviews` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/security-health.js` -> `/.netlify/functions/security-health` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/seller-activate.js` -> `/.netlify/functions/seller-activate` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/seller-apply.js` -> `/.netlify/functions/seller-apply` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/seller-login.js` -> `/.netlify/functions/seller-login` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/seller-orders.js` -> `/.netlify/functions/seller-orders` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/seller-products.js` -> `/.netlify/functions/seller-products` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/seo.js` -> `/.netlify/functions/seo` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/signals.js` -> `/.netlify/functions/signals` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/signup.js` -> `/.netlify/functions/signup` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/ticket.js` -> `/.netlify/functions/ticket` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/verify-payment.js` -> `/.netlify/functions/verify-payment` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- `threadly-v2/netlify/functions/website-activity.js` -> `/.netlify/functions/website-activity` — Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+
+## 6. Complete tracked-file catalogue
+
+Every tracked file is listed below except package lockfiles and this generated guide. Purpose, file type, size and line count are listed for each. Symbol hints are deliberately omitted rather than guessed; inspect source for complete behavior.
+
+### `.github/workflows/build-threadly-android.yml`
+
+- **Purpose:** Android wrapper build workflow.
+- **Type:** yml; **size:** 2,195 bytes; **lines:** 73.
+
+### `.github/workflows/checkout-tests.yml`
+
+- **Purpose:** Checkout regression test workflow.
+- **Type:** yml; **size:** 1,103 bytes; **lines:** 43.
+
+### `.github/workflows/historical-secret-scan.yml`
+
+- **Purpose:** Historical secret scanning.
+- **Type:** yml; **size:** 3,247 bytes; **lines:** 87.
+
+### `.github/workflows/repository-technical-docs.yml`
+
+- **Purpose:** GitHub Actions automation; inspect triggers, permissions and steps.
+- **Type:** yml; **size:** 1,624 bytes; **lines:** 50.
+
+### `.github/workflows/security.yml`
+
+- **Purpose:** CI tests, static/security checks and dependency audit.
+- **Type:** yml; **size:** 1,014 bytes; **lines:** 42.
+
+### `.github/workflows/storefront-e2e.yml`
+
+- **Purpose:** Browser-based storefront/seller tests.
+- **Type:** yml; **size:** 1,213 bytes; **lines:** 41.
+
+### `.github/workflows/validate-juno.yml`
+
+- **Purpose:** Storefront syntax, branding, catalogue and policy validation.
+- **Type:** yml; **size:** 9,150 bytes; **lines:** 159.
+
+### `.gitignore`
+
+- **Purpose:** Files Git should ignore.
+- **Type:** special file; **size:** 152 bytes; **lines:** 4.
+
+### `.gitleaks.toml`
+
+- **Purpose:** Secret scanner configuration.
+- **Type:** toml; **size:** 368 bytes; **lines:** 8.
+
+### `README.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 15,577 bytes; **lines:** 258.
+
+### `SECURITY.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 3,149 bytes; **lines:** 32.
+
+### `docs/juno-architecture.svg`
+
+- **Purpose:** Architecture diagram or technical documentation.
+- **Type:** svg; **size:** 4,308 bytes; **lines:** 18.
+
+### `netlify.toml`
+
+- **Purpose:** Tracked file; inspect source and references for exact behavior.
+- **Type:** toml; **size:** 471 bytes; **lines:** 28.
+
+### `scripts/generate_repository_docs.js`
+
+- **Purpose:** Repository maintenance automation.
+- **Type:** js; **size:** 13,389 bytes; **lines:** 67.
+
+### `scripts/update_product_tracker.py`
+
+- **Purpose:** Repository maintenance automation.
+- **Type:** py; **size:** 11,502 bytes; **lines:** 196.
+
+### `scripts/update_project_tracker.py`
+
+- **Purpose:** Repository maintenance automation.
+- **Type:** py; **size:** 9,369 bytes; **lines:** 161.
+
+### `scripts/update_runtime_trackers.py`
+
+- **Purpose:** Repository maintenance automation.
+- **Type:** py; **size:** 7,398 bytes; **lines:** 51.
+
+### `threadly-android/README.md`
+
+- **Purpose:** Android wrapper setup notes.
+- **Type:** md; **size:** 1,977 bytes; **lines:** 29.
+
+### `threadly-android/capacitor.config.json`
+
+- **Purpose:** Capacitor Android wrapper configuration.
+- **Type:** json; **size:** 251 bytes; **lines:** 14.
+
+### `threadly-android/package.json`
+
+- **Purpose:** Android wrapper package scripts/dependencies.
+- **Type:** json; **size:** 397 bytes; **lines:** 18.
+
+### `threadly-v2/.env.example`
+
+- **Purpose:** Environment variable names/examples; never put real secrets here.
+- **Type:** example; **size:** 883 bytes; **lines:** 18.
+
+### `threadly-v2/.gitignore`
+
+- **Purpose:** Tracked file; inspect source and references for exact behavior.
+- **Type:** special file; **size:** 40 bytes; **lines:** 6.
+
+### `threadly-v2/AI_PRODUCT_STUDIO.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 4,466 bytes; **lines:** 88.
+
+### `threadly-v2/AI_PRODUCT_VIEW_BATCH.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 5,197 bytes; **lines:** 98.
+
+### `threadly-v2/AUTOMATIC_PRODUCT_IMAGES.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 2,659 bytes; **lines:** 33.
+
+### `threadly-v2/ECOMMERCE_AUDIT_TRACKER.md`
+
+- **Purpose:** Ecommerce feature audit and benchmark tracker.
+- **Type:** md; **size:** 40,266 bytes; **lines:** 223.
+
+### `threadly-v2/JUNO_RELEASE_RUNBOOK.md`
+
+- **Purpose:** Production checks, launch blockers and rollback instructions.
+- **Type:** md; **size:** 5,655 bytes; **lines:** 91.
+
+### `threadly-v2/JUNO_V1_BACKLOG.md`
+
+- **Purpose:** V1 backlog with completion evidence and release risks.
+- **Type:** md; **size:** 29,770 bytes; **lines:** 144.
+
+### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 4,638 bytes; **lines:** 75.
+
+### `threadly-v2/MARKETPLACE_ROADMAP.md`
+
+- **Purpose:** Marketplace rollout plan and seller constraints.
+- **Type:** md; **size:** 7,314 bytes; **lines:** 87.
+
+### `threadly-v2/README.md`
+
+- **Purpose:** Project documentation; verify instructions against code.
+- **Type:** md; **size:** 24,081 bytes; **lines:** 195.
+
+### `threadly-v2/netlify.toml`
+
+- **Purpose:** Tracked file; inspect source and references for exact behavior.
+- **Type:** toml; **size:** 448 bytes; **lines:** 27.
+
+### `threadly-v2/netlify/functions/add-review.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 83 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/admin.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 72 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/ai-product-views.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 5,478 bytes; **lines:** 91.
+
+### `threadly-v2/netlify/functions/coupons.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 272 bytes; **lines:** 11.
+
+### `threadly-v2/netlify/functions/create-order.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 85 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/customer-profile-update.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 101 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/customer-profile.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 94 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/forgot.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 73 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/health.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 72 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/login.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 72 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/my-orders.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 81 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/my-requests.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 83 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/my-tickets.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 82 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/pincode.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 73 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/place-cod.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 82 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/product-image-scheduler.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 5,627 bytes; **lines:** 117.
+
+### `threadly-v2/netlify/functions/product-image-worker-background.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 8,255 bytes; **lines:** 157.
+
+### `threadly-v2/netlify/functions/product-image.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 1,453 bytes; **lines:** 37.
+
+### `threadly-v2/netlify/functions/products.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 74 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/razorpay-webhook.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 74 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/reset.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 72 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/return-request.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 87 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/reviews.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 73 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/security-health.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 85 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/seller-activate.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 86 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/seller-apply.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 83 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/seller-login.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 83 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/seller-orders.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 84 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/seller-products.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 86 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/seo.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 1,124 bytes; **lines:** 10.
+- **Core delegate:** `core.visibleIds`.
+
+### `threadly-v2/netlify/functions/signals.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 73 bytes; **lines:** 3.
+- **Wrapper hint:** `GET`.
+
+### `threadly-v2/netlify/functions/signup.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 73 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/ticket.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 73 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/verify-payment.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 87 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/functions/website-activity.js`
+
+- **Purpose:** Netlify serverless API entry point; inspect this handler and delegated core function for method, auth and payload contract.
+- **Type:** js; **size:** 87 bytes; **lines:** 3.
+- **Wrapper hint:** `POST`.
+
+### `threadly-v2/netlify/lib/core.js`
+
+- **Purpose:** Shared server business rules: auth, validation, customer accounts, checkout, Razorpay verification, orders, inventory sync, support, sellers and admin.
+- **Type:** js; **size:** 78,732 bytes; **lines:** 884.
+
+### `threadly-v2/netlify/lib/coupons.js`
+
+- **Purpose:** Central coupon definitions and discount calculations.
+- **Type:** js; **size:** 1,108 bytes; **lines:** 26.
+
+### `threadly-v2/netlify/lib/sheets.js`
+
+- **Purpose:** Google Sheets persistence adapter used by backend handlers.
+- **Type:** js; **size:** 2,185 bytes; **lines:** 46.
+
+### `threadly-v2/package.json`
+
+- **Purpose:** Node requirements, dependencies and npm commands.
+- **Type:** json; **size:** 423 bytes; **lines:** 20.
+
+### `threadly-v2/public/_headers`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** special file; **size:** 240 bytes; **lines:** 7.
+
+### `threadly-v2/public/admin-product-studio.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 9,227 bytes; **lines:** 34.
+- **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/admin.html`
+
+- **Purpose:** Admin dashboard for catalogue, orders, customers, reviews, support and marketplace operations.
+- **Type:** html; **size:** 26,693 bytes; **lines:** 101.
+- **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/apple-touch-icon.png`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** png; **size:** 6,533 bytes; **lines:** binary.
+
+### `threadly-v2/public/catalog.json`
+
+- **Purpose:** Bundled fallback catalogue for live catalogue outages.
+- **Type:** json; **size:** 301,802 bytes; **lines:** 14561.
+
+### `threadly-v2/public/contact.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 4,897 bytes; **lines:** 6.
+- **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/cookie-policy.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 7,302 bytes; **lines:** 19.
+- **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/favicon.ico`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** ico; **size:** 5,294 bytes; **lines:** binary.
+
+### `threadly-v2/public/favicon.svg`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** svg; **size:** 683 bytes; **lines:** 1.
+
+### `threadly-v2/public/icon-192.png`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** png; **size:** 7,227 bytes; **lines:** binary.
+
+### `threadly-v2/public/icon-512.png`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** png; **size:** 27,629 bytes; **lines:** binary.
+
+### `threadly-v2/public/images/categories/drinkware.svg`
+
+- **Purpose:** Static image asset.
+- **Type:** svg; **size:** 1,042 bytes; **lines:** 1.
+
+### `threadly-v2/public/images/categories/home-kitchen.svg`
+
+- **Purpose:** Static image asset.
+- **Type:** svg; **size:** 863 bytes; **lines:** 1.
+
+### `threadly-v2/public/images/categories/plush-toys.svg`
+
+- **Purpose:** Static image asset.
+- **Type:** svg; **size:** 1,146 bytes; **lines:** 1.
+
+### `threadly-v2/public/images/categories/stationery.svg`
+
+- **Purpose:** Static image asset.
+- **Type:** svg; **size:** 823 bytes; **lines:** 1.
+
+### `threadly-v2/public/images/categories/tech-accessories.svg`
+
+- **Purpose:** Static image asset.
+- **Type:** svg; **size:** 935 bytes; **lines:** 1.
+
+### `threadly-v2/public/index.html`
+
+- **Purpose:** Customer storefront: catalogue, search, filters, sorting, product detail, wishlist, cart and checkout.
+- **Type:** html; **size:** 146,474 bytes; **lines:** 844.
+- **Embedded JavaScript:** 4 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/manifest.webmanifest`
+
+- **Purpose:** PWA installation metadata and icons.
+- **Type:** webmanifest; **size:** 743 bytes; **lines:** 36.
+
+### `threadly-v2/public/offline.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 1,052 bytes; **lines:** 16.
+
+### `threadly-v2/public/privacy-policy.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 9,779 bytes; **lines:** 28.
+- **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/products.csv`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** csv; **size:** 27,965 bytes; **lines:** 302.
+
+### `threadly-v2/public/refund-policy.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 6,777 bytes; **lines:** 9.
+- **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/sell-on-juno.html`
+
+- **Purpose:** Seller acquisition and onboarding page.
+- **Type:** html; **size:** 9,380 bytes; **lines:** 85.
+- **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/seller-studio.html`
+
+- **Purpose:** Seller portal and seller workflows.
+- **Type:** html; **size:** 12,254 bytes; **lines:** 26.
+- **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/shipping-policy.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 6,192 bytes; **lines:** 9.
+- **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/site-config.js`
+
+- **Purpose:** Public static asset/configuration; never include secrets or private data.
+- **Type:** js; **size:** 289 bytes; **lines:** 4.
+
+### `threadly-v2/public/sw.js`
+
+- **Purpose:** PWA service worker for shell caching, offline behavior and cache management.
+- **Type:** js; **size:** 2,673 bytes; **lines:** 90.
+
+### `threadly-v2/public/terms.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 8,269 bytes; **lines:** 17.
+- **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/requirements-ai-product-studio.txt`
+
+- **Purpose:** Optional workflow dependency list.
+- **Type:** txt; **size:** 24 bytes; **lines:** 2.
+
+### `threadly-v2/requirements-image-generation.txt`
+
+- **Purpose:** Optional workflow dependency list.
+- **Type:** txt; **size:** 54 bytes; **lines:** 4.
+
+### `threadly-v2/requirements-local-image-generation.txt`
+
+- **Purpose:** Optional workflow dependency list.
+- **Type:** txt; **size:** 190 bytes; **lines:** 10.
+
+### `threadly-v2/scripts/auto_product_images.py`
+
+- **Purpose:** Product image generation/preparation workflow; check dependencies before running.
+- **Type:** py; **size:** 9,982 bytes; **lines:** 214.
+
+### `threadly-v2/scripts/check-links.js`
+
+- **Purpose:** Static repository, route, catalogue and policy consistency checks.
+- **Type:** js; **size:** 3,863 bytes; **lines:** 39.
+
+### `threadly-v2/scripts/check-security-config.js`
+
+- **Purpose:** Static checks for security configuration and headers.
+- **Type:** js; **size:** 3,346 bytes; **lines:** 34.
+
+### `threadly-v2/scripts/generate_product_views.py`
+
+- **Purpose:** Product-view image generation workflow.
+- **Type:** py; **size:** 17,038 bytes; **lines:** 329.
+
+### `threadly-v2/scripts/generate_product_views_local.py`
+
+- **Purpose:** Local product-view generation workflow.
+- **Type:** py; **size:** 8,979 bytes; **lines:** 176.
+
+### `threadly-v2/scripts/sync_sheet_product_images.py`
+
+- **Purpose:** Synchronizes image references with catalogue/Sheet data.
+- **Type:** py; **size:** 11,492 bytes; **lines:** 242.
+
+### `threadly-v2/scripts/test-checkout.js`
+
+- **Purpose:** Backend/checkout regression suite.
+- **Type:** js; **size:** 103,214 bytes; **lines:** 1442.
+
+### `threadly-v2/scripts/test-storefront-e2e.js`
+
+- **Purpose:** Browser tests for storefront and seller flows.
+- **Type:** js; **size:** 24,746 bytes; **lines:** 363.
+
+## 7. GitHub Actions index
+
+| Workflow | Name |
+|---|---|
+| `.github/workflows/build-threadly-android.yml` | Build Juno Android APK |
+| `.github/workflows/checkout-tests.yml` | Checkout regression tests |
+| `.github/workflows/historical-secret-scan.yml` | Historical secret scan |
+| `.github/workflows/repository-technical-docs.yml` | Repository technical documentation |
+| `.github/workflows/security.yml` | Security checks |
+| `.github/workflows/storefront-e2e.yml` | Storefront browser tests |
+| `.github/workflows/validate-juno.yml` | Validate Juno storefront |
+
+## 8. Safe change workflow
+
+1. Trace the browser page, API handler, shared core function and persistence adapter.
+2. Add regression coverage in threadly-v2/scripts/test-checkout.js or threadly-v2/scripts/test-storefront-e2e.js.
+3. Run npm test, npm run check and npm run check:security from threadly-v2; inspect CI for the exact commit.
+4. Regenerate this guide after changes. Main-branch automation commits refreshed docs; PRs should include the generated guide.
+5. Test real Sheets, Razorpay, email, deployed Netlify behavior and Android separately.
+
+## 9. Known limitations
+
+- Google Sheets reads/writes are not transactions or unique constraints.
+- Inventory reservation/restock and partial-failure recovery require concurrency-safe/idempotent design.
+- Payment verification/webhooks require replay and late-event tests.
+- Seller transfers must remain disabled until provider approval and reconciliation.
+- Image workflows may require optional packages, models, compute or external services.
+- This is a technical index, not a formal complete call graph, security audit or production-readiness certificate.
+
+_Generated automatically by scripts/generate_repository_docs.js from the current checkout._
+
