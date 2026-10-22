@@ -29,7 +29,7 @@
       "src": "/favicon.svg?v=3",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
