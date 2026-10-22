@@ -501,7 +501,23 @@ const webhook = async (b, e) => {
       const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[OIDX.pay] = ev.event === 'refund.processed' ? 'Refunded' : 'Refund pending'; await sheets.update('Orders', i + 1, row);
       try { const ledger = await sheets.read('SellerLedger'); for (let k = 1; k < ledger.length; k++) if (String(ledger[k][2] || '') === String(rows[i][0] || '')) { const lr = ledger[k].slice(); while (lr.length < 17) lr.push(''); lr[12] = 'REFUND_REVIEW'; lr[15] = now(); lr[16] = 'Refund event received; reconcile refund allocation and any payout manually before settlement.'; await sheets.update('SellerLedger', k + 1, lr); } } catch (x) { console.error('refund received but seller ledger review update failed', rows[i][0], x && x.message); }
     }
-  } else if (ev.event === 'payment.failed') console.error('payment failed', JSON.stringify(((pl.payment || {}).entity || {}).error_description || ''));
+  } else if (ev.event === 'payment.failed') {
+    const failed = (pl.payment && pl.payment.entity) || {}, oid = String(failed.order_id || ''), pid = String(failed.id || '');
+    if (oid) {
+      const pending = await sheets.read('Pending'), pi = pending.findIndex((r, k) => k > 0 && String(r[0]) === oid);
+      if (pi > 0) {
+        const current = String(pending[pi][3] || '');
+        const terminal = ['recorded', 'seller_reconciliation_required', 'stock_reconciliation_required'];
+        let saved = {}; try { saved = JSON.parse(pending[pi][1] || '{}') } catch (x) {}
+        const orders = await sheets.read('Orders');
+        const alreadyPaid = orders.slice(1).some(r => String(r[0] || '') === String(saved.id || '') || (pid && String(r[15] || '') === pid));
+        // A failed attempt must never downgrade a successfully recorded payment.
+        if (!terminal.includes(current) && !alreadyPaid) await markPending(oid, 'payment_failed');
+      }
+    }
+    // Do not log gateway descriptions: they can contain provider/user-supplied data.
+    console.error('payment failed; pending status updated when an eligible attempt was found');
+  }
   return { ok: true };
 };
 /* Password reset by email (Brevo) */
