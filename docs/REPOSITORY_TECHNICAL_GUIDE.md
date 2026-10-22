@@ -207,7 +207,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `scripts/generate_repository_docs.js`
 
 - **Purpose:** Repository maintenance automation.
-- **Type:** js; **size:** 18,132 bytes; **lines:** 97.
+- **Type:** js; **size:** 18,310 bytes; **lines:** 98.
 - **Imports/dependencies:** `node:fs`, `node:path`, `node:child_process`.
 - **Detected symbols (8):**
   - `function files`
@@ -756,6 +756,28 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function webhook(b, e)` — Razorpay webhook: records paid orders even if the customer closed the page, and marks refunds
   - `function mail(to, subject, html)` — Password reset by email (Brevo)
   - `function forgot(b, e)`
+  - `function reset(b, e)`
+  - `function reviews(b, e)` — ---------- reviews ----------
+  - `function addReview(b, e, u)`
+  - `function padOrder(r)` — ---------- return / cancellation requests ----------
+  - `function returnRequest(b, e, u)`
+  - `function myRequests(b, e, u)`
+  - `function why(x)` — Setup checker: shows which settings and sheet tabs are working. Never returns secrets.
+  - `function health` — Public liveness endpoint: do not disclose environment/configuration details anonymously.
+  - `function securityHealth(b, e)`
+  - `function pincode(b, e)`
+  - `function SUP`
+  - `function tryMail(to, sub, html)`
+  - `function ticket(b, e)`
+  - `function myTickets(b, e, u)`
+  - `function orderTime(t)`
+  - `function signals`
+  - `function rank(o)`
+  - `function visibleIds`
+  - `function myOrders(b, e, u)`
+  - `function sha(t)` — ---------- admin ----------
+  - `function adminLogin(b, e)`
+  - `function admin(b, e)`
   - … 22 additional symbols omitted from this file entry; use the linked source.
 - **Module role map:** API handlers and business rules for customer auth/profile/password reset; product visibility/pricing and stock validation; Razorpay order creation, signature/webhook processing and refunds; customer order history/returns; seller applications/accounts/catalogue/orders; admin order/product/review/ticket/request operations; consent-based activity logging; pincode lookup and support tickets. Confirm each handler body and the exported API below in source.
 
@@ -797,12 +819,35 @@ Every tracked file is listed below except package lockfiles and this generated g
 
 - **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
 - **Type:** html; **size:** 9,227 bytes; **lines:** 34.
+- **Detected symbols (3):**
+  - `function renderResults(items)`
+  - `function slug(s)`
+  - `function $(id)`
 - **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/admin.html`
 
 - **Purpose:** Admin dashboard for catalogue, orders, customers, reviews, support and marketplace operations.
 - **Type:** html; **size:** 26,693 bytes; **lines:** 101.
+- **Detected symbols (18):**
+  - `function api(b)`
+  - `function out`
+  - `function load`
+  - `function draw`
+  - `function dash`
+  - `function orders`
+  - `function prods`
+  - `function reqs`
+  - `function revs`
+  - `function sellers`
+  - `function sellerproducts`
+  - `function sellerorders`
+  - `function sellerledger`
+  - `function tix`
+  - `function users`
+  - `function edit(p)`
+  - `function $(s)`
+  - `function toast(t)`
 - **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/apple-touch-icon.png`
@@ -876,6 +921,133 @@ Every tracked file is listed below except package lockfiles and this generated g
 
 - **Purpose:** Customer storefront: catalogue, search, filters, sorting, product detail, wishlist, cart and checkout.
 - **Type:** html; **size:** 146,474 bytes; **lines:** 844.
+- **Detected symbols (125):**
+  - `function toast(t)`
+  - `function parseCSV(t)` — ---- Google Sheet / products.csv loader ----
+  - `function setCatalogueNotice(fallback)`
+  - `function getBundledProducts`
+  - `function loadSheet`
+  - `function eta(p)`
+  - `function card(p)`
+  - `function chips`
+  - `function list`
+  - `function render`
+  - `function onCard(e)`
+  - `function sugg`
+  - `function pick(i)`
+  - `function nl(t)`
+  - `function query(t)`
+  - `function fOK(p)`
+  - `function renderExtras(r)`
+  - `function applySig`
+  - `function loadSignals`
+  - `function popular`
+  - `function megaHTML(g)`
+  - `function renderNav`
+  - `function megaToggle(li,on)`
+  - `function goTo(grp,cat)`
+  - `function crumbUpdate(br)`
+  - `function seoInit`
+  - `function productLD(p)`
+  - `function homeSecs`
+  - `function openFilters`
+  - `function quickAdd(id)`
+  - `function shareP(id)`
+  - `function railsFor(p)`
+  - `function botAsk(q)`
+  - `function botRules(q)`
+  - `function demoReviews(p)`
+  - `function loadReviews(pid)`
+  - `function submitReview(pid)`
+  - `function reqHTML(o)`
+  - `function reqUI(type,oid)`
+  - `function sendReq`
+  - `function pinLookup(v)`
+  - `function pinShow(inp,html)`
+  - `function pinInput(t)`
+  - `function pdpPin(v)`
+  - `function openTicket(type)`
+  - `function sendTicket`
+  - `function showCookie` — ---- cookie consent ----
+  - `function cookieChoice(c)`
+  - `function loadRzp` — ---- payment window: loaded only when someone pays ----
+  - `function productMeta(p)`
+  - `function openP(id)`
+  - `function invoice(id)`
+  - `function cmpBar`
+  - `function cmpOpen`
+  - `function cpDisc(c,sub)`
+  - `function totals`
+  - `function drawCart`
+  - `function authUI(m)`
+  - `function forgotUI`
+  - `function doForgot`
+  - `function resetUI`
+  - `function passwordIssue(pw)`
+  - `function doReset`
+  - `function doAuth(m)`
+  - `function acct`
+  - `function checkoutStart` — ---- checkout & payment ----
+  - `function addressKey`
+  - `function addressBook`
+  - `function writeAddressBook(a)`
+  - `function addressFormValues`
+  - `function addressCards(selected)`
+  - `function fillAddress(a)`
+  - `function openPay(addressId)`
+  - `function resetAddressForm`
+  - `function saveAddressFromForm`
+  - `function editSavedAddress(id)`
+  - `function removeSavedAddress(id)`
+  - `function payNow`
+  - `function $(s)`
+  - `function esc(t)`
+  - `function show(id,on=true)`
+  - `function imgUrl(u)`
+  - `function catalogueFetch(url,options={})`
+  - `function normProductText(v)`
+  - `function productImageUrls(p)`
+  - `function pin` — ---- delivery estimate ----
+  - `function arr(k)` — ---- store UI ----
+  - `function img(p,eager)`
+  - `function bg(p)`
+  - `function productGallery(p)`
+  - `function deb(fn,ms)`
+  - `function hay(p)`
+  - `function hasW(h,w)`
+  - `function words(t)`
+  - `function rec`
+  - `function addRec(t)`
+  - `function hl(t,q)`
+  - `function sgClose`
+  - `function hasCol(p,c)`
+  - `function lev(a,b)`
+  - `function fm(p,w)`
+  - `function facetValue(p,k)`
+  - `function filtersActive`
+  - `function clsOf(c)`
+  - `function grpMeta(id)`
+  - `function present(c)`
+  - `function menuGroup(g)`
+  - `function mobileGroup(g)`
+  - `function megaClose`
+  - `function rep(g)`
+  - `function rail(t,l,sub)`
+  - `function categoryAttrs(cat)`
+  - `function facetOptions(key)`
+  - `function chart(p)`
+  - `function botAdd(h,me)` — assistant (rule-based, runs in the browser)
+  - `function laterHTML` — ---- saved for later (cart) ----
+  - `function pinClose`
+  - `function tkHTML`
+  - `function set(selector,attr,value)`
+  - `function sha(t)`
+  - `function ubtn`
+  - `function done(id)`
+  - `function consented`
+  - `function getSessionId`
+  - `function send(event, extra = {})`
+  - … 65 additional symbols omitted from this file entry; use the linked source.
 - **Embedded JavaScript:** 4 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/manifest.webmanifest`
@@ -909,12 +1081,24 @@ Every tracked file is listed below except package lockfiles and this generated g
 
 - **Purpose:** Seller acquisition and onboarding page.
 - **Type:** html; **size:** 9,380 bytes; **lines:** 85.
+- **Detected symbols (1):**
+  - `function status(message,kind)`
 - **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/seller-studio.html`
 
 - **Purpose:** Seller portal and seller workflows.
 - **Type:** html; **size:** 12,254 bytes; **lines:** 26.
+- **Detected symbols (9):**
+  - `function msg(el,text,kind)`
+  - `function esc(s)`
+  - `function call(url,data,t=token)`
+  - `function showStudio(d)`
+  - `function loadProducts`
+  - `function startProductEdit(id)`
+  - `function resetProductEdit`
+  - `function loadSellerOrders`
+  - `function $(s)`
 - **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/shipping-policy.html`
@@ -1073,7 +1257,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 - A nearby comment is shown only when a clear adjacent comment can be associated with the symbol. Missing descriptions mean the source has no nearby comment or static matching could not safely identify one.
 - **Imports/dependencies** show direct CommonJS requires or Python imports; runtime-loaded modules and browser CDN dependencies may not be captured.
 - **Exports** are static CommonJS export assignments; object-literal export maps may require reading the final module.exports statement.
-- Inline JavaScript in HTML is counted but is not yet split into independent function entries.
+- Inline JavaScript in HTML is extracted for the same heuristic symbol inventory where recognizable.
 
 ## 9. Safe change workflow
 
