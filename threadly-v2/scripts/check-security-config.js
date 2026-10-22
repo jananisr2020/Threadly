@@ -24,7 +24,7 @@ const required = [
   ['external seller sales are disabled by default until marketplace settlement is ready', envExample.includes('MARKETPLACE_SELLER_SALES_ENABLED=false') && core.includes('marketplaceSellerSalesEnabled') && core.includes('Seller sales are disabled until marketplace payment settlement')],
   ['CI audits production dependencies', workflow.includes('npm audit --omit=dev --audit-level=high')],
   ['public health function is GET-only and delegates to the minimal health handler', healthFunction.includes("c.wrap('GET',c.health)")],
-  ['public health function does not directly read environment variables or credentials', !/process\\.env|GOOGLE_PRIVATE_KEY|RAZORPAY_KEY_SECRET|JWT_SECRET|ADMIN_PASSWORD/.test(healthFunction)],
+  ['public health function does not directly read environment variables or credentials', !/process\.env|GOOGLE_PRIVATE_KEY|RAZORPAY_KEY_SECRET|JWT_SECRET|ADMIN_PASSWORD/.test(healthFunction)],
   ['API routes are mapped to Netlify functions', netlifyConfig.includes('from = "/api/*"') && netlifyConfig.includes('to = "/.netlify/functions/:splat"')]
 ];
 const failed = required.filter(([, ok]) => !ok);
