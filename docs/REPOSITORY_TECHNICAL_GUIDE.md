@@ -187,7 +187,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `README.md`
 
 - **Purpose:** Project documentation; verify instructions against code.
-- **Type:** md; **size:** 15,577 bytes; **lines:** 258.
+- **Type:** md; **size:** 15,730 bytes; **lines:** 259.
 
 ### `SECURITY.md`
 
