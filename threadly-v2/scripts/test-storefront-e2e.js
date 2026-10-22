@@ -331,6 +331,11 @@ const server = http.createServer((req, res) => {
     await page.waitForTimeout(150);
     assert.equal(await page.locator('#aov.show').count(), 0, 'fallback catalogue must not proceed into checkout/login');
     assert.equal(await page.locator('#pov.show').count(), 0, 'fallback catalogue must not proceed into checkout');
+    // The preview warning must offer a retry and recover when the live catalogue returns.
+    liveCatalogueAvailable = true;
+    await page.locator('#retry-live-catalogue').click();
+    await page.waitForFunction(() => !document.querySelector('#catalogue-sync-notice'));
+    assert.ok(await page.locator('#grid .p').count() > 0, 'catalogue retry should restore products');
     assert.deepEqual(pageErrors, [], 'storefront and seller pages should not throw uncaught JavaScript errors');
     process.stdout.write('✓ storefront browser smoke tests passed (search, category, sort, wishlist, cart, product detail, compare, mobile)\n');
   } catch (error) {
