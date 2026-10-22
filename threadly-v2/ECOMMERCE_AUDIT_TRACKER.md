@@ -21,14 +21,14 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 | Storefront/catalogue | `public/index.html`, `public/catalog.json`, `public/products.csv` exist; README documents the Google Sheets catalogue | Implemented in code; live data/rendering still needs production verification |
 | Category/navigation and product discovery | Existing storefront and catalogue files are present; run link and UI tests before changing | Present; behavior not yet fully re-tested in this pass |
 | Prepaid checkout | `create-order.js`, `verify-payment.js`, `razorpay-webhook.js`; offline checkout tests exist | Implemented in code; Razorpay end-to-end requires configured credentials/webhook and a test payment |
-| COD disabled | README specifies prepaid only; `place-cod.js` handler still exists in the repository | **Audit item:** verify it always rejects and no storefront flow exposes COD |
+| COD disabled | `placeCod` rejects direct server calls; storefront and admin do not expose COD; regression tests cover direct handler rejection | Code and CI covered; production UI smoke test remains open |
 | Authentication/account | login/signup/reset/my-orders endpoints exist | Implemented in code; session/account production flows need testing |
 | Customer activity | `website-activity.js` requires explicit all-consent and validates event names/session IDs | Implemented in code; verify consent UI and retention/privacy behavior |
 | Seller applications | `sell-on-juno.html`, `seller-apply.js`, admin application flow | Phase 1 exists; live submission must be tested against the configured Sheets tab |
-| Seller account/products/orders | seller login, activation, products and orders endpoints and seller studio exist | Partial marketplace; verify every operation enforces verified seller identity and ownership |
+| Seller account/products/orders | Seller login/expiry, seller-ID ownership checks, product edit re-moderation, seller order status transitions, and logout token clearing have regression coverage | Core authorization paths tested in CI; production Sheet/account flows still need smoke tests |
 | Seller payouts | Roadmap states payouts are subsequent work; no claim of automated payouts | Not launch-ready; keep transfers disabled |
 | Admin/security | `admin.html`, `security-health.js`, activity logging in `netlify/lib/core.js` | Present; permission and data-isolation tests remain |
-| CI / offline checks | `npm run check`, `npm run check:security`, `npm test`; GitHub Actions workflows exist | Must run on the latest commit and review the resulting logs |
+| CI / offline checks | Checkout tests, security configuration/dependency audit, historical secret scan, storefront browser/axe tests and activity-log safe-field tests pass on recent commits | Automated evidence available; repeat final suite on release commit before signoff |
 | Netlify production | Root `netlify.toml` points to `threadly-v2/`; prior deploy attempt returned Forbidden | **Unverified:** do not equate a GitHub commit with a successful production deployment |
 
 ## Benchmark gap tracker
@@ -199,3 +199,11 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 
 
 2026-10-21 product detail browser tests: Playwright adds a deterministic product with a broken image URL and low stock. The test verifies the broken image is hidden gracefully, `Only 2 left` is shown, the product detail opens, and colour variants can be selected. [Browser tests passed](https://github.com/jananisr2020/Threadly/actions/runs/39604587125). Backlog commit `69f39265` marks T16 complete; progress is 48 confirmed complete and 32 open.
+
+
+## Batch execution log — 2026-10-22
+
+- Fixed Seller Studio logout browser-test setup so its session seed does not re-run after the page reload. Browser suite passed: https://github.com/jananisr2020/Threadly/actions/runs/39790678230.
+- Added customer order-history regression coverage: results are email-scoped, omit delivery address/phone/PIN/payment ID, and a fresh read reflects current fulfilment status/tracking. Checkout regression suite passed: https://github.com/jananisr2020/Threadly/actions/runs/39790812185.
+- Added explicit allowlist test for activity audit details; password, token, payment ID, phone, address and arbitrary free text are excluded. Security checks passed: https://github.com/jananisr2020/Threadly/actions/runs/39790756393; historical secret scan passed: https://github.com/jananisr2020/Threadly/actions/runs/39790756391.
+- Backlog updated from 48/80 to 52/80 complete. T37, T48, T54 and T77 are now complete with CI evidence. Production checks remain open: live /api/health, Google Sheets credentials/tab headers, live Razorpay checkout/payment and reconciliation, email delivery, and exact Netlify deployment commit. Seller sales remain disabled until settlement/inventory safeguards are ready; COD remains disabled and the ₹500 ceiling remains enforced.
