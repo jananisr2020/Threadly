@@ -351,6 +351,12 @@ async function rejectsWith(items, pattern) {
         for (const key of ['email', 'phone', 'address', 'pin', 'paymentId']) assert.equal(Object.hasOwn(result[0], key), false, 'customer history must not expose ' + key);
         assert.equal(JSON.stringify(result).includes('Private address'), false);
         assert.equal(JSON.stringify(result).includes('9876543210'), false);
+        // A fresh request must reflect the latest persisted fulfilment status and tracking.
+        mockedSheets.Orders[1][17] = 'Delivered';
+        mockedSheets.Orders[1][18] = 'TRACK-DELIVERED';
+        const refreshed = await myOrders({}, {}, { email: 'buyer.one@example.com' });
+        assert.equal(refreshed[0].status, 'Delivered');
+        assert.equal(refreshed[0].tracking, 'TRACK-DELIVERED');
       } finally {
         mockedSheets = previousSheets;
       }
