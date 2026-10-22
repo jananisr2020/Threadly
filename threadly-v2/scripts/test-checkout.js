@@ -340,6 +340,13 @@ async function rejectsWith(items, pattern) {
         assert.equal(saved.row[8], 'Open');
         const updated = await admin({ action: 'updateTicket', id: result.id, status: 'In progress', reply: 'We are checking the order now.' }, { headers: { authorization: 'Bearer ' + adminToken } });
         assert.equal(updated.ok, true);
+        assert.equal(updated.emailed, true, 'support reply should trigger a customer email when mail is configured');
+        const replyMail = mailRequests.filter(x => x.to && x.to[0] && x.to[0].email === 'buyer@example.com').at(-1);
+        assert.ok(replyMail, 'expected customer ticket-update email');
+        for (const sensitive of ['9876543210', 'ORDER-1', '123 Test Street', 'pay_sensitive_123', 'rzp_secret_test']) {
+          assert.equal(replyMail.htmlContent.includes(sensitive), false, 'customer reply notification must not disclose ' + sensitive);
+        }
+        assert.match(replyMail.htmlContent, /We are checking the order now/);
         const ticketRow = mockedSheets.Tickets.find(r => r[0] === result.id);
         assert.equal(ticketRow[8], 'In progress');
         assert.equal(ticketRow[9], 'We are checking the order now.');
