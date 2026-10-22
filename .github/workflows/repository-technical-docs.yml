@@ -1,0 +1,49 @@
+name: Repository technical documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  technical-guide:
+    # The generated documentation commit must not trigger an endless commit loop.
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'docs(auto): refresh repository technical guide')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate repository-wide technical reference
+        run: node scripts/generate_repository_docs.js
+
+      - name: Commit refreshed guide on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git diff --quiet -- docs/REPOSITORY_TECHNICAL_GUIDE.md; then
+            echo "Technical guide is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/REPOSITORY_TECHNICAL_GUIDE.md
+          git commit -m "docs(auto): refresh repository technical guide"
+          git push
+
+      - name: Verify guide is current for pull requests
+        if: github.event_name == 'pull_request'
+        run: |
+          node scripts/generate_repository_docs.js --check
+          git diff --exit-code -- docs/REPOSITORY_TECHNICAL_GUIDE.md
