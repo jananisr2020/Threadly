@@ -970,7 +970,8 @@ async function rejectsWith(items, pattern) {
         Orders: [['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes']],
         Pending: [
           ['Razorpay Order ID', 'Order Data', 'Created', 'Status'],
-          ['order_rzp_hook', JSON.stringify({ id: 'JN-HOOK-1', email: 'buyer@example.com', addr: { name: 'Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'UPI', eta: '2-4 days', lines: 'Basic scrunchie x1', count: 1, sub: 100, disc: 10, ship: 39, total: 129, qty: [['JN0001', 1]], itemDetails: [{ productId: 'JN0001', name: 'Basic scrunchie', unitPrice: 100, quantity: 1, sellerId: '' }] }), '', 'pending']
+          ['order_rzp_hook', JSON.stringify({ id: 'JN-HOOK-1', email: 'buyer@example.com', addr: { name: 'Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'UPI', eta: '2-4 days', lines: 'Basic scrunchie x1', count: 1, sub: 100, disc: 10, ship: 39, total: 129, qty: [['JN0001', 1]], itemDetails: [{ productId: 'JN0001', name: 'Basic scrunchie', unitPrice: 100, quantity: 1, sellerId: '' }] }), '', 'pending'],
+          ['order_rzp_fail', JSON.stringify({ id: 'JN-HOOK-FAIL', email: 'failed@example.com', addr: { name: 'Buyer', phone: '9876543210', line: '123 Test Street', pin: '641001' }, method: 'UPI', eta: '2-4 days', lines: 'Basic scrunchie x1', count: 1, sub: 100, disc: 0, ship: 39, total: 139, qty: [['JN0001', 1]], itemDetails: [{ productId: 'JN0001', name: 'Basic scrunchie', unitPrice: 100, quantity: 1, sellerId: '' }] }), '', 'pending']
         ],
         Sellers: [['Seller ID', 'Application ID', 'Store Name', 'Email', 'Password Hash', 'City', 'Category', 'Status', 'Created', 'Last Login']],
         SellerOrders: [['Seller Order ID', 'Parent Order ID', 'Date', 'Seller ID', 'Seller Store Name', 'Customer Name', 'Customer Email', 'Customer Phone', 'Shipping Address', 'Pincode', 'Items JSON', 'Item Count', 'Seller Subtotal', 'Shipping Allocation', 'Seller Order Total', 'Payment Status', 'Fulfilment Status', 'Tracking', 'Updated', 'Payment ID']],
@@ -990,11 +991,16 @@ async function rejectsWith(items, pattern) {
         await webhook({}, event);
         assert.equal(mockedSheets.Orders.length, 2, 'replayed captured webhook must not create a duplicate order');
         assert.equal(mockedSheets.Products[1][9], 4, 'replayed captured webhook must not decrement stock twice');
-        const failedBody = JSON.stringify({ event: 'payment.failed', payload: { payment: { entity: { error_description: 'declined by issuer' } } } });
+        const failedBody = JSON.stringify({ event: 'payment.failed', payload: { payment: { entity: { id: 'pay_failed_1', order_id: 'order_rzp_fail', error_description: 'declined by issuer' } } } });
         const failedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET).update(failedBody).digest('hex');
         await webhook({}, { body: failedBody, headers: { 'x-razorpay-signature': failedSignature } });
+        assert.equal(mockedSheets.Pending[2][3], 'payment_failed', 'failed payment attempt should be marked for recovery/cleanup');
         assert.equal(mockedSheets.Orders.length, 2, 'failed payment webhook must not create an order');
         assert.equal(mockedSheets.Products[1][9], 4, 'failed payment webhook must not alter stock');
+        const lateFailureBody = JSON.stringify({ event: 'payment.failed', payload: { payment: { entity: { id: 'pay_failed_late', order_id: 'order_rzp_hook', error_description: 'another attempt declined' } } } });
+        const lateFailureSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET).update(lateFailureBody).digest('hex');
+        await webhook({}, { body: lateFailureBody, headers: { 'x-razorpay-signature': lateFailureSignature } });
+        assert.equal(mockedSheets.Pending[1][3], 'recorded', 'a late failed attempt must not downgrade an already-paid order');
       } finally {
         _t.setRazorpayOverride(null);
         global.fetch = previousFetch;
