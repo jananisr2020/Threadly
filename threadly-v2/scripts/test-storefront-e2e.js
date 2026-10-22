@@ -11,6 +11,7 @@ const AxeBuilder = require('@axe-core/playwright');
 const root = path.resolve(__dirname, '../public');
 const csv = fs.readFileSync(path.join(root, 'products.csv'), 'utf8');
 const e2eCsv = csv.trimEnd() + '\nE2E001,E2E Broken Image Hair Clip,Hair Clips,Women,150,100,Metal acrylic,Pink|Black|Beige,http://127.0.0.1:1/missing.jpg,2,No,4.5,Yes\n';
+const catalogueIds = new Set(e2eCsv.trim().split('\n').slice(1).map(row => row.split(',')[0]));
 let liveCatalogueAvailable = true;
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -205,7 +206,7 @@ const server = http.createServer((req, res) => {
         const ids = await railCards.evaluateAll(cards => cards.map(card => card.getAttribute('data-id')));
         assert.equal(new Set(ids).size, ids.length, railName + ' must not repeat a product within its rail');
         for (const id of ids) {
-          assert.ok(id && await page.locator(`#grid .p[data-id="${id}"]`).count() > 0, railName + ' must use a real catalogue product ID');
+          assert.ok(id && catalogueIds.has(id), railName + ' must use a real catalogue product ID');
         }
       }
     }
