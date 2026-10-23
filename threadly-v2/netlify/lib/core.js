@@ -894,8 +894,8 @@ const admin = async (b, e) => {
     movement[7] = now();
     movement[8] = ('Manual reconciliation confirmed by admin; stock=' + expectedStock + '; ' + reviewNote).slice(0, 180);
     await sheets.update('InventoryMovements', movementIndex + 1, movement);
-    const related = movementRows.slice(1).filter(r => String(r[1] || '') === String(movement[1] || ''));
-    const allResolved = related.length > 0 && related.every(r => String(r[0] || '') === movementId || ['APPLIED', 'SKIPPED_UNTRACKED', 'MANUALLY_RECONCILED'].includes(String(r[5] || '')));
+    const related = movementRows.slice(1).filter(r => String(r[1] || '') === String(movement[1] || '')).map(r => String(r[0] || '') === movementId ? movement : r);
+    const allResolved = related.length > 0 && related.every(r => ['APPLIED', 'SKIPPED_UNTRACKED', 'MANUALLY_RECONCILED'].includes(String(r[5] || '')));
     let orderUpdated = false;
     if (allResolved && /^(STOCK_SYNC_PENDING|STOCK_RECONCILIATION_REQUIRED:)/.test(String(orderRow[OIDX.notes] || ''))) {
       orderRow[OIDX.notes] = ('STOCK_RECONCILED_MANUALLY: ' + now() + ' | ' + reviewNote).slice(0, 500);
