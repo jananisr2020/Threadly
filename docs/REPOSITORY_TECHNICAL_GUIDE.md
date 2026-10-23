@@ -310,7 +310,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_RELEASE_RUNBOOK.md`
 
 - **Purpose:** Production checks, launch blockers and rollback instructions.
-- **Type:** md; **size:** 6,418 bytes; **lines:** 92.
+- **Type:** md; **size:** 7,782 bytes; **lines:** 103.
 
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
