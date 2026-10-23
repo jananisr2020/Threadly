@@ -67,6 +67,18 @@ async function rejectsWith(items, pattern) {
       assert.equal(Object.prototype.hasOwnProperty.call(result, 'env'), false);
       assert.equal(Object.prototype.hasOwnProperty.call(result, 'shareSheetWith'), false);
     });
+    await check('health route wrapper returns minimal GET JSON and rejects other methods', async () => {
+      const handler = wrap('GET', health);
+      const response = await handler({ httpMethod: 'GET', headers: {}, body: '' });
+      assert.equal(response.statusCode, 200);
+      const body = JSON.parse(response.body);
+      assert.equal(body.ok, true);
+      assert.equal(Object.prototype.hasOwnProperty.call(body, 'env'), false);
+      assert.equal(Object.prototype.hasOwnProperty.call(body, 'shareSheetWith'), false);
+      const wrongMethod = await handler({ httpMethod: 'POST', headers: {}, body: '' });
+      assert.equal(wrongMethod.statusCode, 405);
+      assert.equal(JSON.parse(wrongMethod.body).error, 'GET only');
+    });
     await check('security diagnostics require an admin session', async () => {
       await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
     });
