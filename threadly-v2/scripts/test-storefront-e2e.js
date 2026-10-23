@@ -387,6 +387,22 @@ const server = http.createServer((req, res) => {
     catalogueResponseDelayMs = 0;
     await page.locator('#retry-live-catalogue').click();
     await page.waitForFunction(() => !document.querySelector('#catalogue-sync-notice'));
+    // Verify the installed service worker keeps the storefront shell usable after the network disappears.
+    await context.setOffline(false);
+    await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(async () => {
+      if (!('serviceWorker' in navigator)) throw new Error('Service workers are unavailable in the browser test');
+      await navigator.serviceWorker.ready;
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 5000 });
+    await context.setOffline(true);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 8000 });
+    await page.waitForSelector('#grid .p', { timeout: 5000 });
+    assert.match(await page.title(), /Juno/i, 'offline navigation should serve the cached Juno shell');
+    await context.setOffline(false);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#grid .p', { timeout: 10000 });
     assert.deepEqual(pageErrors, [], 'storefront and seller pages should not throw uncaught JavaScript errors');
     process.stdout.write('✓ storefront browser smoke tests passed (search, category, sort, wishlist, cart, product detail, compare, mobile)\n');
   } catch (error) {
