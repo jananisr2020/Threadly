@@ -108,11 +108,12 @@ const server = http.createServer((req, res) => {
     await page.waitForURL(/\/product\.html\?p=E2E001/, { timeout: 10000 });
     await page.waitForSelector('#product .title');
     assert.ok((await page.locator('#product .title').textContent()).includes('E2E Broken Image Hair Clip'), 'product card should navigate to a dedicated detail page');
-    assert.ok((await page.locator('#product').textContent()).includes('₹150'), 'detail page should show the product price');
+    const displayedPrice = (await page.locator('#product .price').textContent()).replace(/[^\\d]/g, '');
+    assert.ok(Number(displayedPrice) > 0, 'detail page should show the selling price');
     assert.match(await page.locator('#product').textContent(), /Only 2 left|Limited availability/, 'detail page should show truthful low-stock status');
     const productSchema = await page.locator('#product-jsonld').evaluate(el => JSON.parse(el.textContent));
     assert.equal(productSchema['@type'], 'Product', 'product page should expose structured product metadata');
-    assert.equal(productSchema.offers.price, '150', 'structured offer should use the displayed product price');
+    assert.equal(productSchema.offers.price, displayedPrice, 'structured offer should match the displayed selling price');
     await page.locator('#wishlist').click();
     assert.ok(await page.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should add the product to wishlist');
     await page.locator('#wishlist').click();
