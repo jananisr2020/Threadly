@@ -12,7 +12,7 @@
     "razorpay": "^2.9.4"
   },
   "scripts": {
-    "check": "node scripts/check-links.js && node scripts/check-netlify-config.js",
+    "check": "node scripts/check-links.js && node scripts/check-netlify-config.js && node scripts/test-image-qa.js",
     "check:security": "node scripts/check-security-config.js",
     "test": "node scripts/test-checkout.js",
     "build": "node scripts/build-catalog.js",
