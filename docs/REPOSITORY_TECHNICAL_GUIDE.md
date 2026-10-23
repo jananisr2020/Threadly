@@ -924,8 +924,8 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/index.html`
 
 - **Purpose:** Customer storefront: catalogue, search, filters, sorting, product detail, wishlist, cart and checkout.
-- **Type:** html; **size:** 146,474 bytes; **lines:** 844.
-- **Detected symbols (125):**
+- **Type:** html; **size:** 147,470 bytes; **lines:** 857.
+- **Detected symbols (127):**
   - `function toast(t)`
   - `function parseCSV(t)` — ---- Google Sheet / products.csv loader ----
   - `function setCatalogueNotice(fallback)`
@@ -976,6 +976,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function cookieChoice(c)`
   - `function loadRzp` — ---- payment window: loaded only when someone pays ----
   - `function productMeta(p)`
+  - `function listingDetails(p)`
   - `function openP(id)`
   - `function invoice(id)`
   - `function cmpBar`
@@ -1045,6 +1046,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function pinClose`
   - `function tkHTML`
   - `function set(selector,attr,value)`
+  - `function escText(v)`
   - `function sha(t)`
   - `function ubtn`
   - `function done(id)`
