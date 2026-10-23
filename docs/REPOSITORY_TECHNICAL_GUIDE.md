@@ -12,7 +12,7 @@ This describes source code at a revision; it is not proof that production servic
 - Persistence: Google Sheets through threadly-v2/netlify/lib/sheets.js.
 - Payments: Razorpay; email depends on provider configuration.
 - Android wrapper: threadly-android/. CI: .github/workflows/.
-- Tracked files: **113**.
+- Tracked files: **114**.
 
 ### Directory map
 
@@ -65,6 +65,7 @@ At repository root: node scripts/generate_repository_docs.js regenerates this gu
 | `threadly-v2/package.json` | `npm run check` | `node scripts/check-links.js` |
 | `threadly-v2/package.json` | `npm run check:security` | `node scripts/check-security-config.js` |
 | `threadly-v2/package.json` | `npm run test` | `node scripts/test-checkout.js` |
+| `threadly-v2/package.json` | `npm run build` | `node scripts/build-catalog.js` |
 
 ## 4. Environment configuration inventory
 
@@ -172,7 +173,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `.github/workflows/validate-juno.yml`
 
 - **Purpose:** Storefront syntax, branding, catalogue and policy validation.
-- **Type:** yml; **size:** 9,150 bytes; **lines:** 159.
+- **Type:** yml; **size:** 9,257 bytes; **lines:** 161.
 
 ### `.gitignore`
 
@@ -207,7 +208,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `netlify.toml`
 
 - **Purpose:** Tracked file; inspect source and references for exact behavior.
-- **Type:** toml; **size:** 471 bytes; **lines:** 28.
+- **Type:** toml; **size:** 499 bytes; **lines:** 29.
 
 ### `scripts/generate_repository_docs.js`
 
@@ -814,7 +815,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/package.json`
 
 - **Purpose:** Node requirements, dependencies and npm commands.
-- **Type:** json; **size:** 423 bytes; **lines:** 20.
+- **Type:** json; **size:** 469 bytes; **lines:** 21.
 
 ### `threadly-v2/public/_headers`
 
@@ -1193,6 +1194,12 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function run(args, backend)`
   - `function git_push`
   - `function main`
+
+### `threadly-v2/scripts/build-catalog.js`
+
+- **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
+- **Type:** js; **size:** 1,948 bytes; **lines:** 34.
+- **Imports/dependencies:** `node:fs`, `node:path`.
 
 ### `threadly-v2/scripts/check-links.js`
 
