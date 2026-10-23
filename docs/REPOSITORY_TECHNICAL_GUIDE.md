@@ -1076,8 +1076,8 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/product.html`
 
 - **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
-- **Type:** html; **size:** 32,793 bytes; **lines:** 75.
-- **Detected symbols (21):**
+- **Type:** html; **size:** 32,787 bytes; **lines:** 75.
+- **Detected symbols (22):**
   - `function toast(msg)`
   - `function productUrls(p)`
   - `function normalizeProduct(p)`
@@ -1090,6 +1090,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function renderRelated(current)`
   - `function cartCount`
   - `function etaForPin(pin)`
+  - `function checkDelivery`
   - `function addToCart(buy)`
   - `function showPhoto(i)`
   - `function renderRatings(data)`
