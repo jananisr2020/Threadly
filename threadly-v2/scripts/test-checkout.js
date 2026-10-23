@@ -1428,6 +1428,46 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
       }
     });
+  await check('admin inventory audit exposes flagged orders and unresolved movements without customer contact fields', async () => {
+    const previousSheets = mockedSheets;
+    const previousSecret = process.env.JWT_SECRET;
+    process.env.JWT_SECRET = 'offline-inventory-audit-secret';
+    const order = Array(20).fill('');
+    order[0] = 'JN-STOCK-AUDIT';
+    order[1] = '2026-10-23';
+    order[9] = 100;
+    order[12] = 100;
+    order[14] = 'Paid';
+    order[17] = 'New';
+    order[19] = 'STOCK_RECONCILIATION_REQUIRED: simulated write failure';
+    const movement = ['JN-STOCK-AUDIT|RETURN|JN0001', 'JN-STOCK-AUDIT', 'RETURN', 'JN0001', 1, 'PENDING', '2026-10-23', '', 'test pending movement'];
+    mockedSheets = {
+      Orders: [['Order ID', 'Date', '', '', '', '', '', '', '', 'Subtotal', '', '', 'Total', '', 'Payment Status', '', '', 'Status', '', 'Notes'], order],
+      Products: rows.map(row => row.slice()),
+      Users: [['Name', 'Email']],
+      Reviews: [['Review ID']],
+      Requests: [['Request ID']],
+      Tickets: [['Ticket ID']],
+      SellerOrders: [['Seller Order ID']],
+      SellerLedger: [['Ledger ID']],
+      Sellers: [['Seller ID'],
+      ],
+      InventoryMovements: [['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes'], movement]
+    };
+    try {
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const result = await admin({ action: 'load' }, { headers: { authorization: 'Bearer ' + token } });
+      assert.equal(result.inventoryAudit.orders.length, 1);
+      assert.equal(result.inventoryAudit.orders[0].orderId, 'JN-STOCK-AUDIT');
+      assert.equal(result.inventoryAudit.movements.length, 1);
+      assert.equal(result.inventoryAudit.movements[0].status, 'PENDING');
+      assert.equal(Object.prototype.hasOwnProperty.call(result.inventoryAudit.orders[0], 'phone'), false);
+      assert.equal(Object.prototype.hasOwnProperty.call(result.inventoryAudit.orders[0], 'email'), false);
+    } finally {
+      mockedSheets = previousSheets;
+      if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
+    }
+  });
   await check('cancellation/return inventory restoration is journaled and idempotent', async () => {
     const previousSheets = mockedSheets;
     const previousRows = rows.map(row => row.slice());
