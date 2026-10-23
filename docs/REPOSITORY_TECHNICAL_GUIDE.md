@@ -1270,7 +1270,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
 - **Purpose:** Browser tests for storefront and seller flows.
-- **Type:** js; **size:** 26,858 bytes; **lines:** 384.
+- **Type:** js; **size:** 26,934 bytes; **lines:** 385.
 - **Imports/dependencies:** `node:assert/strict`, `node:fs`, `node:http`, `node:path`, `playwright`, `@axe-core/playwright`.
 
 ## 7. GitHub Actions index
