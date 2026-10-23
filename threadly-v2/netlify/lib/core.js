@@ -425,8 +425,9 @@ async function restoreInventoryForOrder(orderId, movementType, orderRow) {
   try { saved = JSON.parse(savedRow[1] || '{}'); } catch (x) { throw new E('Original order items are invalid; inventory restoration needs manual reconciliation.', 503); }
   const quantities = Array.isArray(saved.qty) ? saved.qty : Array.isArray(saved.itemDetails) ? saved.itemDetails.map(it => [it.productId, Number(it.quantity) || 0]) : [];
   if (!quantities.length) throw new E('Original item quantities are unavailable; inventory restoration needs manual reconciliation.', 503);
-  await sheets.ensureTab('InventoryMovements', INVENTORY_MOVEMENT_HEADERS);
-  const movementRows = await sheets.read('InventoryMovements');
+  let movementRows;
+  try { movementRows = await sheets.read('InventoryMovements'); }
+  catch (readError) { await sheets.ensureTab('InventoryMovements', INVENTORY_MOVEMENT_HEADERS); movementRows = await sheets.read('InventoryMovements'); }
   const products = await productRows(true), headers = (products[0] || []).map(nk), stockIndex = headers.indexOf('stock');
   const idIndex = headers.indexOf('product id');
   if (stockIndex < 0 || idIndex < 0) throw new E('Products sheet is missing inventory columns.', 503);
