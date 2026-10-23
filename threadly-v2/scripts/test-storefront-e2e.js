@@ -105,7 +105,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await brokenCard.locator('img').evaluate(img => getComputedStyle(img).display), 'none', 'broken product images should fail gracefully');
     assert.match(await brokenCard.textContent(), /Only 2 left/, 'low stock should be visible');
     await brokenCard.click();
-    await page.waitForURL(/\\/product\\.html\\?p=E2E001/, { timeout: 10000 });
+    await page.waitForURL(/\/product\.html\?p=E2E001/, { timeout: 10000 });
     await page.waitForSelector('#product .title');
     assert.ok((await page.locator('#product .title').textContent()).includes('E2E Broken Image Hair Clip'), 'product card should navigate to a dedicated detail page');
     assert.ok((await page.locator('#product').textContent()).includes('₹150'), 'detail page should show the product price');
