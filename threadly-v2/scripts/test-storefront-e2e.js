@@ -173,10 +173,12 @@ const server = http.createServer((req, res) => {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
     await page.locator('#grid .p').first().locator('[data-qa]').click();
-    if (await page.locator('#mov.show').count()) {
-      const sizeChoice = page.locator('#modal .sz button').first();
+    if (new URL(page.url()).pathname === '/product.html') {
+      const sizeChoice = page.locator('#options .option').first();
       if (await sizeChoice.count()) await sizeChoice.click();
       await page.locator('#add').click();
+      await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#grid .p');
     }
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -199,11 +201,12 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => localStorage.setItem('tl_cookie', JSON.stringify('all')));
     const viewedId = await page.locator('#grid .p').first().getAttribute('data-id');
     await page.locator('#grid .p').first().click();
-    await page.waitForSelector('#mov.show');
-    assert.ok((await page.locator('#modal h2').first().textContent()).trim().length > 0, 'product details should open');
+    await page.waitForURL(/\\/product\\.html\\?p=/, { timeout: 10000 });
+    await page.waitForSelector('#product .title');
+    assert.ok((await page.locator('#product .title').textContent()).trim().length > 0, 'product details should open on a dedicated page');
 
-    await page.locator('#mov [data-close]').click();
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#grid .p');
     await page.waitForSelector('#grid .p');
     const recentlyViewed = page.locator('section[aria-label="Recently viewed"] .p');
     await recentlyViewed.first().waitFor({ timeout: 5000 });
@@ -280,12 +283,16 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     // Open the product card itself so the test exercises the same detail flow as a shopper.
     await page.locator('#grid .p').first().click();
-    await page.waitForSelector('#mov.show');
-    const mobileSize = page.locator('#modal .sz button').first();
+    await page.waitForURL(/\\/product\\.html\\?p=/, { timeout: 10000 });
+    await page.waitForSelector('#product .title');
+    const mobileSize = page.locator('#options .option').first();
     if (await mobileSize.count()) await mobileSize.click();
     await page.locator('#add').click();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile product detail should not overflow');
+    await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#grid .p');
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1', null, { timeout: 5000 });
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile product/cart state should not overflow');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile cart state should not overflow');
     await page.locator('#cb').click();
     await page.waitForSelector('#cov.show');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile cart drawer should not overflow');
@@ -328,10 +335,12 @@ const server = http.createServer((req, res) => {
     assert.match(await page.locator('#catalogue-sync-notice').textContent(), /saved catalogue only/i);
     await page.waitForSelector('#grid .p');
     await page.locator('#grid .p').first().locator('[data-qa]').click();
-    if (await page.locator('#mov.show').count()) {
-      const fallbackSize = page.locator('#modal .sz button').first();
+    if (new URL(page.url()).pathname === '/product.html') {
+      const fallbackSize = page.locator('#options .option').first();
       if (await fallbackSize.count()) await fallbackSize.click();
       await page.locator('#add').click();
+      await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#grid .p');
     }
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
     await page.locator('#cb').click();
