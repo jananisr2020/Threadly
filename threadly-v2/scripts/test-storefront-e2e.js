@@ -98,6 +98,21 @@ const server = http.createServer((req, res) => {
       assert.equal(iconResponse.status(), 200, iconPath + ' should exist');
       assert.ok((iconResponse.headers()['content-type'] || '').includes('image/png'), iconPath + ' should be served as PNG');
     }
+    // Simulate Chromium's install event so the install button behavior is covered without a physical phone.
+    const installButton = page.locator('#threadly-install');
+    assert.equal(await installButton.count(), 1, 'storefront should expose the Juno install CTA');
+    await page.evaluate(() => {
+      window.__junoInstallPromptCalled = false;
+      const event = new Event('beforeinstallprompt', { cancelable: true });
+      event.prompt = async () => { window.__junoInstallPromptCalled = true; };
+      event.userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
+      window.dispatchEvent(event);
+    });
+    await installButton.click();
+    await page.waitForFunction(() => window.__junoInstallPromptCalled === true);
+    await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('#threadly-install')).display === 'none');
+    await page.evaluate(() => { window.__junoInstallPromptCalled = false; });
     // Broken image fallback, low-stock messaging and product variant selection.
     await page.locator('#q').fill('E2E Broken Image Hair Clip');
     const brokenCard = page.locator('#grid .p[data-id="E2E001"]');
