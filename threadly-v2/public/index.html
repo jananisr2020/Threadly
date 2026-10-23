@@ -612,7 +612,7 @@ function listingDetails(p){
   </section>`;
 }
 function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length===1?p.sizes[0]:null;qty=1;ST.set('tl_rv',[id,...arr('tl_rv').filter(x=>x!==id)].slice(0,12));
-  galleryIndex=0;$('#modal').innerHTML=`${productGallery(p)}<div class="md"><button class="x" data-close aria-label="Close">×</button><small>${esc(p.brand)}</small><h2 style="margin:0">${esc(p.name)}</h2>${p.rc?`<div class="rt">★ ${p.rr} · ${p.rc} review${p.rc>1?'s':''}</div>`:''}
+  galleryIndex=0;$('#modal').innerHTML=`${productGallery(p)}<div class="md"><button class="x" data-close aria-label="Close">×</button><small>${esc(p.brand)}</small><h2 style="margin:0">${esc((p.listing&&p.listing.listingTitle)||p.name)}</h2>${p.rc?`<div class="rt">★ ${p.rr} · ${p.rc} review${p.rc>1?'s':''}</div>`:''}
   <div class="pr"><b style="font-size:26px">${inr(p.price)}</b><s>${inr(p.mrp)}</s><span>${p.off}% off</span></div>${p.off>=30?'<div class="pill" style="align-self:flex-start;background:var(--acc);color:#fff">⚡ Sale price</div>':''}
   ${p.sizes.length>1?`<div>Select ${p.lab||(p.sz?'size':'colour')}</div><div class="sz">${p.sizes.map(s=>`<button data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>`:''}
   <div class="eta" id="peta">🚚 Delivery by <b>${eta(pin())}</b>${pin()?' to '+pin():''}</div><div class="row2" style="grid-template-columns:1fr auto"><input id="ppin" data-pin autocomplete="off" maxlength="30" placeholder="Check delivery: pincode or area" value="${esc(pin())}" style="padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="pchk">Check</button></div>
