@@ -1,10 +1,12 @@
 /* Juno PWA service worker.
  * Keep API responses, checkout, account and payment flows network-only.
  */
-const CACHE_NAME = "juno-shell-v4";
+const CACHE_NAME = "juno-shell-v5";
 const SHELL_URLS = [
   "/",
   "/index.html",
+  "/product.html",
+  "/catalog.json",
   "/offline.html",
   "/manifest.webmanifest",
   "/favicon.svg?v=3",
@@ -47,13 +49,14 @@ self.addEventListener("fetch", (event) => {
         .then((response) => {
           if (response && response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", copy));
+            const cacheKey = url.pathname === "/" ? "/index.html" : url.pathname;
+            caches.open(CACHE_NAME).then((cache) => cache.put(cacheKey, copy));
           }
           return response;
         })
         .catch(async () => {
-          const cached = await caches.match("/index.html");
-          return cached || caches.match("/offline.html");
+          const cached = await caches.match(request, { ignoreSearch: true }) || await caches.match(url.pathname);
+          return cached || caches.match("/index.html") || caches.match("/offline.html");
         })
     );
     return;
