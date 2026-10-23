@@ -112,6 +112,9 @@ const server = http.createServer((req, res) => {
     const displayedPrice = displayedPriceText.replace(/[^0-9]/g, '');
     assert.ok(Number(displayedPrice) > 0, 'detail page should show the selling price; got ' + JSON.stringify(displayedPriceText));
     assert.match(await page.locator('#product').textContent(), /Only 2 left|Limited availability/, 'detail page should show truthful low-stock status');
+    await page.locator('#delivery-pin').fill('641001');
+    await page.locator('#check-pin').click();
+    await page.waitForFunction(() => document.querySelector('#delivery-result')?.classList.contains('ok'));
     const productSchema = await page.locator('#product-jsonld').evaluate(el => JSON.parse(el.textContent));
     assert.equal(productSchema['@type'], 'Product', 'product page should expose structured product metadata');
     assert.equal(productSchema.offers.price, displayedPrice, 'structured offer should match the displayed selling price');
