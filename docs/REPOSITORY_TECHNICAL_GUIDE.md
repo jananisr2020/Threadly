@@ -1268,7 +1268,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-checkout.js`
 
 - **Purpose:** Backend/checkout regression suite.
-- **Type:** js; **size:** 113,433 bytes; **lines:** 1616.
+- **Type:** js; **size:** 113,793 bytes; **lines:** 1621.
 - **Imports/dependencies:** `node:assert/strict`, `node:crypto`, `../netlify/lib/sheets`, `jsonwebtoken`, `bcryptjs`, `../netlify/lib/coupons`, `../netlify/lib/core`.
 - **Detected symbols (6):**
   - `function check(name, fn)`
