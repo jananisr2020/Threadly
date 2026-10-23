@@ -200,7 +200,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `docs/FUNCTION_REFERENCE.md`
 
 - **Purpose:** Architecture diagram or technical documentation.
-- **Type:** md; **size:** 24,563 bytes; **lines:** 156.
+- **Type:** md; **size:** 26,401 bytes; **lines:** 168.
 
 ### `docs/juno-architecture.svg`
 
