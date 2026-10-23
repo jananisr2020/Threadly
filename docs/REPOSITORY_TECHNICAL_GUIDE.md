@@ -314,7 +314,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
 - **Purpose:** V1 backlog with completion evidence and release risks.
-- **Type:** md; **size:** 31,764 bytes; **lines:** 149.
+- **Type:** md; **size:** 31,793 bytes; **lines:** 149.
 
 ### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
 
@@ -1271,7 +1271,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
 - **Purpose:** Browser tests for storefront and seller flows.
-- **Type:** js; **size:** 27,237 bytes; **lines:** 389.
+- **Type:** js; **size:** 27,343 bytes; **lines:** 391.
 - **Imports/dependencies:** `node:assert/strict`, `node:fs`, `node:http`, `node:path`, `playwright`, `@axe-core/playwright`.
 
 ## 7. GitHub Actions index
