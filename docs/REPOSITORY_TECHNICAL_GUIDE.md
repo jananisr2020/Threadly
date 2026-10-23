@@ -12,7 +12,7 @@ This describes source code at a revision; it is not proof that production servic
 - Persistence: Google Sheets through threadly-v2/netlify/lib/sheets.js.
 - Payments: Razorpay; email depends on provider configuration.
 - Android wrapper: threadly-android/. CI: .github/workflows/.
-- Tracked files: **111**.
+- Tracked files: **112**.
 
 ### Directory map
 
@@ -193,6 +193,11 @@ Every tracked file is listed below except package lockfiles and this generated g
 
 - **Purpose:** Project documentation; verify instructions against code.
 - **Type:** md; **size:** 3,149 bytes; **lines:** 32.
+
+### `docs/FUNCTION_REFERENCE.md`
+
+- **Purpose:** Architecture diagram or technical documentation.
+- **Type:** md; **size:** 24,563 bytes; **lines:** 156.
 
 ### `docs/juno-architecture.svg`
 
