@@ -294,6 +294,15 @@ const server = http.createServer((req, res) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
+    const mobileNavigationTiming = await page.evaluate(() => {
+      const nav = performance.getEntriesByType('navigation')[0];
+      return nav ? { domContentLoadedMs: Math.round(nav.domContentLoadedEventEnd), loadEventMs: Math.round(nav.loadEventEnd) } : null;
+    });
+    const catalogueBytes = (await (await page.request.get(`http://127.0.0.1:${address.port}/catalog.json`)).body()).length;
+    assert.ok(mobileNavigationTiming && mobileNavigationTiming.domContentLoadedMs > 0 && mobileNavigationTiming.domContentLoadedMs < 10000,
+      'mobile storefront DOM should become ready within 10 seconds; measured ' + JSON.stringify(mobileNavigationTiming));
+    assert.ok(catalogueBytes < 1500000, 'catalogue static payload must stay below 1.5 MB before compression; got ' + catalogueBytes);
+    process.stdout.write('✓ mobile performance budget: DOMContentLoaded ' + mobileNavigationTiming.domContentLoadedMs + 'ms; catalogue ' + catalogueBytes + ' bytes\\n');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     assert.equal(overflow, false, 'mobile storefront should not have horizontal page overflow');
     await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
