@@ -21,10 +21,10 @@ Also confirm the GitHub Actions runs for Checkout regression tests, Security che
 In Netlify site settings, verify privately (never paste secret values into an issue, chat, or log):
 
 - `SHEET_ID` points to the intended production spreadsheet.
-- The Google service account has the required access and the Products, Users, Orders, Pending, Requests, Reviews, Tickets, Sellers, SellerOrders and SellerLedger tabs have the expected headers.
+- The Google service account has the required access and the Products, Users, Orders, Pending, Requests, Reviews, Tickets, Sellers, SellerOrders, SellerLedger and InventoryMovements tabs have the expected headers. Admin → Security diagnostics now checks these seller/inventory tabs as well as ActivityLog and WebsiteActivity; it must report `degraded` when required configuration or a tab is missing.
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` belong to the intended environment and webhook URL is correct.
 - `JWT_SECRET` and `ADMIN_PASSWORD` are strong, private, and set.
-- `BREVO_API_KEY`, `MAIL_FROM`, `SUPPORT_EMAIL`, and `SUPPORT_PHONE` are configured and the sender is verified.
+- `BREVO_API_KEY`, `MAIL_FROM`, `SUPPORT_EMAIL`, and `SUPPORT_PHONE` are configured and the sender is verified. Missing email configuration must produce a customer-safe error; do not log API keys, reset tokens, message bodies, or recipient personal data.
 - `MARKETPLACE_SELLER_SALES_ENABLED` remains `false` until inventory and seller settlement safeguards have been accepted.
 
 Record only pass/fail and the tested commit. Do not record credential values.
