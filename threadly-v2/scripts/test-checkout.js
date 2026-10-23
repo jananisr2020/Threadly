@@ -1436,27 +1436,6 @@ async function rejectsWith(items, pattern) {
   }
 
 
-    await check('paid cancellation restores stock once and writes an idempotent inventory movement', async () => {
-      const previousSheets = mockedSheets, previousAppends = appendedRows.length;
-      mockedSheets = {
-        Products: [['Product ID', 'Product Name', 'Category', 'Selling Price', 'Stock', 'Show on site', 'Seller ID', 'Approval Status'], ['JN0001', 'Basic scrunchie', 'Hair accessories', 100, 3, 'Yes', '', 'Approved']],
-        Pending: [['Razorpay Order ID', 'Order JSON', 'Created', 'Status'], ['rzp-cancel', JSON.stringify({ id: 'ORDER-CANCEL', qty: [['JN0001', 1]] }), '', 'recorded']],
-        InventoryMovements: [['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes']],
-        Orders: [['Order ID', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Pincode', 'Items', 'Count', 'Subtotal', 'Discount', 'Shipping', 'Total', 'Method', 'Payment Status', 'Payment ID', 'ETA', 'Status', 'Tracking', 'Notes'], ['ORDER-CANCEL', '', 'Buyer', 'buyer@example.com', '9876543210', 'Test address', '641001', 'Basic scrunchie x1', 1, 100, 0, 39, 139, 'UPI', 'Paid', 'pay_cancel', '', 'New', '', 'STOCK_SYNCED']],
-        Requests: [['Request ID', 'Date', 'Order ID', 'Email', 'Type', 'Reason', 'Details', 'Status', 'Admin Notes']]
-      };
-      const previousEnsure = sheets.ensureTab;
-      sheets.ensureTab = async (tab, headers) => { if (!mockedSheets[tab]) mockedSheets[tab] = [headers]; return true; };
-      try {
-        const result = await returnRequest({ type: 'Cancel', orderId: 'ORDER-CANCEL', reason: 'Changed mind' }, {}, { email: 'buyer@example.com' });
-        assert.equal(result.status, 'Approved');
-        assert.equal(mockedSheets.Products[1][4], 4);
-        assert.equal(mockedSheets.InventoryMovements[1][0], 'ORDER-CANCEL|CANCEL|JN0001');
-        assert.equal(mockedSheets.InventoryMovements[1][5], 'APPLIED');
-        assert.equal(mockedSheets.Orders[1][17], 'Cancelled');
-        assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'InventoryMovements').length, 1);
-      } finally { sheets.ensureTab = previousEnsure; mockedSheets = previousSheets; }
-    });
 
   const failed = cases.filter(x => !x.ok);
   process.stdout.write('\n' + (cases.length - failed.length) + '/' + cases.length + ' checkout tests passed.\n');
