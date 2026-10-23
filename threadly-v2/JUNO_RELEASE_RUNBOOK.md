@@ -66,7 +66,7 @@ The current release does not have a configured SMS gateway contract. SMS/OTP wor
 Do not enable seller sales or advertise checkout as production-ready until:
 
 - A concurrency-safe inventory reservation/transaction mechanism prevents overselling across simultaneous checkouts.
-- Partial stock updates can be reconciled without double-decrementing or double-restocking.
+- Partial stock updates can be reconciled without double-decrementing or double-restocking. Admin → Inventory audit now supports **Confirm manual reconciliation** for a pending movement: first physically count the item and correct the Products sheet through the approved stock-maintenance process, then enter the exact current stock count and a review note. The server verifies the entered count matches the Products sheet, records `MANUALLY_RECONCILED` on the movement, and clears the order's stock-reconciliation flag only after every related movement is resolved. This action never changes stock itself. If the stock count does not match, it fails without changing the movement.
 - Expired/abandoned payment attempts and late gateway events have a tested safe reconciliation policy. The admin audit can mark an attempt `expired_unpaid` only when Razorpay confirms status `created`, zero amount paid, no existing Orders row, and an age of at least 24 hours; attempted/paid orders or gateway errors fail closed. A late captured-payment webhook remains authoritative.
 - Cancellation and return restocking is idempotent and auditable.
 - Seller ledger, refunds, commission rules and settlement provider approval are verified. Automated seller transfers remain disabled until approved.
