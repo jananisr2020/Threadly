@@ -70,6 +70,28 @@ async function rejectsWith(items, pattern) {
     await check('security diagnostics require an admin session', async () => {
       await assert.rejects(() => securityHealth({}, { headers: {} }), /Admin login required/i);
     });
+    await check('admin diagnostics cover seller and inventory tabs and require email configuration', async () => {
+      const previousSheets = mockedSheets;
+      const envNames = ['JWT_SECRET', 'SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'BREVO_API_KEY', 'MAIL_FROM'];
+      const previousEnv = Object.fromEntries(envNames.map(k => [k, process.env[k]]));
+      process.env.JWT_SECRET = 'offline-admin-diagnostics-secret';
+      envNames.filter(k => k !== 'JWT_SECRET').forEach(k => { delete process.env[k]; });
+      mockedSheets = Object.fromEntries(['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets', 'Sellers', 'SellerOrders', 'SellerLedger', 'InventoryMovements', 'ActivityLog', 'WebsiteActivity'].map(k => [k, [['Header']]]));
+      try {
+        const token = jwt.sign({ admin: true }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const result = await securityHealth({}, { headers: { authorization: 'Bearer ' + token } });
+        const data = JSON.parse(result.__raw.body);
+        for (const tab of ['Sellers', 'SellerOrders', 'SellerLedger', 'InventoryMovements']) assert.equal(data.tabs[tab], 'ok', tab + ' should be checked');
+        assert.equal(data.overall, 'degraded');
+        assert.ok(data.missingRequired.includes('BREVO_API_KEY'));
+        assert.ok(data.missingRequired.includes('MAIL_FROM'));
+        assert.equal(JSON.stringify(data).includes('offline-admin-diagnostics-secret'), false);
+        assert.equal(JSON.stringify(data).includes('BEGIN PRIVATE KEY'), false);
+      } finally {
+        mockedSheets = previousSheets;
+        envNames.forEach(k => { if (previousEnv[k] === undefined) delete process.env[k]; else process.env[k] = previousEnv[k]; });
+      }
+    });
     await check('expired customer sessions and seller-role tokens cannot access customer-only endpoints', async () => {
       const previousSecret = process.env.JWT_SECRET;
       process.env.JWT_SECRET = 'offline-customer-session-expiry-secret';
