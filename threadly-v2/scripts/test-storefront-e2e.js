@@ -186,6 +186,7 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     await page.locator('#grid .p').first().locator('[data-qa]').click();
     if (new URL(page.url()).pathname === '/product.html') {
+      await page.waitForSelector('#product .title');
       const sizeChoice = page.locator('#options .option').first();
       if (await sizeChoice.count()) await sizeChoice.click();
       await page.locator('#add').click();
@@ -348,6 +349,7 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     await page.locator('#grid .p').first().locator('[data-qa]').click();
     if (new URL(page.url()).pathname === '/product.html') {
+      await page.waitForSelector('#product .title');
       const fallbackSize = page.locator('#options .option').first();
       if (await fallbackSize.count()) await fallbackSize.click();
       await page.locator('#add').click();
