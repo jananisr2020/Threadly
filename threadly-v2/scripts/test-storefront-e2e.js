@@ -104,31 +104,32 @@ const server = http.createServer((req, res) => {
     });
     assert.equal(await brokenCard.locator('img').evaluate(img => getComputedStyle(img).display), 'none', 'broken product images should fail gracefully');
     assert.match(await brokenCard.textContent(), /Only 2 left/, 'low stock should be visible');
+    const brokenPopupPromise = page.waitForEvent('popup');
     await brokenCard.click();
-    await page.waitForURL(/\/product\.html\?p=E2E001/, { timeout: 10000 });
-    await page.waitForSelector('#product .title');
-    assert.ok((await page.locator('#product .title').textContent()).includes('E2E Broken Image Hair Clip'), 'product card should navigate to a dedicated detail page');
-    const displayedPriceText = await page.locator('#product .price').textContent();
+    const detailPage = await brokenPopupPromise;
+    await detailPage.waitForURL(/\/product\.html\?p=E2E001/, { timeout: 10000 });
+    await detailPage.waitForSelector('#product .title');
+    assert.ok((await detailPage.locator('#product .title').textContent()).includes('E2E Broken Image Hair Clip'), 'product card should open a dedicated detail page in a new tab');
+    const displayedPriceText = await detailPage.locator('#product .price').textContent();
     const displayedPrice = displayedPriceText.replace(/[^0-9]/g, '');
     assert.ok(Number(displayedPrice) > 0, 'detail page should show the selling price; got ' + JSON.stringify(displayedPriceText));
-    assert.match(await page.locator('#product').textContent(), /Only 2 left|Limited availability/, 'detail page should show truthful low-stock status');
-    await page.locator('#delivery-pin').fill('641001');
-    await page.locator('#check-pin').click();
-    await page.waitForFunction(() => document.querySelector('#delivery-result')?.classList.contains('ok'));
-    const productSchema = await page.locator('#product-jsonld').evaluate(el => JSON.parse(el.textContent));
+    assert.match(await detailPage.locator('#product').textContent(), /Only 2 left|Limited availability/, 'detail page should show truthful low-stock status');
+    await detailPage.locator('#delivery-pin').fill('641001');
+    await detailPage.locator('#check-pin').click();
+    await detailPage.waitForFunction(() => document.querySelector('#delivery-result')?.classList.contains('ok'));
+    const productSchema = await detailPage.locator('#product-jsonld').evaluate(el => JSON.parse(el.textContent));
     assert.equal(productSchema['@type'], 'Product', 'product page should expose structured product metadata');
     assert.equal(productSchema.offers.price, displayedPrice, 'structured offer should match the displayed selling price');
-    await page.locator('#wishlist').click();
-    assert.ok(await page.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should add the product to wishlist');
-    await page.locator('#wishlist').click();
-    assert.ok(!(await page.evaluate(() => JSON.parse(localStorage.getItem('tl_wl') || '[]').includes('E2E001'))), 'product detail page should remove the product from wishlist');
-    const variants = page.locator('#options .option');
+    await detailPage.locator('#wishlist').click();
+    assert.ok(await detailPage.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should add the product to wishlist');
+    await detailPage.locator('#wishlist').click();
+    assert.ok(!(await detailPage.evaluate(() => JSON.parse(localStorage.getItem('tl_wl') || '[]').includes('E2E001'))), 'product detail page should remove the product from wishlist');
+    const variants = detailPage.locator('#options .option');
     assert.ok(await variants.count() >= 3, 'product detail page should show available colour variants');
     await variants.first().click();
     assert.ok((await variants.first().getAttribute('class')).includes('on'), 'selected variant should be visibly indicated');
-    await page.waitForSelector('#product .fallback', { timeout: 5000 });
-    await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#grid .p');
+    await detailPage.waitForSelector('#product .fallback', { timeout: 5000 });
+    await detailPage.close();
     await page.locator('#q').fill('');
     await page.waitForTimeout(300);
     const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
@@ -184,13 +185,16 @@ const server = http.createServer((req, res) => {
     // Add to cart (choose a colour/size if the product requires one) and verify persistence.
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
+    const quickPopupPromise = page.waitForEvent('popup', { timeout: 2500 }).catch(() => null);
     await page.locator('#grid .p').first().locator('[data-qa]').click();
-    if (new URL(page.url()).pathname === '/product.html') {
-      await page.waitForSelector('#product .title');
-      const sizeChoice = page.locator('#options .option').first();
+    const quickPopup = await quickPopupPromise;
+    if (quickPopup) {
+      await quickPopup.waitForSelector('#product .title');
+      const sizeChoice = quickPopup.locator('#options .option').first();
       if (await sizeChoice.count()) await sizeChoice.click();
-      await page.locator('#add').click();
-      await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+      await quickPopup.locator('#add').click();
+      await quickPopup.close();
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#grid .p');
     }
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
@@ -213,13 +217,13 @@ const server = http.createServer((req, res) => {
     // Consent to optional local storage in this test so recently viewed data persists across reload.
     await page.evaluate(() => localStorage.setItem('tl_cookie', JSON.stringify('all')));
     const viewedId = await page.locator('#grid .p').first().getAttribute('data-id');
+    const viewedPopupPromise = page.waitForEvent('popup');
     await page.locator('#grid .p').first().click();
-    await page.waitForURL(/\/product\.html\?p=/, { timeout: 10000 });
-    await page.waitForSelector('#product .title');
-    assert.ok((await page.locator('#product .title').textContent()).trim().length > 0, 'product details should open on a dedicated page');
-
-    await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#grid .p');
+    const viewedPage = await viewedPopupPromise;
+    await viewedPage.waitForSelector('#product .title');
+    assert.ok((await viewedPage.locator('#product .title').textContent()).trim().length > 0, 'product details should open in a dedicated tab');
+    await viewedPage.close();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
     const recentlyViewed = page.locator('section[aria-label="Recently viewed"] .p');
     await recentlyViewed.first().waitFor({ timeout: 5000 });
@@ -295,14 +299,16 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
     // Open the product card itself so the test exercises the same detail flow as a shopper.
+    const mobilePopupPromise = page.waitForEvent('popup');
     await page.locator('#grid .p').first().click();
-    await page.waitForURL(/\/product\.html\?p=/, { timeout: 10000 });
-    await page.waitForSelector('#product .title');
-    const mobileSize = page.locator('#options .option').first();
+    const mobilePage = await mobilePopupPromise;
+    await mobilePage.waitForSelector('#product .title');
+    const mobileSize = mobilePage.locator('#options .option').first();
     if (await mobileSize.count()) await mobileSize.click();
-    await page.locator('#add').click();
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile product detail should not overflow');
-    await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await mobilePage.locator('#add').click();
+    assert.equal(await mobilePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile product detail should not overflow');
+    await mobilePage.close();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#grid .p');
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1', null, { timeout: 5000 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false, 'mobile cart state should not overflow');
@@ -347,13 +353,16 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#catalogue-sync-notice');
     assert.match(await page.locator('#catalogue-sync-notice').textContent(), /saved catalogue only/i);
     await page.waitForSelector('#grid .p');
+    const fallbackPopupPromise = page.waitForEvent('popup', { timeout: 2500 }).catch(() => null);
     await page.locator('#grid .p').first().locator('[data-qa]').click();
-    if (new URL(page.url()).pathname === '/product.html') {
-      await page.waitForSelector('#product .title');
-      const fallbackSize = page.locator('#options .option').first();
+    const fallbackPopup = await fallbackPopupPromise;
+    if (fallbackPopup) {
+      await fallbackPopup.waitForSelector('#product .title');
+      const fallbackSize = fallbackPopup.locator('#options .option').first();
       if (await fallbackSize.count()) await fallbackSize.click();
-      await page.locator('#add').click();
-      await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+      await fallbackPopup.locator('#add').click();
+      await fallbackPopup.close();
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#grid .p');
     }
     await page.waitForFunction(() => document.querySelector('#cc').textContent === '1');
