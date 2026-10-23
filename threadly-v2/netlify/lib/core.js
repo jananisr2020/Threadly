@@ -382,6 +382,7 @@ async function record(o, payStatus, payId) {
       row[si] = current - n;
       await sheets.update('Products', p.row, row);
       rows[p.row - 1] = row;
+      await appendInventoryMovement(o.id, 'SALE', id, -n, 'APPLIED', 'Stock decremented for captured payment.');
     }
     invalidate();
     const orderRows = await sheets.read('Orders');
@@ -397,6 +398,72 @@ async function record(o, payStatus, payId) {
     throw new E('Payment was recorded, but Juno could not finish updating stock for order ' + o.id + '. Do not pay again. Contact Juno support with this order ID while inventory is reconciled.', 503);
   }
 }
+
+const INVENTORY_MOVEMENT_HEADERS = ['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes'];
+async function appendInventoryMovement(orderId, type, productId, delta, status, notes) {
+  await sheets.ensureTab('InventoryMovements', INVENTORY_MOVEMENT_HEADERS);
+  const rows = await sheets.read('InventoryMovements');
+  const key = String(orderId) + '|' + String(type) + '|' + String(productId);
+  const existingIndex = rows.findIndex((r, i) => i > 0 && String(r[0] || '') === key);
+  const row = [key, String(orderId), String(type), String(productId), Number(delta), status, now(), now(), String(notes || '').slice(0, 180)];
+  if (existingIndex > 0) {
+    const current = rows[existingIndex];
+    if (String(current[5] || '') === 'APPLIED' || String(current[5] || '') === 'SKIPPED_UNTRACKED') return false;
+    throw new E('Inventory movement ' + key + ' is pending reconciliation. Do not retry stock changes automatically.', 503);
+  }
+  await sheets.append('InventoryMovements', row);
+  return true;
+}
+async function restoreInventoryForOrder(orderId, movementType, orderRow) {
+  const notes = String((orderRow || [])[OIDX.notes] || '');
+  if (!notes.includes('STOCK_SYNCED')) throw new E('Stock state for order ' + orderId + ' is not confirmed. Inventory restoration needs manual reconciliation.', 503);
+  const paymentStatus = String((orderRow || [])[OIDX.pay] || '');
+  if (!['Paid', 'Refunded', 'Refund pending', 'Refund initiated'].includes(paymentStatus)) throw new E('Only an online-paid order can restore inventory automatically.', 409);
+  const pending = await sheets.read('Pending');
+  const savedRow = pending.slice(1).find(r => { try { return String(JSON.parse(r[1] || '{}').id || '') === String(orderId); } catch (x) { return false; } });
+  if (!savedRow) throw new E('Original order items are unavailable; inventory restoration needs manual reconciliation.', 503);
+  let saved;
+  try { saved = JSON.parse(savedRow[1] || '{}'); } catch (x) { throw new E('Original order items are invalid; inventory restoration needs manual reconciliation.', 503); }
+  const quantities = Array.isArray(saved.qty) ? saved.qty : Array.isArray(saved.itemDetails) ? saved.itemDetails.map(it => [it.productId, Number(it.quantity) || 0]) : [];
+  if (!quantities.length) throw new E('Original item quantities are unavailable; inventory restoration needs manual reconciliation.', 503);
+  await sheets.ensureTab('InventoryMovements', INVENTORY_MOVEMENT_HEADERS);
+  const movementRows = await sheets.read('InventoryMovements');
+  const products = await productRows(true), headers = (products[0] || []).map(nk), stockIndex = headers.indexOf('stock');
+  const idIndex = headers.indexOf('product id');
+  if (stockIndex < 0 || idIndex < 0) throw new E('Products sheet is missing inventory columns.', 503);
+  for (const pair of quantities) {
+    const productId = String(pair[0] || ''), quantity = Number(pair[1]);
+    if (!productId || !Number.isInteger(quantity) || quantity < 1) throw new E('Original order contains an invalid inventory quantity.', 503);
+    const key = String(orderId) + '|' + movementType + '|' + productId;
+    const existingIndex = movementRows.findIndex((r, i) => i > 0 && String(r[0] || '') === key);
+    if (existingIndex > 0) {
+      const status = String(movementRows[existingIndex][5] || '');
+      if (status === 'APPLIED' || status === 'SKIPPED_UNTRACKED') continue;
+      throw new E('Inventory movement ' + key + ' is pending reconciliation. Do not retry stock changes automatically.', 503);
+    }
+    const pIndex = products.findIndex((r, i) => i > 0 && String(r[idIndex] || '') === productId);
+    if (pIndex < 1) throw new E('Product ' + productId + ' is missing; inventory restoration needs manual reconciliation.', 503);
+    const rowNum = pIndex + 1, productRow = products[pIndex].slice(), current = productRow[stockIndex];
+    const status = current === '' || current == null ? 'SKIPPED_UNTRACKED' : 'PENDING';
+    const movement = [key, String(orderId), movementType, productId, quantity, status, now(), now(), current === '' || current == null ? 'Stock is not tracked for this product.' : 'Restock started; pending confirms stock write.'];
+    await sheets.append('InventoryMovements', movement);
+    movementRows.push(movement);
+    if (status === 'SKIPPED_UNTRACKED') continue;
+    productRow[stockIndex] = num(current) + quantity;
+    try {
+      await sheets.update('Products', rowNum, productRow);
+      products[pIndex] = productRow;
+      const applied = movement.slice(); applied[5] = 'APPLIED'; applied[7] = now(); applied[8] = 'Stock restored for ' + movementType.toLowerCase() + '.';
+      await sheets.update('InventoryMovements', movementRows.length, applied);
+      movementRows[movementRows.length - 1] = applied;
+    } catch (x) {
+      throw new E('Stock restoration is pending reconciliation for order ' + orderId + '. Do not retry or change stock manually without checking InventoryMovements.', 503);
+    }
+  }
+  invalidate();
+  return true;
+}
+
 const placeCod = async () => { throw new E('Cash on delivery is not available. Please pay online using UPI, cards or netbanking.', 410) };
 let razorpayOverride = null;
 const rz = () => { if (razorpayOverride) return razorpayOverride; if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) throw new E('Payments are not set up yet.', 500); return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET }) };
@@ -603,7 +670,7 @@ const returnRequest = async (b, e, u) => {
   const reqs = await sheets.read('Requests'); if (reqs.some((r, k) => k > 0 && r[2] === orders[i][0] && r[4] === type && !['Rejected', 'Closed'].includes(r[7]))) throw new E('You already have a ' + type.toLowerCase() + ' request for this order.');
   let status = 'Requested', message = 'Request received. We will update the status in your account.';
   if (type === 'Cancel') {
-    if (st === 'New') { const row = padOrder(orders[i]); row[OIDX.status] = 'Cancelled'; await sheets.update('Orders', i + 1, row); status = 'Approved'; message = 'Order cancelled. If you paid online, Juno will review the refund and update its status.' }
+    if (st === 'New') { await restoreInventoryForOrder(orders[i][0], 'CANCEL', orders[i]); const row = padOrder(orders[i]); row[OIDX.status] = 'Cancelled'; await sheets.update('Orders', i + 1, row); status = 'Approved'; message = 'Order cancelled. If you paid online, Juno will review the refund and update its status.' }
     else if (st === 'Packed') message = 'Your order is already packed. We will try to stop it and confirm shortly.';
     else throw new E(st === 'Delivered' ? 'This order was delivered. You can request a return instead.' : 'This order has already shipped, so it cannot be cancelled. You can request a return after delivery.');
   } else {
@@ -789,7 +856,7 @@ const admin = async (b, e) => {
     const row = Array.from({ length: 9 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]); row[8] = b.status === 'Hidden' ? 'Hidden' : 'Approved'; await sheets.update('Reviews', i + 1, row); return { ok: true };
   }
   if (b.action === 'updateRequest') {
-    const ST = ['Requested', 'Approved', 'Rejected', 'Pickup scheduled', 'Refunded', 'Closed'];
+    const ST = ['Requested', 'Approved', 'Rejected', 'Pickup scheduled', 'Return received', 'Refunded', 'Closed'];
     if (!ST.includes(b.status)) throw new E('Bad status.');
     const rows = await sheets.read('Requests'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id);
     if (i < 0) throw new E('Request not found.', 404);
@@ -800,6 +867,7 @@ const admin = async (b, e) => {
       throw new E('Configure BREVO_API_KEY and MAIL_FROM before approving this seller application so Juno can send the activation link.', 500);
     }
     const want = type === 'cancel' && b.status === 'Approved' ? 'Cancelled' : type === 'return' && b.status === 'Refunded' ? 'Returned' : '';
+    const receivingReturn = type === 'return' && b.status === 'Return received';
     let orderRows = null, orderIndex = -1, orderRow = null;
     if (want) {
       orderRows = await sheets.read('Orders');
@@ -810,6 +878,7 @@ const admin = async (b, e) => {
         throw new E('Complete the Razorpay refund and wait for the verified refund webhook before marking this return as Refunded.');
       }
     }
+    if (receivingReturn) { if (!['Approved', 'Pickup scheduled', 'Return received'].includes(oldStatus)) throw new E('Approve the return or schedule pickup before recording receipt.'); const receivedRows = await sheets.read('Orders'); const receivedOrder = receivedRows.find((r, n) => n > 0 && String(r[0]) === String(row[2])); if (!receivedOrder) throw new E('Related order not found.', 404); await restoreInventoryForOrder(row[2], 'RETURN', padOrder(receivedOrder)); }
     row[7] = b.status; row[8] = clean(b.notes);
     await sheets.update('Requests', i + 1, row);
     if (approvingSeller) {
@@ -880,4 +949,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, customerProfile, updateCustomerProfile, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, setRazorpayOverride: client => { razorpayOverride = client || null }, safeActivityDetails } };
+module.exports = { E, json, wrap, products, signup, login, customerProfile, updateCustomerProfile, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, restoreInventoryForOrder, appendInventoryMovement, setRazorpayOverride: client => { razorpayOverride = client || null }, safeActivityDetails } };
