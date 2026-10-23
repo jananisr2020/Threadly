@@ -42,6 +42,10 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ ok: true, found: true, state: 'Tamil Nadu', district: 'Coimbatore', serviceable: true, areas: [{ name: 'Coimbatore', district: 'Coimbatore', state: 'Tamil Nadu' }] }));
       return;
     }
+    if (url.pathname === '/api/ticket' && req.method === 'POST') {
+      res.end(JSON.stringify({ ok: true, id: 'TK-E2E-EMAIL-FAIL', emailed: false }));
+      return;
+    }
     if (url.pathname === '/api/signals') {
       res.end(JSON.stringify({ ok: true, bestsellers: [], trending: [], popular: [], recent: [] }));
       return;
@@ -355,6 +359,19 @@ const server = http.createServer((req, res) => {
     await sellerSessionPage.waitForFunction(() => !sessionStorage.getItem('junoSellerToken') && !document.querySelector('#auth').classList.contains('hidden'));
     assert.equal(await sellerSessionPage.evaluate(() => sessionStorage.getItem('junoSellerToken')), null, 'seller logout must clear the session token');
     await sellerSessionPage.close();
+
+    // A saved support ticket must not claim an email was sent when the email provider reports failure.
+    await page.goto(`http://127.0.0.1:${address.port}/?ticket=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#tov.show #tks');
+    await page.locator('#tkn').fill('E2E Test Buyer');
+    await page.locator('#tke').fill('ticket-buyer@example.com');
+    await page.locator('#tkg').fill('Please help me check a test order confirmation.');
+    await page.locator('#tks').click();
+    await page.waitForFunction(() => document.querySelector('#tkm h3')?.textContent.includes('TK-E2E-EMAIL-FAIL'));
+    const ticketConfirmation = await page.locator('#tkm').textContent();
+    assert.match(ticketConfirmation, /could not send a confirmation email/i);
+    assert.match(ticketConfirmation, /Keep this ticket ID/i);
+    assert.doesNotMatch(ticketConfirmation, /A confirmation email has been sent/i);
 
     // If the live catalogue fails, the bundled preview is explicitly labelled and checkout stays disabled.
     liveCatalogueAvailable = false;
