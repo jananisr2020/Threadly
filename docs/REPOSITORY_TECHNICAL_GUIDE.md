@@ -314,7 +314,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
 - **Purpose:** V1 backlog with completion evidence and release risks.
-- **Type:** md; **size:** 30,573 bytes; **lines:** 147.
+- **Type:** md; **size:** 30,510 bytes; **lines:** 147.
 
 ### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
 
@@ -698,7 +698,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/netlify/lib/core.js`
 
 - **Purpose:** Shared server business rules: auth, validation, customer accounts, checkout, Razorpay verification, orders, inventory sync, support, sellers and admin.
-- **Type:** js; **size:** 84,581 bytes; **lines:** 953.
+- **Type:** js; **size:** 84,443 bytes; **lines:** 952.
 - **Imports/dependencies:** `./sheets`, `bcryptjs`, `jsonwebtoken`, `crypto`, `razorpay`, `./coupons`.
 - **Detected symbols (84):**
   - `class E`
