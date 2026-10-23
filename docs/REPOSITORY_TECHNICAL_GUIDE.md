@@ -207,7 +207,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `scripts/generate_repository_docs.js`
 
 - **Purpose:** Repository maintenance automation.
-- **Type:** js; **size:** 18,310 bytes; **lines:** 98.
+- **Type:** js; **size:** 18,171 bytes; **lines:** 98.
 - **Imports/dependencies:** `node:fs`, `node:path`, `node:child_process`.
 - **Detected symbols (8):**
   - `function files`
@@ -778,7 +778,6 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function sha(t)` — ---------- admin ----------
   - `function adminLogin(b, e)`
   - `function admin(b, e)`
-  - … 22 additional symbols omitted from this file entry; use the linked source.
 - **Module role map:** API handlers and business rules for customer auth/profile/password reset; product visibility/pricing and stock validation; Razorpay order creation, signature/webhook processing and refunds; customer order history/returns; seller applications/accounts/catalogue/orders; admin order/product/review/ticket/request operations; consent-based activity logging; pincode lookup and support tickets. Confirm each handler body and the exported API below in source.
 
 ### `threadly-v2/netlify/lib/coupons.js`
@@ -1047,7 +1046,6 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function consented`
   - `function getSessionId`
   - `function send(event, extra = {})`
-  - … 65 additional symbols omitted from this file entry; use the linked source.
 - **Embedded JavaScript:** 4 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/manifest.webmanifest`
