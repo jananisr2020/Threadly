@@ -9,7 +9,7 @@ const output = path.join(repoRoot, 'PRODUCT_IMAGE_QA.csv');
 
 function cell(value) {
   let text = String(value == null ? '' : value).trim();
-  if (/^[\\s]*[=+@-]/.test(text)) text = "'" + text;
+  if (/^\s*[=+@-]/.test(text)) text = "'" + text;
   return '"' + text.replace(/"/g, '""') + '"';
 }
 function get(product, keys) {
@@ -44,4 +44,8 @@ function main() {
   console.log('Products: ' + products.length + '; missing image URLs: ' + missing + '; duplicate IDs/names: ' + duplicates);
   console.log('Do not treat this template as image approval; fill source/permission fields and set QA Status to Approved only after human review.');
 }
-try { main(); } catch (error) { console.error('Image QA export failed: ' + error.message); process.exitCode = 1; }
+if (require.main === module) {
+  try { main(); } catch (error) { console.error('Image QA export failed: ' + error.message); process.exitCode = 1; }
+}
+
+module.exports = { cell, get, main };
