@@ -1152,7 +1152,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/sw.js`
 
 - **Purpose:** PWA service worker for shell caching, offline behavior and cache management.
-- **Type:** js; **size:** 2,673 bytes; **lines:** 90.
+- **Type:** js; **size:** 2,873 bytes; **lines:** 93.
 
 ### `threadly-v2/public/terms.html`
 
