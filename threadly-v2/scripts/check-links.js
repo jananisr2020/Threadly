@@ -7,7 +7,7 @@ const isFile = p => fs.existsSync(p) && fs.statSync(p).isFile();
 let problems = 0; const bad = m => { problems++; console.log('  ✗ ' + m) }, good = m => console.log('  ✓ ' + m);
 console.log('Project folder: ' + root + '\n');
 // 1. required files
-const need = ['index.html', 'admin.html', 'privacy-policy.html', 'terms.html', 'refund-policy.html', 'shipping-policy.html', 'cookie-policy.html', 'contact.html', 'site-config.js', 'favicon.svg', 'products.csv'];
+const need = ['index.html', 'product.html', 'admin.html', 'privacy-policy.html', 'terms.html', 'refund-policy.html', 'shipping-policy.html', 'cookie-policy.html', 'contact.html', 'site-config.js', 'favicon.svg', 'products.csv'];
 console.log('1. Required files in public/');
 need.forEach(f => isFile(path.join(pub, f)) ? good(f) : bad(f + ' is MISSING. This is not the latest project, or files were not copied over.'));
 if (isFile(path.join(pub, '404.html'))) bad('404.html exists (the custom 404 page was removed; delete this old file)');
