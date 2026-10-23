@@ -839,6 +839,34 @@ const admin = async (b, e) => {
     };
     return { inventoryAudit, sellers: sellers.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 10 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerLedger: sl.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 17 }, (_, j) => r[j] == null ? '' : r[j]) })), sellerOrders: so.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), orders: o.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 20 }, (_, j) => r[j] == null ? '' : r[j]) })), products: productObjs(p), reviews: rv.slice(1).map((r, i) => ({ row: i + 2, id: r[0] || '', pid: r[1] || '', name: r[2] || '', rating: r[4] || '', comment: r[5] || '', date: r[6] || '', verified: r[7] || '', status: r[8] || '' })), requests: rq.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 9 }, (_, j) => r[j] == null ? '' : r[j]) })), tickets: tk.slice(1).map((r, i) => ({ row: i + 2, v: Array.from({ length: 11 }, (_, j) => r[j] == null ? '' : r[j]) })), users: us.slice(1).map((r, i) => ({ row: i + 2, name: r[0] || '', email: r[1] || '', phone: r[3] || '', joined: r[4] || '', last: r[5] || '', count: r[6] || 0 })) };
   }
+  if (b.action === 'expirePendingPayment') {
+    const razorpayOrderId = clean(b.razorpayOrderId);
+    if (!/^order_[A-Za-z0-9]+$/.test(razorpayOrderId)) throw new E('Choose a valid Razorpay order ID.');
+    const pendingRows = await sheets.read('Pending');
+    const pendingIndex = pendingRows.findIndex((r, i) => i > 0 && String(r[0] || '') === razorpayOrderId);
+    if (pendingIndex < 1) throw new E('Pending payment attempt not found.', 404);
+    const pendingRow = pendingRows[pendingIndex].slice();
+    if (String(pendingRow[3] || '').toLowerCase() !== 'pending') throw new E('Only a pending payment attempt can be expired.');
+    let saved;
+    try { saved = JSON.parse(pendingRow[1] || '{}'); } catch (x) { throw new E('Saved order data is invalid; keep this attempt for manual review.', 503); }
+    if (!saved.id) throw new E('Saved order ID is missing; keep this attempt for manual review.', 503);
+    const orderRows = await sheets.read('Orders');
+    if (orderRows.some((r, i) => i > 0 && String(r[OIDX.id] || '') === String(saved.id))) {
+      throw new E('An order record already exists for this attempt. Do not expire it; reconcile the order first.', 409);
+    }
+    let gatewayOrder;
+    try { gatewayOrder = await rz().orders.fetch(razorpayOrderId); }
+    catch (x) { throw new E('Could not verify this attempt with Razorpay. No status was changed.', 502); }
+    if (!gatewayOrder || String(gatewayOrder.id || '') !== razorpayOrderId) throw new E('Razorpay order verification did not match. No status was changed.', 502);
+    if (String(gatewayOrder.status || '') !== 'created' || Number(gatewayOrder.amount_paid || 0) !== 0) {
+      throw new E('Razorpay shows an attempted or paid order. Do not expire it; reconcile its payment status first.', 409);
+    }
+    const createdAt = Number(gatewayOrder.created_at || 0), ageSeconds = Math.floor(Date.now() / 1000) - createdAt;
+    if (!createdAt || ageSeconds < 24 * 60 * 60) throw new E('Only verified unpaid Razorpay orders older than 24 hours can be expired.', 409);
+    pendingRow[3] = 'expired_unpaid';
+    await sheets.update('Pending', pendingIndex + 1, pendingRow);
+    return { ok: true, status: 'expired_unpaid', razorpayOrderId, orderId: String(saved.id) };
+  }
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
     const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
