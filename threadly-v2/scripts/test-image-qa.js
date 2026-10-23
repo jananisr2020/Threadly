@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { cell, get } = require('./export-image-qa');
 
-// CSV formula injection must be neutralized even after leading spaces/tabs.
+for (const value of ['=1+1', '   =1+1', '\t+SUM(A1:A2)', '@cmd', '-1+2']) {
 for (const value of ['=1+1', '   =1+1', '\t+SUM(A1:A2)', '@cmd', '-1+2']) {
   const result = cell(value);
   assert.ok(result.startsWith('"\''), 'formula-like cell must be apostrophe-prefixed: ' + JSON.stringify(value));
