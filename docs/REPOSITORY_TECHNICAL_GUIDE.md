@@ -314,7 +314,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
 - **Purpose:** V1 backlog with completion evidence and release risks.
-- **Type:** md; **size:** 30,510 bytes; **lines:** 147.
+- **Type:** md; **size:** 30,660 bytes; **lines:** 147.
 
 ### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
 
@@ -1231,7 +1231,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-checkout.js`
 
 - **Purpose:** Backend/checkout regression suite.
-- **Type:** js; **size:** 105,394 bytes; **lines:** 1465.
+- **Type:** js; **size:** 103,216 bytes; **lines:** 1444.
 - **Imports/dependencies:** `node:assert/strict`, `node:crypto`, `../netlify/lib/sheets`, `jsonwebtoken`, `bcryptjs`, `../netlify/lib/coupons`, `../netlify/lib/core`.
 - **Detected symbols (5):**
   - `function check(name, fn)`
