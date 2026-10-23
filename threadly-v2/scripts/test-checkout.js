@@ -1444,6 +1444,11 @@ async function rejectsWith(items, pattern) {
       Pending: [['Razorpay Order ID', 'Order Data', 'Created', 'Status'], ['rzp_restore_1', JSON.stringify(savedOrder), '', 'recorded']],
       InventoryMovements: [['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes']]
     };
+    const inventoryRead = sheets.read;
+    sheets.read = async tab => {
+      const result = await inventoryRead(tab);
+      return tab === 'InventoryMovements' ? result.map(row => row.slice()) : result;
+    };
     try {
       assert.equal(await _t.restoreInventoryForOrder(savedOrder.id, 'CANCEL_RESTOCK', orderRow), true);
       assert.equal(mockedSheets.Products[1][4], Number(originalStock) + 2);
@@ -1453,6 +1458,7 @@ async function rejectsWith(items, pattern) {
       assert.equal(mockedSheets.Products[1][4], Number(originalStock) + 2, 'retry must not restock twice');
       assert.equal(mockedSheets.InventoryMovements.length, 2, 'retry must reuse the journal entry');
     } finally {
+      sheets.read = inventoryRead;
       mockedSheets = previousSheets;
       rows.splice(0, rows.length, ...previousRows);
       appendedRows.splice(previousAppends);
