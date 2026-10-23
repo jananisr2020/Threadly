@@ -12,7 +12,7 @@ This describes source code at a revision; it is not proof that production servic
 - Persistence: Google Sheets through threadly-v2/netlify/lib/sheets.js.
 - Payments: Razorpay; email depends on provider configuration.
 - Android wrapper: threadly-android/. CI: .github/workflows/.
-- Tracked files: **116**.
+- Tracked files: **117**.
 
 ### Directory map
 
@@ -1232,7 +1232,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/export-image-qa.js`
 
 - **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
-- **Type:** js; **size:** 2,653 bytes; **lines:** 48.
+- **Type:** js; **size:** 2,724 bytes; **lines:** 52.
 - **Imports/dependencies:** `node:fs`, `node:path`.
 - **Detected symbols (3):**
   - `function cell(value)`
@@ -1299,6 +1299,12 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function delivered(ageDays)`
   - `function order(id, note)`
   - `function saved(id)`
+
+### `threadly-v2/scripts/test-image-qa.js`
+
+- **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
+- **Type:** js; **size:** 792 bytes; **lines:** 16.
+- **Imports/dependencies:** `node:assert/strict`, `./export-image-qa`.
 
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
