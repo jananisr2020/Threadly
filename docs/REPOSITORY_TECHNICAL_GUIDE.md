@@ -698,7 +698,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/netlify/lib/core.js`
 
 - **Purpose:** Shared server business rules: auth, validation, customer accounts, checkout, Razorpay verification, orders, inventory sync, support, sellers and admin.
-- **Type:** js; **size:** 84,443 bytes; **lines:** 952.
+- **Type:** js; **size:** 84,543 bytes; **lines:** 953.
 - **Imports/dependencies:** `./sheets`, `bcryptjs`, `jsonwebtoken`, `crypto`, `razorpay`, `./coupons`.
 - **Detected symbols (84):**
   - `class E`
