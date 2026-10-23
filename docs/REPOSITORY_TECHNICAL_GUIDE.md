@@ -835,8 +835,8 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/admin.html`
 
 - **Purpose:** Admin dashboard for catalogue, orders, customers, reviews, support and marketplace operations.
-- **Type:** html; **size:** 26,693 bytes; **lines:** 101.
-- **Detected symbols (18):**
+- **Type:** html; **size:** 28,507 bytes; **lines:** 108.
+- **Detected symbols (19):**
   - `function api(b)`
   - `function out`
   - `function load`
@@ -850,6 +850,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function sellerproducts`
   - `function sellerorders`
   - `function sellerledger`
+  - `function inventory`
   - `function tix`
   - `function users`
   - `function edit(p)`
