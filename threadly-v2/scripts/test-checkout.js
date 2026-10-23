@@ -1428,15 +1428,6 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
       }
     });
-  } finally {
-    sheets.read = originalRead;
-    sheets.append = originalAppend;
-    sheets.update = originalUpdate;
-    sheets.ensureTab = originalEnsureTab;
-  }
-
-
-
   await check('cancellation/return inventory restoration is journaled and idempotent', async () => {
     const previousSheets = mockedSheets;
     const previousRows = rows.map(row => row.slice());
@@ -1488,6 +1479,16 @@ async function rejectsWith(items, pattern) {
       mockedSheets = previousSheets;
     }
   });
+
+  } finally {
+    sheets.read = originalRead;
+    sheets.append = originalAppend;
+    sheets.update = originalUpdate;
+    sheets.ensureTab = originalEnsureTab;
+  }
+
+
+
   const failed = cases.filter(x => !x.ok);
   process.stdout.write('\n' + (cases.length - failed.length) + '/' + cases.length + ' checkout tests passed.\n');
   if (failed.length) process.exitCode = 1;
