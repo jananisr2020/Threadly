@@ -62,7 +62,7 @@ At repository root: node scripts/generate_repository_docs.js regenerates this gu
 |---|---|---|
 | `threadly-android/package.json` | `npm run android:sync` | `cap sync android` |
 | `threadly-android/package.json` | `npm run android:open` | `cap open android` |
-| `threadly-v2/package.json` | `npm run check` | `node scripts/check-links.js && node scripts/check-netlify-config.js` |
+| `threadly-v2/package.json` | `npm run check` | `node scripts/check-links.js && node scripts/check-netlify-config.js && node scripts/test-image-qa.js` |
 | `threadly-v2/package.json` | `npm run check:security` | `node scripts/check-security-config.js` |
 | `threadly-v2/package.json` | `npm run test` | `node scripts/test-checkout.js` |
 | `threadly-v2/package.json` | `npm run build` | `node scripts/build-catalog.js` |
@@ -817,7 +817,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/package.json`
 
 - **Purpose:** Node requirements, dependencies and npm commands.
-- **Type:** json; **size:** 616 bytes; **lines:** 23.
+- **Type:** json; **size:** 649 bytes; **lines:** 23.
 
 ### `threadly-v2/public/_headers`
 
