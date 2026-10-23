@@ -1507,6 +1507,44 @@ async function rejectsWith(items, pattern) {
       if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
     }
   });
+  await check('manual inventory reconciliation requires a verified matching stock count and records an audit trail without changing stock', async () => {
+    const previousSheets = mockedSheets;
+    const previousSecret = process.env.JWT_SECRET;
+    process.env.JWT_SECRET = 'offline-manual-inventory-review-secret';
+    const orderId = 'JN-STOCK-RECON';
+    const productId = 'JN0001';
+    const product = Array(13).fill('');
+    product[0] = productId;
+    product[9] = 7;
+    const order = Array(20).fill('');
+    order[0] = orderId;
+    order[14] = 'Paid';
+    order[17] = 'New';
+    order[19] = 'STOCK_RECONCILIATION_REQUIRED: simulated stock write failure';
+    const movement = [orderId + '|CANCEL|' + productId, orderId, 'CANCEL', productId, 1, 'PENDING', '2026-10-23', '', 'simulated pending movement'];
+    mockedSheets = {
+      Products: [['Product ID', '', '', '', '', '', '', '', '', 'Stock'], product],
+      Orders: [['Order ID', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Payment Status', '', '', 'Status', '', 'Notes'], order],
+      InventoryMovements: [['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes'], movement]
+    };
+    try {
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const event = { headers: { authorization: 'Bearer ' + token } };
+      await assert.rejects(() => admin({ action: 'confirmInventoryReconciled', movementId: movement[0], productId, expectedStock: 6, note: 'Counted shelf stock and checked bin' }, event), /does not match the current Products sheet/i);
+      assert.equal(mockedSheets.InventoryMovements[1][5], 'PENDING', 'mismatch must not resolve the movement');
+      const result = await admin({ action: 'confirmInventoryReconciled', movementId: movement[0], productId, expectedStock: 7, note: 'Counted shelf units against physical bin' }, event);
+      assert.equal(result.status, 'MANUALLY_RECONCILED');
+      assert.equal(result.orderUpdated, true);
+      assert.equal(mockedSheets.InventoryMovements[1][5], 'MANUALLY_RECONCILED');
+      assert.match(mockedSheets.InventoryMovements[1][8], /physical bin/i);
+      assert.equal(mockedSheets.Products[1][9], 7, 'manual reconciliation must never change stock');
+      assert.match(mockedSheets.Orders[1][19], /^STOCK_RECONCILED_MANUALLY:/);
+      await assert.rejects(() => admin({ action: 'confirmInventoryReconciled', movementId: movement[0], productId, expectedStock: 7, note: 'Counted shelf units against physical bin' }, { headers: {} }), /Session expired/i);
+    } finally {
+      mockedSheets = previousSheets;
+      if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
+    }
+  });
   await check('admin inventory audit exposes flagged orders and unresolved movements without customer contact fields', async () => {
     const previousSheets = mockedSheets;
     const previousSecret = process.env.JWT_SECRET;
