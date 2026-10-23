@@ -1192,7 +1192,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/check-links.js`
 
 - **Purpose:** Static repository, route, catalogue and policy consistency checks.
-- **Type:** js; **size:** 3,863 bytes; **lines:** 39.
+- **Type:** js; **size:** 3,879 bytes; **lines:** 39.
 - **Imports/dependencies:** `fs`, `path`.
 - **Detected symbols (2):**
   - `function isFile(p)`
@@ -1267,7 +1267,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
 - **Purpose:** Browser tests for storefront and seller flows.
-- **Type:** js; **size:** 24,746 bytes; **lines:** 363.
+- **Type:** js; **size:** 25,333 bytes; **lines:** 368.
 - **Imports/dependencies:** `node:assert/strict`, `node:fs`, `node:http`, `node:path`, `playwright`, `@axe-core/playwright`.
 
 ## 7. GitHub Actions index
