@@ -1076,8 +1076,8 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/product.html`
 
 - **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
-- **Type:** html; **size:** 26,185 bytes; **lines:** 69.
-- **Detected symbols (17):**
+- **Type:** html; **size:** 28,302 bytes; **lines:** 72.
+- **Detected symbols (19):**
   - `function toast(msg)`
   - `function productUrls(p)`
   - `function normalizeProduct(p)`
@@ -1085,6 +1085,8 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function optionMarkup(p)`
   - `function highlights(p)`
   - `function renderProduct(p)`
+  - `function updateProductSchema`
+  - `function renderWishlistButton`
   - `function cartCount`
   - `function addToCart(buy)`
   - `function showPhoto(i)`
@@ -1267,7 +1269,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
 - **Purpose:** Browser tests for storefront and seller flows.
-- **Type:** js; **size:** 26,087 bytes; **lines:** 377.
+- **Type:** js; **size:** 26,858 bytes; **lines:** 384.
 - **Imports/dependencies:** `node:assert/strict`, `node:fs`, `node:http`, `node:path`, `playwright`, `@axe-core/playwright`.
 
 ## 7. GitHub Actions index
