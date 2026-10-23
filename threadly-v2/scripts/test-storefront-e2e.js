@@ -201,7 +201,7 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => localStorage.setItem('tl_cookie', JSON.stringify('all')));
     const viewedId = await page.locator('#grid .p').first().getAttribute('data-id');
     await page.locator('#grid .p').first().click();
-    await page.waitForURL(/\\/product\\.html\\?p=/, { timeout: 10000 });
+    await page.waitForURL(/\/product\.html\?p=/, { timeout: 10000 });
     await page.waitForSelector('#product .title');
     assert.ok((await page.locator('#product .title').textContent()).trim().length > 0, 'product details should open on a dedicated page');
 
@@ -283,7 +283,7 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#grid .p');
     // Open the product card itself so the test exercises the same detail flow as a shopper.
     await page.locator('#grid .p').first().click();
-    await page.waitForURL(/\\/product\\.html\\?p=/, { timeout: 10000 });
+    await page.waitForURL(/\/product\.html\?p=/, { timeout: 10000 });
     await page.waitForSelector('#product .title');
     const mobileSize = page.locator('#options .option').first();
     if (await mobileSize.count()) await mobileSize.click();
