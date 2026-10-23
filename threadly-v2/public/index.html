@@ -611,30 +611,12 @@ function listingDetails(p){
     <details><summary style="cursor:pointer;font-weight:600">Specifications</summary><table><tbody>${specs.map(([k,v])=>'<tr><th>'+escText(k)+'</th><td>'+escText(v)+'</td></tr>').join('')}</tbody></table></details>
   </section>`;
 }
-function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length===1?p.sizes[0]:null;qty=1;ST.set('tl_rv',[id,...arr('tl_rv').filter(x=>x!==id)].slice(0,12));
-  galleryIndex=0;$('#modal').innerHTML=`${productGallery(p)}<div class="md"><button class="x" data-close aria-label="Close">×</button><small>${esc(p.brand)}</small><h2 style="margin:0">${esc((p.listing&&p.listing.listingTitle)||p.name)}</h2>${p.rc?`<div class="rt">★ ${p.rr} · ${p.rc} review${p.rc>1?'s':''}</div>`:''}
-  <div class="pr"><b style="font-size:26px">${inr(p.price)}</b><s>${inr(p.mrp)}</s><span>${p.off}% off</span></div>${p.off>=30?'<div class="pill" style="align-self:flex-start;background:var(--acc);color:#fff">⚡ Sale price</div>':''}
-  ${p.sizes.length>1?`<div>Select ${p.lab||(p.sz?'size':'colour')}</div><div class="sz">${p.sizes.map(s=>`<button data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>`:''}
-  <div class="eta" id="peta">🚚 Delivery by <b>${eta(pin())}</b>${pin()?' to '+pin():''}</div><div class="row2" style="grid-template-columns:1fr auto"><input id="ppin" data-pin autocomplete="off" maxlength="30" placeholder="Check delivery: pincode or area" value="${esc(pin())}" style="padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="pchk">Check</button></div>
-  ${p.stock<=0?'<div class="low">Out of stock</div>':p.stock<=5?`<div class="low">Hurry, only ${p.stock} left</div>`:''}
-  <div class="q" style="margin:2px 0"><span>Quantity</span><button data-qm aria-label="Less">−</button><b id="qv">1</b><button data-qp aria-label="More">+</button></div>
-  <div class="row2"><button class="cta" id="add" ${p.stock<=0?'disabled':''}>Add to cart</button><button class="cta alt" id="buy" ${p.stock<=0?'disabled':''}>Buy now</button></div>
-  <small>✔ 7-day easy returns · ✔ Secure UPI, card and netbanking payments</small>${chart(p)}${listingDetails(p)}</div><div style="grid-column:1/-1;padding:0 20px 20px"${railsFor(p)}<div id="rv"></div></div>`;
-  show('#mov');loadReviews(p.id);productLD(p);productMeta(p);
-  $('#modal').onclick=e=>{const t=e.target,s=t.dataset.s;if(t.dataset.close!==undefined)return show('#mov',false);
-    if(t.closest('.p')){onCard(e);return}
-    const thumb=t.closest('[data-pimg]');if(thumb){const next=+thumb.dataset.pimg,urls=productImageUrls(p);if(urls[next]){galleryIndex=next;const main=$('#pimgmain');if(main){main.src=urls[next];main.style.display=''}document.querySelectorAll('.pg-thumb').forEach((b,i)=>b.classList.toggle('on',i===next))}return}
-    if(t.id==='wr'){if(!user){show('#mov',false);authUI('in');return toast('Log in to write a review')}rvR=0;$('#rf').innerHTML=`<div class="fm" style="margin-top:8px"><div>${[1,2,3,4,5].map(n=>`<button class="chip" data-rs="${n}">${n}★</button>`).join(' ')}</div><textarea id="rtx" rows="3" maxlength="500" placeholder="Share what you liked or did not like"></textarea><div class="err" id="rer"></div><button class="cta" id="rsub">Submit review</button></div>`}
-    if(t.dataset.rs){rvR=+t.dataset.rs;document.querySelectorAll('[data-rs]').forEach(b=>b.classList.toggle('on',+b.dataset.rs<=rvR))}
-    if(t.id==='rsub')submitReview(p.id);
-    if(t.closest('.zm'))t.closest('.zm').classList.toggle('zoomed');
-    if(t.id==='pchk'){const v=$('#ppin').value.trim();if(!/^\d{6}$/.test(v))return toast('Enter a valid 6-digit pincode');pdpPin(v)}
-    if(t.dataset.qm!==undefined){qty=Math.max(1,qty-1);$('#qv').textContent=qty}
-    if(t.dataset.qp!==undefined){const mx=Math.max(1,Math.min(20,p.stock||20));if(qty>=mx)toast('Maximum '+mx+' per order');qty=Math.min(mx,qty+1);$('#qv').textContent=qty}
-    if(s){sel=s;document.querySelectorAll('.sz button').forEach(b=>b.classList.toggle('on',b.dataset.s===s))}
-    if(t.id==='add'||t.id==='buy'){if(!sel)return toast('Pick an option first');const k=S.cart.find(c=>c.id===p.id&&c.s===sel),max=Math.min(20,Math.max(0,p.stock));if(max<=0)return toast('Out of stock');if((k?k.n:0)+qty>max)return toast('Only '+Math.max(0,max-(k?k.n:0))+' more available');if(k)k.n+=qty;else S.cart.push({id:p.id,s:sel,n:qty});show('#mov',false);render();
-      if(t.id==='buy')checkoutStart();else toast('Added '+qty+' to cart')}}}
-$('#mov').onclick=e=>{if(e.target.id==='mov')show('#mov',false)};
+// Product cards, search results and related-product links use a dedicated URL instead of a modal.
+function openP(id){
+  if(!id)return;
+  location.href='/product.html?p='+encodeURIComponent(String(id));
+}
+
 
 /* ---- cart ---- */
 const COUPONS={JUNO10:{pct:10}};
@@ -740,7 +722,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 (async()=>{ubtn();await loadSheet();S.cart=S.cart.filter(c=>P.some(p=>p.id===c.id));S.wl=new Set([...S.wl].filter(i=>P.some(p=>p.id===i)));applySig();renderNav();chips();render();seoInit();loadSignals();
   if(!ST.get('tl_cookie')||new URLSearchParams(location.search).get('cookies'))showCookie();
   if(new URLSearchParams(location.search).get('ticket'))openTicket();
-  const pp=new URLSearchParams(location.search).get('p');if(pp)openP(pp);
+  const pp=new URLSearchParams(location.search).get('p');if(pp)openP(pp);else if(new URLSearchParams(location.search).get('checkout')==='1')checkoutStart();
   const rp=new URLSearchParams(location.search).get('reset');if(rp){resetTok=rp;resetUI()}})();
 </script>
 
