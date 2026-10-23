@@ -670,7 +670,7 @@ const returnRequest = async (b, e, u) => {
   const reqs = await sheets.read('Requests'); if (reqs.some((r, k) => k > 0 && r[2] === orders[i][0] && r[4] === type && !['Rejected', 'Closed'].includes(r[7]))) throw new E('You already have a ' + type.toLowerCase() + ' request for this order.');
   let status = 'Requested', message = 'Request received. We will update the status in your account.';
   if (type === 'Cancel') {
-    if (st === 'New') { await restoreInventoryForOrder(orders[i][0], 'CANCEL', orders[i]); const row = padOrder(orders[i]); row[OIDX.status] = 'Cancelled'; await sheets.update('Orders', i + 1, row); status = 'Approved'; message = 'Order cancelled. If you paid online, Juno will review the refund and update its status.' }
+    if (st === 'New') { if (String(orders[i][19] || '').includes('STOCK_SYNCED')) await restoreInventoryForOrder(orders[i][0], 'CANCEL', orders[i]); else details = [details, 'Manual inventory review required: this order has no confirmed STOCK_SYNCED marker.'].filter(Boolean).join(' | ').slice(0, 400); const row = padOrder(orders[i]); row[OIDX.status] = 'Cancelled'; await sheets.update('Orders', i + 1, row); status = 'Approved'; message = 'Order cancelled. If you paid online, Juno will review the refund and update its status.' }
     else if (st === 'Packed') message = 'Your order is already packed. We will try to stop it and confirm shortly.';
     else throw new E(st === 'Delivered' ? 'This order was delivered. You can request a return instead.' : 'This order has already shipped, so it cannot be cancelled. You can request a return after delivery.');
   } else {
