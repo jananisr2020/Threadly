@@ -862,7 +862,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/catalog.json`
 
 - **Purpose:** Bundled fallback catalogue for live catalogue outages.
-- **Type:** json; **size:** 301,802 bytes; **lines:** 14561.
+- **Type:** json; **size:** 1,244,072 bytes; **lines:** 32246.
 
 ### `threadly-v2/public/contact.html`
 
