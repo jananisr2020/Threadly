@@ -56,7 +56,7 @@ Do not enable seller sales or advertise checkout as production-ready until:
 
 - A concurrency-safe inventory reservation/transaction mechanism prevents overselling across simultaneous checkouts.
 - Partial stock updates can be reconciled without double-decrementing or double-restocking.
-- Expired/abandoned payment attempts and late gateway events have a tested safe reconciliation policy.
+- Expired/abandoned payment attempts and late gateway events have a tested safe reconciliation policy. The admin audit can mark an attempt `expired_unpaid` only when Razorpay confirms status `created`, zero amount paid, no existing Orders row, and an age of at least 24 hours; attempted/paid orders or gateway errors fail closed. A late captured-payment webhook remains authoritative.
 - Cancellation and return restocking is idempotent and auditable.
 - Seller ledger, refunds, commission rules and settlement provider approval are verified. Automated seller transfers remain disabled until approved.
 
