@@ -1020,6 +1020,11 @@ async function rejectsWith(items, pattern) {
         assert.equal(mockedSheets.Products[1][9], 4);
         assert.equal(mockedSheets.Pending[1][3], 'recorded');
         assert.equal(appendedRows.slice(previousAppends).filter(x => x.tab === 'Orders').length, 1);
+        const history = await myOrders({}, event, user);
+        assert.equal(history.length, 1, 'the captured order must appear in customer order history');
+        assert.equal(history[0].id, created.orderId);
+        assert.equal(history[0].status, 'New');
+        assert.equal(history[0].total, 129, 'order history must show the server-calculated total');
       } finally {
         _t.setRazorpayOverride(null);
         global.fetch = previousFetch;
