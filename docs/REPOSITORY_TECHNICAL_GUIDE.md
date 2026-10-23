@@ -1304,7 +1304,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-image-qa.js`
 
 - **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
-- **Type:** js; **size:** 790 bytes; **lines:** 16.
+- **Type:** js; **size:** 714 bytes; **lines:** 15.
 - **Imports/dependencies:** `node:assert/strict`, `./export-image-qa`.
 
 ### `threadly-v2/scripts/test-storefront-e2e.js`
