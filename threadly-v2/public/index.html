@@ -288,7 +288,7 @@ async function loadSheet(){
       if(!name||!price||v('show on site').toLowerCase()==='no')return;
       const cat=v('category')||'More',sizes=v('sizes/colours').split(/[|,]/).map(x=>x.trim()).filter(Boolean),match=byId.get(v('product id').toLowerCase())||byName.get(normProductText(name)),pool=byCat.get(normProductText(cat))||[],used=catUse[normProductText(cat)]||0,categoryMatch=pool.length?pool[used%pool.length]:null;catUse[normProductText(cat)]=used+1;
       const catalogueImage=imgUrl((match&&match.img)||(categoryMatch&&categoryMatch.img)||''),aiImageColumns=k.map((h,j)=>({h,j})).filter(x=>/^ai image [1-5]$/.test(x.h)).sort((a,b)=>Number(a.h.match(/[1-5]/)[0])-Number(b.h.match(/[1-5]/)[0])).map(x=>imgUrl(r[x.j]||'')).filter(Boolean),imageColumns=k.map((h,j)=>({h,j})).filter(x=>/^image\s*(?:url\s*)?(?:[2-6])$/.test(x.h)||/^additional image\s*[1-5]$/.test(x.h)).map(x=>imgUrl(r[x.j]||'')),extraImages=(v('additional images')||v('gallery images')||'').split(/[|;]/).map(imgUrl).filter(Boolean),primaryImage=imgUrl(v('image')||v('image 1')||v('image url')||v('product image')||v('primary image'))||catalogueImage,images=[...new Set((aiImageColumns.length?aiImageColumns:[primaryImage,...imageColumns,...extraImages]).filter(Boolean))].slice(0,5),galleryPrimary=aiImageColumns[0]||primaryImage||catalogueImage;
-      out.push({id:v('product id')||'TL'+(i+1),cat,name,brand:v('details'),g:v('for')||'Unisex',mrp,price,off:Math.max(0,Math.round((mrp-price)/mrp*100)),rt:(num(v('rating'))||4.2).toFixed(1),rv:Math.floor(50+(i*137)%2000),col:COL[i%COL.length],sizes:sizes.length?sizes:['One size'],sz:sizes.length>0&&sizes.every(s=>/^(XXS|XS|S|M|L|XL|XXL|3XL|\d{1,2}(-\d{1,2}Y)?)$/i.test(s)),stock:v('stock')===''?99:num(v('stock')),sale:/^y/i.test(v('flash sale')),img:galleryPrimary,images,fallbackImg:catalogueImage,material:v('material'),style:v('style'),occasion:v('occasion'),type:v('product type')||v('type'),ic:ICM[cat]||cat,lab:/case|cover/i.test(cat)?'model':''})});
+      out.push({id:v('product id')||'TL'+(i+1),cat,name,brand:v('details'),g:v('for')||'Unisex',mrp,price,off:Math.max(0,Math.round((mrp-price)/mrp*100)),rt:(num(v('rating'))||4.2).toFixed(1),rv:Math.floor(50+(i*137)%2000),col:COL[i%COL.length],sizes:sizes.length?sizes:['One size'],sz:sizes.length>0&&sizes.every(s=>/^(XXS|XS|S|M|L|XL|XXL|3XL|\d{1,2}(-\d{1,2}Y)?)$/i.test(s)),stock:v('stock')===''?99:num(v('stock')),sale:/^y/i.test(v('flash sale')),img:galleryPrimary,images,fallbackImg:catalogueImage,listing:match&&match.listing,material:v('material'),style:v('style'),occasion:v('occasion'),type:v('product type')||v('type'),ic:ICM[cat]||cat,lab:/case|cover/i.test(cat)?'model':''})});
     if(!out.length)throw new Error('No published products were returned');P.length=0;P.push(...out);catalogueReady=true;setCatalogueNotice(false)}catch(e){console.error('Juno live catalogue unavailable; trying the bundled database catalogue:',e);try{const local=await fetch('/catalog.json',{cache:'no-store'});if(!local.ok)throw new Error('Bundled catalogue returned HTTP '+local.status);const data=await local.json();if(!Array.isArray(data.products)||!data.products.length)throw new Error('Bundled catalogue contains no products');P.length=0;P.push(...data.products);catalogueReady=true;setCatalogueNotice(true);console.warn('Loaded '+P.length+' products from the bundled catalogue. Live sheet sync is still unavailable.');toast('Showing saved catalogue while live data reconnects.')}catch(fallbackError){catalogueReady=false;setCatalogueNotice(true);P.length=0;console.error('Juno catalogue fallback failed:',fallbackError);toast('Catalogue could not load. Please try again shortly.')}}}
 
 /* ---- delivery estimate ---- */
@@ -598,6 +598,19 @@ function productMeta(p){
   set('link[rel="canonical"]','href',url);
   if(p.img&&/^https?:/.test(p.img))set('meta[property="og:image"]','content',p.img);
 }
+function listingDetails(p){
+  const l=p&&p.listing;if(!l)return '';
+  const escText=v=>esc(String(v==null?'':v));
+  const highlights=Array.isArray(l.highlights)?l.highlights:[];
+  const specs=l.specifications&&typeof l.specifications==='object'?Object.entries(l.specifications):[];
+  return `<section class="pdp-copy" style="padding:16px 0;border-top:1px solid var(--line);margin-top:12px">
+    <h3 style="margin:0 0 8px">Product highlights</h3>
+    <ul style="padding-left:20px;margin:0 0 14px">${highlights.map(x=>'<li style="margin:5px 0">'+escText(x)+'</li>').join('')}</ul>
+    <h3 style="margin:0 0 8px">Product description</h3>
+    <p style="line-height:1.6;margin:0 0 14px">${escText(l.description||'')}</p>
+    <details><summary style="cursor:pointer;font-weight:600">Specifications</summary><table><tbody>${specs.map(([k,v])=>'<tr><th>'+escText(k)+'</th><td>'+escText(v)+'</td></tr>').join('')}</tbody></table></details>
+  </section>`;
+}
 function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length===1?p.sizes[0]:null;qty=1;ST.set('tl_rv',[id,...arr('tl_rv').filter(x=>x!==id)].slice(0,12));
   galleryIndex=0;$('#modal').innerHTML=`${productGallery(p)}<div class="md"><button class="x" data-close aria-label="Close">×</button><small>${esc(p.brand)}</small><h2 style="margin:0">${esc(p.name)}</h2>${p.rc?`<div class="rt">★ ${p.rr} · ${p.rc} review${p.rc>1?'s':''}</div>`:''}
   <div class="pr"><b style="font-size:26px">${inr(p.price)}</b><s>${inr(p.mrp)}</s><span>${p.off}% off</span></div>${p.off>=30?'<div class="pill" style="align-self:flex-start;background:var(--acc);color:#fff">⚡ Sale price</div>':''}
@@ -606,7 +619,7 @@ function openP(id){const p=P.find(x=>x.id===id);if(!p)return;sel=p.sizes.length=
   ${p.stock<=0?'<div class="low">Out of stock</div>':p.stock<=5?`<div class="low">Hurry, only ${p.stock} left</div>`:''}
   <div class="q" style="margin:2px 0"><span>Quantity</span><button data-qm aria-label="Less">−</button><b id="qv">1</b><button data-qp aria-label="More">+</button></div>
   <div class="row2"><button class="cta" id="add" ${p.stock<=0?'disabled':''}>Add to cart</button><button class="cta alt" id="buy" ${p.stock<=0?'disabled':''}>Buy now</button></div>
-  <small>✔ 7-day easy returns · ✔ Secure UPI, card and netbanking payments</small>${chart(p)}</div><div style="grid-column:1/-1;padding:0 20px 20px">${railsFor(p)}<div id="rv"></div></div>`;
+  <small>✔ 7-day easy returns · ✔ Secure UPI, card and netbanking payments</small>${chart(p)}${listingDetails(p)}</div><div style="grid-column:1/-1;padding:0 20px 20px"${railsFor(p)}<div id="rv"></div></div>`;
   show('#mov');loadReviews(p.id);productLD(p);productMeta(p);
   $('#modal').onclick=e=>{const t=e.target,s=t.dataset.s;if(t.dataset.close!==undefined)return show('#mov',false);
     if(t.closest('.p')){onCard(e);return}
