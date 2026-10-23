@@ -116,7 +116,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#wishlist').click();
     assert.ok(await page.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should add the product to wishlist');
     await page.locator('#wishlist').click();
-    assert.ok(!(await page.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should remove the product from wishlist');
+    assert.ok(!(await page.evaluate(() => JSON.parse(localStorage.getItem('tl_wl') || '[]').includes('E2E001'))), 'product detail page should remove the product from wishlist');
     const variants = page.locator('#options .option');
     assert.ok(await variants.count() >= 3, 'product detail page should show available colour variants');
     await variants.first().click();
