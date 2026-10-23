@@ -832,8 +832,9 @@ const admin = async (b, e) => {
   const u = bearer(e); if (!u || !u.admin) throw new E('Session expired. Log in again.', 401);
   if (b.action === 'load') {
     await ensureMarketplaceTabs();
-    const [o, p, us, rv, rq, tk, so, sl, sellers, im] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => []), sheets.read('Sellers').catch(() => []), sheets.read('InventoryMovements').catch(() => [])]);
-    const inventoryAudit = {
+    const [o, p, us, rv, rq, tk, so, sl, sellers, im, pn] = await Promise.all([sheets.read('Orders'), productRows(true), sheets.read('Users'), sheets.read('Reviews').catch(() => []), sheets.read('Requests').catch(() => []), sheets.read('Tickets').catch(() => []), sheets.read('SellerOrders').catch(() => []), sheets.read('SellerLedger').catch(() => []), sheets.read('Sellers').catch(() => []), sheets.read('InventoryMovements').catch(() => []), sheets.read('Pending').catch(() => [])]);
+    const paymentAttempts = pn.slice(1).filter(r => ['pending', 'expired_unpaid', 'stock_reconciliation_required'].includes(String(r[3] || '').toLowerCase())).map(r => { let saved = {}; try { saved = JSON.parse(r[1] || '{}'); } catch (x) {} return { razorpayOrderId: String(r[0] || ''), orderId: String(saved.id || ''), created: String(r[2] || ''), status: String(r[3] || ''), total: num(saved.total) }; });
+    const inventoryAudit = { paymentAttempts,
       orders: o.slice(1).filter(r => /^(STOCK_SYNC_PENDING|STOCK_RECONCILIATION_REQUIRED:)/.test(String(r[OIDX.notes] || ''))).map(r => ({ orderId: String(r[OIDX.id] || ''), date: String(r[OIDX.date] || ''), total: num(r[OIDX.total]), paymentStatus: String(r[OIDX.pay] || ''), orderStatus: String(r[OIDX.status] || ''), note: String(r[OIDX.notes] || '').slice(0, 220) })),
       movements: im.slice(1).filter(r => !['APPLIED', 'SKIPPED_UNTRACKED'].includes(String(r[5] || ''))).map(r => ({ movementId: String(r[0] || ''), orderId: String(r[1] || ''), type: String(r[2] || ''), productId: String(r[3] || ''), delta: Number(r[4]) || 0, status: String(r[5] || 'UNKNOWN'), created: String(r[6] || ''), note: String(r[8] || '').slice(0, 180) }))
     };
