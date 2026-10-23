@@ -50,6 +50,17 @@ Use Razorpay test mode first. Do not create a real charge without explicit busin
 
 Never use real customer data for smoke tests. Use synthetic accounts and test payments.
 
+## 3A. Customer communication channel policy
+
+| Event | V1 source of truth | Notification channel | Guardrail |
+|---|---|---|---|
+| Password reset | One-time 30-minute token | Email through Brevo only when `BREVO_API_KEY` and verified `MAIL_FROM` are configured | Never expose whether an account exists; never log reset tokens |
+| Support ticket/reply | Persisted ticket and status in admin | Email when configured; UI must distinguish saved ticket from failed confirmation email | Do not claim delivery on provider failure |
+| Order/payment status | Orders history and verified Razorpay webhook state | In-app/order history; email only after a configured sender and delivery path are tested | Never send a paid/failed message based only on a browser callback |
+| SMS login OTP / order SMS | Not enabled until a provider is selected and verified | SMS provider integration is a tracked open task (T45) | Do not simulate OTP or claim an SMS was sent; obtain consent and verify delivery before enabling |
+
+The current release does not have a configured SMS gateway contract. SMS/OTP work remains disabled until provider credentials, sender/number registration, consent wording, rate limits, delivery receipts, and retry policy are agreed and tested. Email delivery is also not considered verified until a test inbox receives the message from the configured sender.
+
 ## 4. Inventory and payment launch blockers
 
 Do not enable seller sales or advertise checkout as production-ready until:
