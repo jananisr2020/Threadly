@@ -926,7 +926,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/index.html`
 
 - **Purpose:** Customer storefront: catalogue, search, filters, sorting, product detail, wishlist, cart and checkout.
-- **Type:** html; **size:** 143,865 bytes; **lines:** 839.
+- **Type:** html; **size:** 143,908 bytes; **lines:** 839.
 - **Detected symbols (127):**
   - `function toast(t)`
   - `function parseCSV(t)` — ---- Google Sheet / products.csv loader ----
@@ -1076,8 +1076,8 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/product.html`
 
 - **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
-- **Type:** html; **size:** 28,302 bytes; **lines:** 72.
-- **Detected symbols (19):**
+- **Type:** html; **size:** 30,200 bytes; **lines:** 73.
+- **Detected symbols (20):**
   - `function toast(msg)`
   - `function productUrls(p)`
   - `function normalizeProduct(p)`
@@ -1087,6 +1087,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function renderProduct(p)`
   - `function updateProductSchema`
   - `function renderWishlistButton`
+  - `function renderRelated(current)`
   - `function cartCount`
   - `function addToCart(buy)`
   - `function showPhoto(i)`
