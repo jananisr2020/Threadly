@@ -1428,6 +1428,46 @@ async function rejectsWith(items, pattern) {
         mockedSheets = previousSheets;
       }
     });
+  await check('pending payment expiry requires a verified unpaid Razorpay order older than 24 hours', async () => {
+    const previousSheets = mockedSheets;
+    const previousSecret = process.env.JWT_SECRET;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    process.env.JWT_SECRET = 'offline-pending-expiry-secret';
+    const saved = id => JSON.stringify({ id: 'JUNO-' + id.toUpperCase(), total: 139, email: 'buyer@example.com', addr: { phone: '9876543210', line: 'private address' } });
+    mockedSheets = {
+      Pending: [
+        ['Razorpay Order ID', 'Order Data', 'Created', 'Status'],
+        ['order_old123', saved('old'), '', 'pending'],
+        ['order_young123', saved('young'), '', 'pending'],
+        ['order_attempted123', saved('attempted'), '', 'pending']
+      ],
+      Orders: [['Order ID']]
+    };
+    const gateway = {
+      orders: { fetch: async id => ({
+        id,
+        status: id === 'order_attempted123' ? 'attempted' : 'created',
+        amount_paid: 0,
+        created_at: id === 'order_young123' ? nowSeconds - 3600 : nowSeconds - 25 * 3600
+      }) }
+    };
+    _t.setRazorpayOverride(gateway);
+    try {
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const event = { headers: { authorization: 'Bearer ' + token } };
+      const expired = await admin({ action: 'expirePendingPayment', razorpayOrderId: 'order_old123' }, event);
+      assert.equal(expired.status, 'expired_unpaid');
+      assert.equal(mockedSheets.Pending[1][3], 'expired_unpaid');
+      await assert.rejects(() => admin({ action: 'expirePendingPayment', razorpayOrderId: 'order_young123' }, event), /older than 24 hours/i);
+      await assert.rejects(() => admin({ action: 'expirePendingPayment', razorpayOrderId: 'order_attempted123' }, event), /attempted or paid/i);
+      assert.equal(mockedSheets.Pending[2][3], 'pending', 'young attempts must remain pending');
+      assert.equal(mockedSheets.Pending[3][3], 'pending', 'attempted gateway orders must remain pending for manual review');
+    } finally {
+      _t.setRazorpayOverride(null);
+      mockedSheets = previousSheets;
+      if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
+    }
+  });
   await check('admin inventory audit exposes flagged orders and unresolved movements without customer contact fields', async () => {
     const previousSheets = mockedSheets;
     const previousSecret = process.env.JWT_SECRET;
