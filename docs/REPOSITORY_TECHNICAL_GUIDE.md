@@ -66,6 +66,7 @@ At repository root: node scripts/generate_repository_docs.js regenerates this gu
 | `threadly-v2/package.json` | `npm run check:security` | `node scripts/check-security-config.js` |
 | `threadly-v2/package.json` | `npm run test` | `node scripts/test-checkout.js` |
 | `threadly-v2/package.json` | `npm run build` | `node scripts/build-catalog.js` |
+| `threadly-v2/package.json` | `npm run images:qa` | `node scripts/export-image-qa.js` |
 
 ## 4. Environment configuration inventory
 
@@ -815,7 +816,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/package.json`
 
 - **Purpose:** Node requirements, dependencies and npm commands.
-- **Type:** json; **size:** 509 bytes; **lines:** 21.
+- **Type:** json; **size:** 561 bytes; **lines:** 22.
 
 ### `threadly-v2/public/_headers`
 
