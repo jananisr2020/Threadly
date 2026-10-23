@@ -4,10 +4,11 @@ This runbook is a checklist, not evidence that production is already verified. D
 
 ## 1. Local / CI gates
 
-Run from `threadly-v2/`:
+Run from `threadly-v2/`. The build validates the 604-item bundled catalogue and compacts its JSON before Netlify publishes the static site:
 
 ```sh
 npm ci
+npm run build
 npm test
 npm run check
 npm run check:security
