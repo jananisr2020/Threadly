@@ -110,6 +110,13 @@ const server = http.createServer((req, res) => {
     assert.ok((await page.locator('#product .title').textContent()).includes('E2E Broken Image Hair Clip'), 'product card should navigate to a dedicated detail page');
     assert.ok((await page.locator('#product').textContent()).includes('₹150'), 'detail page should show the product price');
     assert.match(await page.locator('#product').textContent(), /Only 2 left|Limited availability/, 'detail page should show truthful low-stock status');
+    const productSchema = await page.locator('#product-jsonld').evaluate(el => JSON.parse(el.textContent));
+    assert.equal(productSchema['@type'], 'Product', 'product page should expose structured product metadata');
+    assert.equal(productSchema.offers.price, '150', 'structured offer should use the displayed product price');
+    await page.locator('#wishlist').click();
+    assert.ok(await page.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should add the product to wishlist');
+    await page.locator('#wishlist').click();
+    assert.ok(!(await page.evaluate(() => (JSON.parse(localStorage.getItem('tl_wl') || '[]')).includes('E2E001')), 'product detail page should remove the product from wishlist');
     const variants = page.locator('#options .option');
     assert.ok(await variants.count() >= 3, 'product detail page should show available colour variants');
     await variants.first().click();
