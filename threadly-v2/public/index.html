@@ -722,7 +722,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 (async()=>{ubtn();await loadSheet();S.cart=S.cart.filter(c=>P.some(p=>p.id===c.id));S.wl=new Set([...S.wl].filter(i=>P.some(p=>p.id===i)));applySig();renderNav();chips();render();seoInit();loadSignals();
   if(!ST.get('tl_cookie')||new URLSearchParams(location.search).get('cookies'))showCookie();
   if(new URLSearchParams(location.search).get('ticket'))openTicket();
-  const qs=new URLSearchParams(location.search),pp=qs.get('p');if(pp)openP(pp);else if(qs.get('checkout')==='1')checkoutStart();else if(qs.get('cart')==='1'){drawCart();show('#cov')}else if(qs.get('wishlist')==='1'){S.wv=true;render()}else if(qs.get('q')){$('#q').value=qs.get('q');render()}
+  const qs=new URLSearchParams(location.search),pp=qs.get('p');if(pp)openP(pp);else if(qs.get('checkout')==='1')checkoutStart();else if(qs.get('cart')==='1'){drawCart();show('#cov')}else if(qs.get('wishlist')==='1'){S.wv=true;render()}else if(qs.get('login')==='1')authUI('in');else if(qs.get('q')){$('#q').value=qs.get('q');render()}
   const rp=new URLSearchParams(location.search).get('reset');if(rp){resetTok=rp;resetUI()}})();
 </script>
 
