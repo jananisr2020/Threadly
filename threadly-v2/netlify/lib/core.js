@@ -746,7 +746,7 @@ const securityHealth = async (b, e) => {
       auditWrite = 'ok';
     } catch (x) { auditWrite = 'failed'; tabs.ActivityLog = why(x); }
   } else auditWrite = 'blocked_missing_configuration';
-  const required = ['SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'JWT_SECRET', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
+  const required = ['SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'JWT_SECRET', 'ADMIN_PASSWORD', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'BREVO_API_KEY', 'MAIL_FROM'];
   const missingRequired = required.filter(k => env[k] !== 'set');
   const failedTabs = Object.entries(tabs).filter(([, v]) => v !== 'ok').map(([k]) => k);
   const result = { checkedAt: now(), env, privateKey, tabs, auditWrite, overall: missingRequired.length || failedTabs.length || auditWrite !== 'ok' ? 'degraded' : 'ok', missingRequired, failedTabs };
