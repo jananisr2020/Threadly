@@ -12,7 +12,7 @@ This describes source code at a revision; it is not proof that production servic
 - Persistence: Google Sheets through threadly-v2/netlify/lib/sheets.js.
 - Payments: Razorpay; email depends on provider configuration.
 - Android wrapper: threadly-android/. CI: .github/workflows/.
-- Tracked files: **112**.
+- Tracked files: **113**.
 
 ### Directory map
 
@@ -926,7 +926,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/index.html`
 
 - **Purpose:** Customer storefront: catalogue, search, filters, sorting, product detail, wishlist, cart and checkout.
-- **Type:** html; **size:** 147,507 bytes; **lines:** 857.
+- **Type:** html; **size:** 143,505 bytes; **lines:** 839.
 - **Detected symbols (127):**
   - `function toast(t)`
   - `function parseCSV(t)` — ---- Google Sheet / products.csv loader ----
@@ -979,7 +979,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function loadRzp` — ---- payment window: loaded only when someone pays ----
   - `function productMeta(p)`
   - `function listingDetails(p)`
-  - `function openP(id)`
+  - `function openP(id)` — Product cards, search results and related-product links use a dedicated URL instead of a modal.
   - `function invoice(id)`
   - `function cmpBar`
   - `function cmpOpen`
@@ -1072,6 +1072,28 @@ Every tracked file is listed below except package lockfiles and this generated g
 - **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
 - **Type:** html; **size:** 9,779 bytes; **lines:** 28.
 - **Embedded JavaScript:** 2 inline script block(s). Inspect the HTML for complete UI behavior.
+
+### `threadly-v2/public/product.html`
+
+- **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
+- **Type:** html; **size:** 22,831 bytes; **lines:** 67.
+- **Detected symbols (15):**
+  - `function toast(msg)`
+  - `function productUrls(p)`
+  - `function normalizeProduct(p)`
+  - `function stockMarkup(p)`
+  - `function optionMarkup(p)`
+  - `function highlights(p)`
+  - `function renderProduct(p)`
+  - `function cartCount`
+  - `function addToCart(buy)`
+  - `function showPhoto(i)`
+  - `function renderRatings(data)`
+  - `function loadReviews`
+  - `function loadProduct`
+  - `function $(s)`
+  - `function stored(k)`
+- **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/products.csv`
 
