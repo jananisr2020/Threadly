@@ -1437,6 +1437,57 @@ async function rejectsWith(items, pattern) {
 
 
 
+  await check('cancellation/return inventory restoration is journaled and idempotent', async () => {
+    const previousSheets = mockedSheets;
+    const previousRows = rows.map(row => row.slice());
+    const previousAppends = appendedRows.length;
+    const previousUpdates = updatedRows.length;
+    const originalStock = rows[1][4];
+    const savedOrder = { id: 'RESTORE-ORDER-1', qty: [['JN0001', 2]] };
+    const orderRow = Array(20).fill('');
+    orderRow[0] = savedOrder.id;
+    orderRow[14] = 'Paid';
+    orderRow[19] = 'STOCK_SYNCED';
+    mockedSheets = {
+      Products: rows.map(row => row.slice()),
+      Pending: [['Razorpay Order ID', 'Order Data', 'Created', 'Status'], ['rzp_restore_1', JSON.stringify(savedOrder), '', 'recorded']],
+      InventoryMovements: [['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes']]
+    };
+    try {
+      assert.equal(await _t.restoreInventoryForOrder(savedOrder.id, 'CANCEL_RESTOCK', orderRow), true);
+      assert.equal(mockedSheets.Products[1][4], Number(originalStock) + 2);
+      assert.equal(mockedSheets.InventoryMovements.length, 2);
+      assert.equal(mockedSheets.InventoryMovements[1][5], 'APPLIED');
+      assert.equal(await _t.restoreInventoryForOrder(savedOrder.id, 'CANCEL_RESTOCK', orderRow), true);
+      assert.equal(mockedSheets.Products[1][4], Number(originalStock) + 2, 'retry must not restock twice');
+      assert.equal(mockedSheets.InventoryMovements.length, 2, 'retry must reuse the journal entry');
+    } finally {
+      mockedSheets = previousSheets;
+      rows.splice(0, rows.length, ...previousRows);
+      appendedRows.splice(previousAppends);
+      updatedRows.splice(previousUpdates);
+    }
+  });
+  await check('inventory restoration fails closed when a prior movement is still pending', async () => {
+    const previousSheets = mockedSheets;
+    const savedOrder = { id: 'RESTORE-ORDER-2', qty: [['JN0001', 1]] };
+    const orderRow = Array(20).fill('');
+    orderRow[0] = savedOrder.id;
+    orderRow[14] = 'Paid';
+    orderRow[19] = 'STOCK_SYNCED';
+    const key = savedOrder.id + '|RETURN_RESTOCK|JN0001';
+    mockedSheets = {
+      Products: rows.map(row => row.slice()),
+      Pending: [['Razorpay Order ID', 'Order Data', 'Created', 'Status'], ['rzp_restore_2', JSON.stringify(savedOrder), '', 'recorded']],
+      InventoryMovements: [['Movement ID', 'Order ID', 'Movement Type', 'Product ID', 'Quantity Delta', 'Status', 'Created', 'Updated', 'Notes'], [key, savedOrder.id, 'RETURN_RESTOCK', 'JN0001', 1, 'PENDING', '', '', 'test']]
+    };
+    try {
+      await assert.rejects(() => _t.restoreInventoryForOrder(savedOrder.id, 'RETURN_RESTOCK', orderRow), /pending reconciliation/i);
+      assert.equal(mockedSheets.Products[1][4], rows[1][4], 'pending movement must not mutate stock again');
+    } finally {
+      mockedSheets = previousSheets;
+    }
+  });
   const failed = cases.filter(x => !x.ok);
   process.stdout.write('\n' + (cases.length - failed.length) + '/' + cases.length + ' checkout tests passed.\n');
   if (failed.length) process.exitCode = 1;
