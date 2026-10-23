@@ -382,7 +382,6 @@ async function record(o, payStatus, payId) {
       row[si] = current - n;
       await sheets.update('Products', p.row, row);
       rows[p.row - 1] = row;
-      await appendInventoryMovement(o.id, 'SALE', id, -n, 'APPLIED', 'Stock decremented for captured payment.');
     }
     invalidate();
     const orderRows = await sheets.read('Orders');
@@ -949,4 +948,4 @@ const admin = async (b, e) => {
   }
   throw new E('Unknown action.');
 };
-module.exports = { E, json, wrap, products, signup, login, customerProfile, updateCustomerProfile, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, restoreInventoryForOrder, appendInventoryMovement, setRazorpayOverride: client => { razorpayOverride = client || null }, safeActivityDetails } };
+module.exports = { E, json, wrap, products, signup, login, customerProfile, updateCustomerProfile, forgot, reset, webhook, health, securityHealth, reviews, addReview, returnRequest, myRequests, ticket, myTickets, pincode, signals, visibleIds, trackWebsiteActivity, sellerApply, sellerActivate, sellerLogin, sellerProducts, sellerOrders, placeCod, createOrder, verifyPayment, myOrders, admin, _t: { price, nk, csv, recordPaid, buildOrder, restoreInventoryForOrder, setRazorpayOverride: client => { razorpayOverride = client || null }, safeActivityDetails } };
