@@ -153,3 +153,15 @@ Source: [coupons.js](../threadly-v2/netlify/lib/coupons.js)
 - Some API wrappers expose the same core handler under different routes. Follow the corresponding file in `threadly-v2/netlify/functions/` to see the public endpoint name, HTTP method and auth mode.
 - Descriptions are grounded in the current implementation; the source remains authoritative. In particular, Google Sheets does not provide transactions or uniqueness constraints, in-memory rate limiting is per process, and payment/stock/seller reconciliation can require operational review.
 - This reference is an engineering aid, not a claim that every workflow is production-ready or independently security-audited.
+
+## Product-image QA CSV exporter — `threadly-v2/scripts/export-image-qa.js`
+
+Source: [export-image-qa.js](../threadly-v2/scripts/export-image-qa.js). The script reads `threadly-v2/public/catalog.json` and writes `PRODUCT_IMAGE_QA.csv` at the repository root. The output is a review template, not proof that images are licensed or approved.
+
+| Function | Inputs | What it does / result | Side effects and failure behavior |
+|---|---|---|---|
+| `cell(value)` | Any scalar-like value | Trims and CSV-quotes the value, doubles embedded quote characters, and prefixes spreadsheet-formula-leading values (`=`, `+`, `@`, `-`) with an apostrophe after trimming whitespace. | Pure transformation; intended to reduce CSV formula injection risk when opened in spreadsheet software. |
+| `get(product, keys)` | Product object and ordered candidate key names | Returns the first non-empty value found, or an empty string. Supports common catalogue field-name variants. | No I/O. |
+| `main()` | None; reads the configured catalogue path | Accepts either a product array or an object with a `products` array; writes a UTF-8-BOM CSV with product identity, current/replacement image, source, permission, QA status and reviewer-note columns. Prints product, missing-image and duplicate-key counts. | Reads the bundled catalogue and writes/overwrites `PRODUCT_IMAGE_QA.csv`. Invalid JSON, unreadable input or an unsupported catalogue shape fails the command with a nonzero exit code. The generated rows default to `Needs QA` or `Image needed`; human review is still required. |
+
+Regression coverage: run `npm run test:images-qa`, or run `npm run check` (which includes this test). The tests cover formula-like cells including leading whitespace, CSV quote escaping, null values and field fallback. Run `npm run images:qa` to generate the review template.
