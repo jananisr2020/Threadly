@@ -314,7 +314,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
 - **Purpose:** V1 backlog with completion evidence and release risks.
-- **Type:** md; **size:** 29,770 bytes; **lines:** 144.
+- **Type:** md; **size:** 30,573 bytes; **lines:** 147.
 
 ### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
 
@@ -698,15 +698,17 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/netlify/lib/core.js`
 
 - **Purpose:** Shared server business rules: auth, validation, customer accounts, checkout, Razorpay verification, orders, inventory sync, support, sellers and admin.
-- **Type:** js; **size:** 78,732 bytes; **lines:** 884.
+- **Type:** js; **size:** 84,581 bytes; **lines:** 953.
 - **Imports/dependencies:** `./sheets`, `bcryptjs`, `jsonwebtoken`, `crypto`, `razorpay`, `./coupons`.
-- **Detected symbols (82):**
+- **Detected symbols (84):**
   - `class E`
   - `function publicProductRows(force = false)`
   - `function catalogue(force = false)`
   - `function price(items, coupon)`
   - `function buildOrder(b, u)`
   - `function record(o, payStatus, payId)`
+  - `function appendInventoryMovement(orderId, type, productId, delta, status, notes)`
+  - `function restoreInventoryForOrder(orderId, movementType, orderRow)`
   - `function markPending(id, status)`
   - `function ensureSellerOrders(o, payId)`
   - `function ensureSellerLedger(parentOrderId)`
@@ -1229,7 +1231,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-checkout.js`
 
 - **Purpose:** Backend/checkout regression suite.
-- **Type:** js; **size:** 103,214 bytes; **lines:** 1442.
+- **Type:** js; **size:** 105,394 bytes; **lines:** 1465.
 - **Imports/dependencies:** `node:assert/strict`, `node:crypto`, `../netlify/lib/sheets`, `jsonwebtoken`, `bcryptjs`, `../netlify/lib/coupons`, `../netlify/lib/core`.
 - **Detected symbols (5):**
   - `function check(name, fn)`
