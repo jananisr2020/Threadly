@@ -315,7 +315,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
 - **Purpose:** V1 backlog with completion evidence and release risks.
-- **Type:** md; **size:** 34,345 bytes; **lines:** 152.
+- **Type:** md; **size:** 34,664 bytes; **lines:** 152.
 
 ### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
 
