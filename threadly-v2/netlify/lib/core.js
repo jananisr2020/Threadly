@@ -868,6 +868,42 @@ const admin = async (b, e) => {
     await sheets.update('Pending', pendingIndex + 1, pendingRow);
     return { ok: true, status: 'expired_unpaid', razorpayOrderId, orderId: String(saved.id) };
   }
+  if (b.action === 'confirmInventoryReconciled') {
+    const movementId = String(b.movementId || '').trim().slice(0, 120);
+    const productId = clean(b.productId);
+    const expectedStock = Number(b.expectedStock);
+    const reviewNote = clean(b.note).slice(0, 160);
+    if (!movementId || !productId) throw new E('Choose an inventory movement and product.');
+    if (!Number.isInteger(expectedStock) || expectedStock < 0 || expectedStock > 1000000) throw new E('Enter the verified whole-number stock count.');
+    if (reviewNote.length < 20) throw new E('Add a review note of at least 20 characters, including how stock was verified.');
+    const [movementRows, productRowsRaw, orderRows] = await Promise.all([sheets.read('InventoryMovements'), sheets.read('Products'), sheets.read('Orders')]);
+    const movementIndex = movementRows.findIndex((r, i) => i > 0 && String(r[0] || '') === movementId);
+    if (movementIndex < 1) throw new E('Inventory movement not found.', 404);
+    const movement = movementRows[movementIndex].slice();
+    if (String(movement[3] || '') !== productId) throw new E('The product does not match this movement.', 409);
+    if (['APPLIED', 'SKIPPED_UNTRACKED'].includes(String(movement[5] || ''))) throw new E('This movement is already finalized and cannot be manually reconciled.', 409);
+    const productIndex = productRowsRaw.findIndex((r, i) => i > 0 && String(r[0] || '') === productId);
+    if (productIndex < 1) throw new E('Product not found in the Products sheet.', 404);
+    const actualStock = Number(String(productRowsRaw[productIndex][9] == null ? '' : productRowsRaw[productIndex][9]).replace(/[^0-9.-]/g, ''));
+    if (!Number.isInteger(actualStock) || actualStock !== expectedStock) throw new E('Verified stock count does not match the current Products sheet. No reconciliation was recorded.', 409);
+    const orderIndex = orderRows.findIndex((r, i) => i > 0 && String(r[OIDX.id] || '') === String(movement[1] || ''));
+    if (orderIndex < 1) throw new E('Related order not found. Keep this movement for manual review.', 404);
+    const orderRow = orderRows[orderIndex].slice();
+    if (!['Paid', 'Refunded', 'Refund pending', 'Refund initiated'].includes(String(orderRow[OIDX.pay] || ''))) throw new E('Only a verified online-paid order can be reconciled here.', 409);
+    movement[5] = 'MANUALLY_RECONCILED';
+    movement[7] = now();
+    movement[8] = ('Manual reconciliation confirmed by admin; stock=' + expectedStock + '; ' + reviewNote).slice(0, 180);
+    await sheets.update('InventoryMovements', movementIndex + 1, movement);
+    const related = movementRows.slice(1).filter(r => String(r[1] || '') === String(movement[1] || ''));
+    const allResolved = related.length > 0 && related.every(r => ['APPLIED', 'SKIPPED_UNTRACKED', 'MANUALLY_RECONCILED'].includes(String(r[5] || '')));
+    let orderUpdated = false;
+    if (allResolved && /^(STOCK_SYNC_PENDING|STOCK_RECONCILIATION_REQUIRED:)/.test(String(orderRow[OIDX.notes] || ''))) {
+      orderRow[OIDX.notes] = ('STOCK_RECONCILED_MANUALLY: ' + now() + ' | ' + reviewNote).slice(0, 500);
+      await sheets.update('Orders', orderIndex + 1, orderRow);
+      orderUpdated = true;
+    }
+    return { ok: true, status: 'MANUALLY_RECONCILED', movementId, orderId: String(movement[1] || ''), productId, verifiedStock: expectedStock, orderUpdated };
+  }
   if (b.action === 'updateOrder') {
     const rows = await sheets.read('Orders'), i = rows.findIndex((r, k) => k > 0 && r[0] === b.id); if (i < 0) throw new E('Order not found.', 404);
     const row = Array.from({ length: 20 }, (_, j) => rows[i][j] == null ? '' : rows[i][j]);
