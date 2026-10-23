@@ -730,7 +730,7 @@ const securityHealth = async (b, e) => {
   const key = process.env.GOOGLE_PRIVATE_KEY || '';
   const privateKey = !key ? 'MISSING' : (!/BEGIN PRIVATE KEY/.test(key) || !/END PRIVATE KEY/.test(key)) ? 'format_check_failed' : /^\s*["']/.test(key) ? 'remove_wrapping_quotes' : 'format_looks_ok';
   const tabs = {};
-  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets', 'ActivityLog', 'WebsiteActivity']) {
+  for (const t of ['Products', 'Users', 'Orders', 'Pending', 'Reviews', 'Requests', 'Tickets', 'Sellers', 'SellerOrders', 'SellerLedger', 'InventoryMovements', 'ActivityLog', 'WebsiteActivity']) {
     try {
       if (t === 'ActivityLog') await sheets.ensureTab(t, ACTIVITY_HEADERS);
       else if (t === 'WebsiteActivity') await sheets.ensureTab(t, WEBSITE_ACTIVITY_HEADERS);
