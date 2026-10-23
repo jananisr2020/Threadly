@@ -835,8 +835,8 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/admin.html`
 
 - **Purpose:** Admin dashboard for catalogue, orders, customers, reviews, support and marketplace operations.
-- **Type:** html; **size:** 30,103 bytes; **lines:** 116.
-- **Detected symbols (19):**
+- **Type:** html; **size:** 31,383 bytes; **lines:** 128.
+- **Detected symbols (20):**
   - `function api(b)`
   - `function out`
   - `function load`
@@ -856,6 +856,7 @@ Every tracked file is listed below except package lockfiles and this generated g
   - `function edit(p)`
   - `function $(s)`
   - `function toast(t)`
+  - `function csvCell(value)`
 - **Embedded JavaScript:** 1 inline script block(s). Inspect the HTML for complete UI behavior.
 
 ### `threadly-v2/public/apple-touch-icon.png`
