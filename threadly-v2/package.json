@@ -16,6 +16,7 @@
     "check:security": "node scripts/check-security-config.js",
     "test": "node scripts/test-checkout.js",
     "build": "node scripts/build-catalog.js",
-    "images:qa": "node scripts/export-image-qa.js"
+    "images:qa": "node scripts/export-image-qa.js",
+    "test:images-qa": "node scripts/test-image-qa.js"
   }
 }
