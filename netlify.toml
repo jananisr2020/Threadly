@@ -1,5 +1,6 @@
 [build]
   base = "threadly-v2"
+  command = "npm run build"
   publish = "public"
   functions = "netlify/functions"
 
