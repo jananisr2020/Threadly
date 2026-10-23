@@ -15,6 +15,7 @@
     "check": "node scripts/check-links.js && node scripts/check-netlify-config.js",
     "check:security": "node scripts/check-security-config.js",
     "test": "node scripts/test-checkout.js",
-    "build": "node scripts/build-catalog.js"
+    "build": "node scripts/build-catalog.js",
+    "images:qa": "node scripts/export-image-qa.js"
   }
 }
