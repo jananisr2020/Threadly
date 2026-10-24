@@ -12,6 +12,6 @@ assert.equal(cell(null), '""');
 assert.equal(get({ id: 'JN1', title: 'Clip' }, ['id']), 'JN1');
 assert.equal(get({ id: '', title: 'Clip' }, ['id', 'title']), 'Clip');
 const csv = serialize([['Product ID', 'Product Name'], ['JN1', 'Clip, "gold"']]);
-assert.equal(csv, '"Product ID","Product Name"\\r\\n"JN1","Clip, ""gold"""\\r\\n', 'CSV headers and data must be escaped exactly once');
-assert.equal(csv.split('\\r\\n')[1].split(',').length, 3, 'quoted commas must remain inside a single CSV field');
+assert.equal(csv, '"Product ID","Product Name"\r\n"JN1","Clip, ""gold"""\r\n', 'CSV headers and data must be escaped exactly once');
+assert.equal(csv.split('\r\n')[1].split(',').length, 3, 'quoted commas must remain inside a single CSV field');
 console.log('Image QA exporter tests passed (formula injection, CSV escaping, nulls, field fallback and full-row serialization).');
