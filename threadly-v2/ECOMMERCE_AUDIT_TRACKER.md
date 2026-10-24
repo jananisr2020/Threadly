@@ -220,3 +220,13 @@ Comparison set: Meesho, Myntra, Amazon, Flipkart
 - Catalogue timeout/retry (2026-10-22): added a 12-second default timeout to live/bundled catalogue fetches and a deterministic slow-response test with retry recovery. The new timeout test's workflow is queued at https://github.com/jananisr2020/Threadly/actions/runs/39793475978; earlier outage/retry browser coverage passed at https://github.com/jananisr2020/Threadly/actions/runs/39792792109. T70 remains open until the timeout run passes and broader major-page states are covered.
 
 - Release-blocker clarification (2026-10-22): stock validation is not a concurrency-safe reservation because Google Sheets read/update is non-transactional; cancellation/return restocking lacks an idempotent inventory-movement ledger. Also, the published return policy promises a 7-day/category-specific window while the API currently checks only `Delivered`. T25, T41 and T55 remain open until these gaps are implemented and tested. Keep seller sales disabled; do not sign off V1 on CI alone.
+
+## 2026-10-24 — continuation checkpoint
+- V1 fixed-scope status: **74/80 complete; 6 outstanding** (T25, T45, T61, T64, T79, T80).
+- Product detail includes tested **People also viewed** and **Similar products you may like** rails; see backlog evidence for commit `62a2ea94`.
+- Do not mark T25 complete until concurrency-safe inventory reservation is backed by an actually transactional primitive; Google Sheets alone is not atomic.
+- Do not mark T45 complete until the SMS provider, consent/rate-limit controls and real delivery are verified.
+- Do not mark T61 complete until real product-specific, rights-cleared images are reviewed.
+- Do not mark T64 complete until install prompt is verified on a physical Android device.
+- Do not mark T79/T80 complete until production smoke tests and sign-off are evidenced against the exact deployed commit.
+- Guardrails remain: COD disabled, seller sales disabled pending inventory/settlement safeguards, and selling prices capped at ₹500.
