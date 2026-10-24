@@ -337,6 +337,12 @@ const server = http.createServer((req, res) => {
     assert.equal(await mobilePage.locator('#related h2').textContent(), 'Similar products you may like', 'product detail should show a similar-products rail');
     assert.ok(await mobilePage.locator('#people-also-viewed-grid .related-card').count() <= 4, 'People also viewed should stay a compact rail');
     assert.ok(await mobilePage.locator('#related-grid .related-card').count() <= 4, 'similar products should stay a compact rail');
+    for (const railSelector of ['#people-also-viewed-grid', '#related-grid']) {
+      const railStyle = await mobilePage.locator(railSelector).evaluate(el => ({ flow: getComputedStyle(el).gridAutoFlow, overflowX: getComputedStyle(el).overflowX, cardSnap: getComputedStyle(el.querySelector('.related-card')).scrollSnapAlign }));
+      assert.equal(railStyle.flow, 'column', `${railSelector} should render as a horizontal product rail`);
+      assert.equal(railStyle.overflowX, 'auto', `${railSelector} should allow horizontal scrolling`);
+      assert.equal(railStyle.cardSnap, 'start', `${railSelector} cards should snap neatly into view`);
+    }
     const mobileSize = mobilePage.locator('#options .option').first();
     if (await mobileSize.count()) await mobileSize.click();
     await mobilePage.locator('#add').click();
