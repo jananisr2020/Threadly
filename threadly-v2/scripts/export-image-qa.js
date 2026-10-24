@@ -12,6 +12,9 @@ function cell(value) {
   if (/^\s*[=+@-]/.test(text)) text = "'" + text;
   return '"' + text.replace(/"/g, '""') + '"';
 }
+function serialize(rows) {
+  return serialize(rows);
+}
 function get(product, keys) {
   for (const key of keys) if (product[key] != null && String(product[key]).trim()) return product[key];
   return '';
@@ -48,4 +51,4 @@ if (require.main === module) {
   try { main(); } catch (error) { console.error('Image QA export failed: ' + error.message); process.exitCode = 1; }
 }
 
-module.exports = { cell, get, main };
+module.exports = { cell, get, main, serialize };
