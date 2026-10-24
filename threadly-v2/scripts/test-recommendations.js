@@ -16,7 +16,7 @@ const products = [
 ];
 
 const picks = rankRelatedProducts(current, products, 4);
-assert.deepEqual(picks.map(p => p.id), ['JN2', 'JN4', 'JN3'].slice(0, 4).filter(id => picks.some(p => p.id === id)).length === 0 ? [] : picks.map(p => p.id));
+assert.deepEqual(picks.map(p => p.id), ['JN2', 'JN3', 'JN4']);
 // Current product, invalid prices, hidden/unapproved products must never be recommended.
 assert(!picks.some(p => ['JN1', 'JN5', 'JN6', 'JN7', 'JN8'].includes(p.id)));
 assert.equal(picks[0].id, 'JN2', 'closest same-category/style/material product ranks first');
