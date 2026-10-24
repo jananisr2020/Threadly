@@ -39,7 +39,7 @@ function main() {
     counts[a.status] = (counts[a.status] || 0) + 1;
     rows.push([a.id, a.name, a.primary, a.source, a.rights, a.status, a.viewCount]);
   }
-  fs.writeFileSync(reportPath, '\\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\\r\\n') + '\\r\\n', 'utf8');
+  fs.writeFileSync(reportPath, '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n', 'utf8');
   console.log(JSON.stringify({ products: products.length, statuses: counts, report: reportPath, note: 'No image is approved by this automated audit; human product-match and rights review is required.' }, null, 2));
   return { products: products.length, statuses: counts };
 }
