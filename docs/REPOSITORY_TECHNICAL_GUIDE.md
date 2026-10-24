@@ -12,7 +12,7 @@ This describes source code at a revision; it is not proof that production servic
 - Persistence: Google Sheets through threadly-v2/netlify/lib/sheets.js.
 - Payments: Razorpay; email depends on provider configuration.
 - Android wrapper: threadly-android/. CI: .github/workflows/.
-- Tracked files: **119**.
+- Tracked files: **117**.
 
 ### Directory map
 
@@ -1081,7 +1081,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/public/product.html`
 
 - **Purpose:** Static storefront/admin/seller page or policy; browser logic may be embedded.
-- **Type:** html; **size:** 34,946 bytes; **lines:** 81.
+- **Type:** html; **size:** 35,447 bytes; **lines:** 81.
 - **Detected symbols (27):**
   - `function toast(msg)`
   - `function productUrls(p)`
@@ -1116,15 +1116,6 @@ Every tracked file is listed below except package lockfiles and this generated g
 
 - **Purpose:** Public static asset/configuration; never include secrets or private data.
 - **Type:** csv; **size:** 27,965 bytes; **lines:** 302.
-
-### `threadly-v2/public/recommendations.js`
-
-- **Purpose:** Public static asset/configuration; never include secrets or private data.
-- **Type:** js; **size:** 2,607 bytes; **lines:** 54.
-- **Detected symbols (3):**
-  - `function rankRelatedProducts(current, products, limit = 4)` — @param {object[]} products - Public catalogue products. @param {number} limit - Maximum recommendations to return. @returns {object[]} A new array of ranked products, excluding the current item. 
-  - `function clean(value)`
-  - `function score(item)`
 
 ### `threadly-v2/public/refund-policy.html`
 
@@ -1320,12 +1311,6 @@ Every tracked file is listed below except package lockfiles and this generated g
 - **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
 - **Type:** js; **size:** 714 bytes; **lines:** 15.
 - **Imports/dependencies:** `node:assert/strict`, `./export-image-qa`.
-
-### `threadly-v2/scripts/test-recommendations.js`
-
-- **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
-- **Type:** js; **size:** 1,514 bytes; **lines:** 28.
-- **Imports/dependencies:** `node:assert/strict`, `../public/recommendations`.
 
 ### `threadly-v2/scripts/test-storefront-e2e.js`
 
