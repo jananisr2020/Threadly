@@ -13,7 +13,7 @@ function cell(value) {
   return '"' + text.replace(/"/g, '""') + '"';
 }
 function serialize(rows) {
-  return serialize(rows);
+  return rows.map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }
 function get(product, keys) {
   for (const key of keys) if (product[key] != null && String(product[key]).trim()) return product[key];
