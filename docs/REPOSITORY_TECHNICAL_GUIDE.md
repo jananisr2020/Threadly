@@ -307,7 +307,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/ECOMMERCE_AUDIT_TRACKER.md`
 
 - **Purpose:** Ecommerce feature audit and benchmark tracker.
-- **Type:** md; **size:** 40,266 bytes; **lines:** 223.
+- **Type:** md; **size:** 41,252 bytes; **lines:** 233.
 
 ### `threadly-v2/JUNO_RELEASE_RUNBOOK.md`
 
@@ -317,7 +317,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/JUNO_V1_BACKLOG.md`
 
 - **Purpose:** V1 backlog with completion evidence and release risks.
-- **Type:** md; **size:** 42,688 bytes; **lines:** 178.
+- **Type:** md; **size:** 43,854 bytes; **lines:** 180.
 
 ### `threadly-v2/LOCAL_IMAGE_GENERATION.md`
 
