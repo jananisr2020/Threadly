@@ -46,7 +46,7 @@ async function run() {
   assert.equal(call.url, 'https://project.supabase.co/rest/v1/rpc/juno_commit_inventory');
   await inv.release('checkout-12345678', 'expired', options);
   assert.equal(call.url, 'https://project.supabase.co/rest/v1/rpc/juno_release_inventory');
-  assert.throws(() => inv.release('checkout-12345678', 'anything', options),
+  await assert.rejects(() => inv.release('checkout-12345678', 'anything', options),
     e => e.code === 'INVENTORY_INVALID_RELEASE');
 
   await assert.rejects(() => inv.reserve('checkout-12345678', [{ id: 'JN0001', quantity: 1 }], {
