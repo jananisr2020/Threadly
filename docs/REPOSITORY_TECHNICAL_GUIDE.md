@@ -1238,10 +1238,11 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/export-image-qa.js`
 
 - **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
-- **Type:** js; **size:** 2,647 bytes; **lines:** 52.
+- **Type:** js; **size:** 2,760 bytes; **lines:** 55.
 - **Imports/dependencies:** `node:fs`, `node:path`.
-- **Detected symbols (3):**
+- **Detected symbols (4):**
   - `function cell(value)`
+  - `function serialize(rows)`
   - `function get(product, keys)`
   - `function main`
 
@@ -1309,7 +1310,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/test-image-qa.js`
 
 - **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
-- **Type:** js; **size:** 714 bytes; **lines:** 15.
+- **Type:** js; **size:** 1,082 bytes; **lines:** 18.
 - **Imports/dependencies:** `node:assert/strict`, `./export-image-qa`.
 
 ### `threadly-v2/scripts/test-storefront-e2e.js`
