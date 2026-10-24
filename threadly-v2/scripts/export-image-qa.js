@@ -37,9 +37,9 @@ function main() {
     if (key && seen.has(key)) duplicates++;
     if (key) seen.add(key);
     if (!image) missing++;
-    rows.push([id, name, category, price, image, '', '', '', image ? 'Needs QA' : 'Image needed', 'Use a real photo matching this exact product; verify rights, variant, crop and mobile readability.'].map(cell));
+    rows.push([id, name, category, price, image, '', '', '', image ? 'Needs QA' : 'Image needed', 'Use a real photo matching this exact product; verify rights, variant, crop and mobile readability.']);
   }
-  fs.writeFileSync(output, '\uFEFF' + rows.map(row => Array.isArray(row) && typeof row[0] === 'string' ? row.join(',') : row.map(cell).join(',')).join('\r\n') + '\r\n', 'utf8');
+  fs.writeFileSync(output, '\uFEFF' + rows.map(row => row.map(cell).join(',')).join('\r\n') + '\r\n', 'utf8');
   console.log('Product image QA CSV created: ' + output);
   console.log('Products: ' + products.length + '; missing image URLs: ' + missing + '; duplicate IDs/names: ' + duplicates);
   console.log('Do not treat this template as image approval; fill source/permission fields and set QA Status to Approved only after human review.');
