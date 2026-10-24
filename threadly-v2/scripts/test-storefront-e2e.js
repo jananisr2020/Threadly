@@ -331,6 +331,12 @@ const server = http.createServer((req, res) => {
     await page.locator('#grid .p').first().click();
     const mobilePage = await mobilePopupPromise;
     await mobilePage.waitForSelector('#product .title');
+    await mobilePage.waitForSelector('#people-also-viewed-grid .related-card');
+    await mobilePage.waitForSelector('#related-grid .related-card');
+    assert.equal(await mobilePage.locator('#people-also-viewed h2').textContent(), 'People also viewed', 'product detail should show a People also viewed rail');
+    assert.equal(await mobilePage.locator('#related h2').textContent(), 'Similar products you may like', 'product detail should show a similar-products rail');
+    assert.ok(await mobilePage.locator('#people-also-viewed-grid .related-card').count() <= 4, 'People also viewed should stay a compact rail');
+    assert.ok(await mobilePage.locator('#related-grid .related-card').count() <= 4, 'similar products should stay a compact rail');
     const mobileSize = mobilePage.locator('#options .option').first();
     if (await mobileSize.count()) await mobileSize.click();
     await mobilePage.locator('#add').click();
