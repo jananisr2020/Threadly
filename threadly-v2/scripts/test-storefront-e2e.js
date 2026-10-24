@@ -346,7 +346,7 @@ const server = http.createServer((req, res) => {
     assert.ok(similarIds.every(id => id && id !== currentProductId), 'similar-products rail must not recommend the product currently open');
     assert.ok(similarIds.every(id => !peopleViewedIds.includes(id)), 'People also viewed and similar-products rails should not duplicate products');
     const recommendationHref = await mobilePage.locator('#people-also-viewed-grid .related-card').first().getAttribute('href');
-    assert.match(recommendationHref, /^\\/product\\.html\\?p=/, 'recommended products should open their own product detail page');
+    assert.match(recommendationHref, /^\/product\.html\?p=/, 'recommended products should open their own product detail page');
     for (const railSelector of ['#people-also-viewed-grid', '#related-grid']) {
       const railStyle = await mobilePage.locator(railSelector).evaluate(el => ({ flow: getComputedStyle(el).gridAutoFlow, overflowX: getComputedStyle(el).overflowX, cardSnap: getComputedStyle(el.querySelector('.related-card')).scrollSnapAlign }));
       assert.equal(railStyle.flow, 'column', `${railSelector} should render as a horizontal product rail`);
