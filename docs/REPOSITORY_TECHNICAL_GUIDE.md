@@ -1238,7 +1238,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/scripts/export-image-qa.js`
 
 - **Purpose:** Juno test, validation or optional image workflow; inspect source/dependencies before running.
-- **Type:** js; **size:** 2,724 bytes; **lines:** 52.
+- **Type:** js; **size:** 2,647 bytes; **lines:** 52.
 - **Imports/dependencies:** `node:fs`, `node:path`.
 - **Detected symbols (3):**
   - `function cell(value)`
