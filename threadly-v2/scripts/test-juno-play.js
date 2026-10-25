@@ -10,7 +10,8 @@ for(const feature of ['Daily Accessory Trivia','Match the Accessories','Tic-Tac-
 for(const hook of ['showTrivia','resetMemory','moveTtt','lastSpin','drawVibe','drawGuess'])if(!js.includes(hook))throw new Error('Missing game logic: '+hook);
 if(!js.includes('juno_play_v1'))throw new Error('Progress storage key is missing');
 if(!js.includes('data.lastSpin===today()'))throw new Error('Daily spin restriction missing');
-if(!home.includes('/games.html')||!home.includes('JUNO PLAY &amp; DISCOVER'))throw new Error('Homepage Juno Play entry missing');
+if(!home.includes('/games.html')||!home.includes('A TINY BREAK · JUNO PLAY')||!home.includes('home-play-shop'))throw new Error('Compact homepage Juno Play entry missing');
+if(!js.includes("href=\"/?q=\'+encodeURIComponent(rec[result].query)+'\""))throw new Error('Style quiz does not link to catalogue search');
 if(!sw.includes('"/games.html"')||!sw.includes('juno-shell-v6'))throw new Error('Service worker shell cache not updated');
 if(!css.includes('@media(max-width:700px)'))throw new Error('Responsive layout missing');
 console.log('Juno Play checks passed: 6 game modules, home entry, local progress and PWA shell.');
