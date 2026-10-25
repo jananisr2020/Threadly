@@ -6,6 +6,7 @@ const SHELL_URLS = [
   "/",
   "/index.html",
   "/product.html",
+  "/customer-experience.js",
   "/games.html",
   "/games.css",
   "/games.js",
