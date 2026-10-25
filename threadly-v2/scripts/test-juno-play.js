@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..','public');
+const read=name=>fs.readFileSync(path.join(root,name),'utf8');
+const html=read('games.html'),css=read('games.css'),js=read('games.js'),home=read('index.html'),sw=read('sw.js');
+const requiredHtml=['quiz-question','memory-board','ttt-board','spin-button','vibe-quiz','guess-options','games-played'];
+for(const id of requiredHtml)if(!html.includes('id="'+id+'"'))throw new Error('Missing Juno Play element: '+id);
+for(const feature of ['Daily Accessory Trivia','Match the Accessories','Tic-Tac-Toe','Spin & Discover','Find Your Accessory Vibe','Guess the Accessory'])if(!html.includes(feature))throw new Error('Missing game: '+feature);
+for(const hook of ['showTrivia','resetMemory','moveTtt','lastSpin','drawVibe','drawGuess'])if(!js.includes(hook))throw new Error('Missing game logic: '+hook);
+if(!js.includes('juno_play_v1'))throw new Error('Progress storage key is missing');
+if(!js.includes('data.lastSpin===today()'))throw new Error('Daily spin restriction missing');
+if(!home.includes('/games.html')||!home.includes('JUNO PLAY &amp; DISCOVER'))throw new Error('Homepage Juno Play entry missing');
+if(!sw.includes('"/games.html"')||!sw.includes('juno-shell-v6'))throw new Error('Service worker shell cache not updated');
+if(!css.includes('@media(max-width:700px)'))throw new Error('Responsive layout missing');
+console.log('Juno Play checks passed: 6 game modules, home entry, local progress and PWA shell.');
