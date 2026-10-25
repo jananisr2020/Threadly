@@ -136,7 +136,7 @@
       let shown=0;
       cards.forEach(card=>{
         const priceText=card.querySelector('.pr b')?.textContent||'';
-        const price=Number(priceText.replace(/[^\\d]/g,''))||0;
+        const price=Number(priceText.replace(/[^\d]/g,''))||0;
         const visible=!max||(price>0&&price<=max);
         card.hidden=!visible;if(visible)shown++;
       });
