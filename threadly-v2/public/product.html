@@ -78,4 +78,5 @@ $('#search-form').addEventListener('submit',e=>{e.preventDefault();location.href
 $('#back').addEventListener('click',e=>{try{if(history.length>1&&document.referrer&&new URL(document.referrer).origin===location.origin){e.preventDefault();history.back()}}catch(_){}});
 loadProduct();
 </script>
+<script src="/customer-experience.js" defer></script>
 </body></html>
