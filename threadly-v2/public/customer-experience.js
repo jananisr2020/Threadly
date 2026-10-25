@@ -73,6 +73,7 @@
   }
   function rank(products,currentId){
     const s=getSignals(), viewed=new Set((s.views||[]).map(String)),cats=new Map(),terms=new Map();
+    (s.searches||[]).forEach(q=>String(q).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2).forEach(w=>terms.set(w,(terms.get(w)||0)+2)));
     products.filter(p=>viewed.has(p.id)).forEach(p=>{
       cats.set(p.category,(cats.get(p.category)||0)+4);
       String(p.name+' '+p.details).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>3).forEach(w=>terms.set(w,(terms.get(w)||0)+1));
@@ -105,7 +106,7 @@
       const fallback=section('Popular budget finds','A few well-rated picks to start exploring.',popular,'Popular pick');
       if(fallback)sections.push(fallback);
     }
-    const bands=document.createElement('section');bands.className='jrx';bands.innerHTML='<div class="jrx-head"><div><h2>Shop your budget</h2><p>Quick shortcuts to accessories under ₹500.</p></div></div><div class="jrx-tags"><a class="jrx-tag" href="/?q='+encodeURIComponent('')+'&maxPrice=99">Under ₹99</a><a class="jrx-tag" href="/?q=&maxPrice=199">Under ₹199</a><a class="jrx-tag" href="/?q=&maxPrice=299">Under ₹299</a><a class="jrx-tag" href="/?q=&maxPrice=500">Under ₹500</a></div>';
+    const bands=document.createElement('section');bands.className='jrx';bands.innerHTML='<div class="jrx-head"><div><h2>Shop your budget</h2><p>Quick shortcuts to accessories under ₹500.</p></div></div><div class="jrx-tags"><button type="button" class="jrx-tag" data-jrx-budget="99">Under ₹99</button><button type="button" class="jrx-tag" data-jrx-budget="199">Under ₹199</button><button type="button" class="jrx-tag" data-jrx-budget="299">Under ₹299</button><button type="button" class="jrx-tag" data-jrx-budget="500">Under ₹500</button><button type="button" class="jrx-tag" data-jrx-budget="0">Clear price shortcut</button></div><p class="jrx-budget-status" aria-live="polite"></p>';
     sections.push(bands);
     const marker=$('.home-play',main)||$('.home-sale',main)||$('#home',main)||main.lastElementChild;
     sections.forEach(el=>{if(marker&&marker.parentNode)marker.parentNode.insertBefore(el,marker.nextSibling);else main.append(el);});
@@ -127,7 +128,25 @@
     banner.innerHTML='Personalized picks use browsing history stored on this device only when analytics consent is enabled. <a href="/cookie-policy.html" style="text-decoration:underline">Cookie choices</a>.';
     const host=$('#main')||$('main');if(host)host.append(banner);
   }
-  document.addEventListener('click',e=>{const a=e.target.closest('[data-jrx-product]');if(a)recordView(a.getAttribute('data-jrx-product'));},true);
+  document.addEventListener('click',e=>{
+    const budget=e.target.closest('[data-jrx-budget]');
+    if(budget){
+      const max=Number(budget.getAttribute('data-jrx-budget'))||0;
+      const cards=[...document.querySelectorAll('article.p[data-id]')];
+      let shown=0;
+      cards.forEach(card=>{
+        const priceText=card.querySelector('.pr b')?.textContent||'';
+        const price=Number(priceText.replace(/[^\\d]/g,''))||0;
+        const visible=!max||(price>0&&price<=max);
+        card.hidden=!visible;if(visible)shown++;
+      });
+      const status=$('.jrx-budget-status');
+      if(status)status.textContent=max?(shown+' products shown at ₹'+max+' or less. Clear the site filters to reset any other filters.'):'Price shortcut cleared.';
+      document.querySelectorAll('[data-jrx-budget]').forEach(b=>b.setAttribute('aria-pressed',String(b===budget)));
+      return;
+    }
+    const a=e.target.closest('[data-jrx-product]');if(a)recordView(a.getAttribute('data-jrx-product'));
+  },true);
   document.addEventListener('submit',e=>{
     const form=e.target;if(!(form instanceof HTMLFormElement))return;
     const input=form.querySelector('input[type="search"],input[placeholder*="search" i]');
