@@ -12,7 +12,7 @@
     "razorpay": "^2.9.4"
   },
   "scripts": {
-    "check": "node scripts/check-links.js && node scripts/check-netlify-config.js && node scripts/test-image-qa.js && node scripts/test-image-provenance.js && node scripts/test-inventory-adapter.js",
+    "check": "node scripts/check-links.js && node scripts/check-netlify-config.js && node scripts/test-image-qa.js && node scripts/test-image-provenance.js && node scripts/test-inventory-adapter.js && node scripts/test-sales-calendar.js",
     "check:security": "node scripts/check-security-config.js",
     "test": "node scripts/test-checkout.js",
     "build": "node scripts/build-catalog.js",
@@ -20,6 +20,7 @@
     "test:images-qa": "node scripts/test-image-qa.js",
     "images:provenance": "node scripts/audit-image-provenance.js",
     "test:images:provenance": "node scripts/test-image-provenance.js",
-    "test:inventory": "node scripts/test-inventory-adapter.js"
+    "test:inventory": "node scripts/test-inventory-adapter.js",
+    "test:sales": "node scripts/test-sales-calendar.js"
   }
 }
