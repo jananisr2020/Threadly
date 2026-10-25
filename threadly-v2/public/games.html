@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#d9186c">
+<title>Juno Play — Quizzes, Mini Games & Accessory Fun</title>
+<meta name="description" content="Take a tiny break with Juno Play: accessory trivia, memory match, tic-tac-toe, daily spin and find-your-vibe quizzes.">
+<link rel="icon" href="/favicon.svg?v=3"><link rel="stylesheet" href="/games.css">
+<script src="/games.js" defer></script>
+</head>
+<body>
+<header class="top"><a class="brand" href="/"><span class="mark">J</span> Juno</a><nav><a href="/">Shop</a><a href="/sales.html">Sale calendar</a><a class="active" href="/games.html">Juno Play</a></nav></header>
+<main>
+<section class="hero"><div class="eyebrow">A LITTLE FUN, JUST FOR YOU</div><h1>Welcome to <span>Juno Play</span> ✦</h1><p>Play tiny games, discover accessory facts and find your style vibe. No purchase needed.</p><div class="scorebar"><span>⭐ Your points</span><strong id="points">0</strong><span class="muted">Saved on this device</span></div></section>
+<section class="daily card" id="daily"><div><div class="eyebrow">TODAY'S QUICK CHALLENGE</div><h2>Daily Accessory Trivia</h2><p id="quiz-question">Loading today's question…</p><div id="quiz-options" class="options"></div><div id="quiz-feedback" class="feedback" aria-live="polite"></div><button id="quiz-next" class="btn secondary" hidden>Next question</button></div><div class="daily-mark" aria-hidden="true">?</div></section>
+<section class="game-grid">
+<article class="card game-card"><div class="game-icon">🃏</div><div class="eyebrow">MEMORY MATCH</div><h2>Match the Accessories</h2><p>Flip cards and find every matching pair in as few moves as you can.</p><div class="game-meta"><span id="moves">Moves: 0</span><span id="pairs">Pairs: 0/6</span></div><div id="memory-board" class="memory-board" aria-label="Memory matching cards"></div><button id="memory-reset" class="btn secondary">Shuffle cards</button><p id="memory-feedback" class="feedback" aria-live="polite"></p></article>
+<article class="card game-card"><div class="game-icon">⭕</div><div class="eyebrow">QUICK GAME</div><h2>Tic-Tac-Toe</h2><p>Play against the computer. Can you draw or win?</p><div id="ttt-status" class="feedback" aria-live="polite">Your turn — you are X.</div><div id="ttt-board" class="ttt-board" aria-label="Tic tac toe board"></div><button id="ttt-reset" class="btn secondary">Play again</button></article>
+<article class="card game-card"><div class="game-icon">🎡</div><div class="eyebrow">DAILY SPIN</div><h2>Spin & Discover</h2><p>Spin once per day for a fun fact, bonus points or a mini challenge. No fake discount promises.</p><div class="wheel-wrap"><div id="wheel" class="wheel">✦</div></div><button id="spin-button" class="btn" >Spin today's wheel</button><p id="spin-result" class="feedback" aria-live="polite"></p></article>
+<article class="card game-card"><div class="game-icon">✨</div><div class="eyebrow">STYLE FINDER</div><h2>Find Your Accessory Vibe</h2><p>Answer three quick questions and get a style vibe with matching Juno browsing suggestions.</p><div id="vibe-quiz"><p id="vibe-question" class="vibe-question"></p><div id="vibe-options" class="options"></div><p id="vibe-feedback" class="feedback" aria-live="polite"></p></div><button id="vibe-reset" class="btn secondary">Start again</button></article>
+<article class="card game-card"><div class="game-icon">🔎</div><div class="eyebrow">GUESS THE ACCESSORY</div><h2>What am I?</h2><p id="guess-clue">I gather your hair into a twist and have teeth that hold it in place. What am I?</p><div id="guess-options" class="options"></div><p id="guess-feedback" class="feedback" aria-live="polite"></p><button id="guess-next" class="btn secondary">Next clue</button></article>
+<article class="card game-card"><div class="game-icon">🏆</div><div class="eyebrow">YOUR PROGRESS</div><h2>Little wins add up</h2><p>Play regularly to collect points and build your own mini-game streak.</p><div class="progress-stats"><div><strong id="games-played">0</strong><span>Games played</span></div><div><strong id="best-streak">0</strong><span>Best quiz streak</span></div></div><p class="muted small">Points and progress are stored in this browser on this device. They are not account-synced or redeemable for discounts yet.</p><a class="btn link-btn" href="/sales.html">Explore accessories sales →</a></article>
+</section>
+<section class="footer-note"><p>Juno Play is for fun. Historical trivia is kept factual, and game points are not money or coupons.</p><a href="/">Back to shopping →</a></section>
+</main>
+</body></html>
