@@ -9,7 +9,7 @@ Add a customer-facing creative space to the Juno accessories marketplace with tw
 
 The first version is a frontend-only prototype at `public/design-lab.html`. It uses inline SVG for a lightweight preview, responsive CSS, no third-party libraries, and no paid AI service. It does not claim to create a production-ready 3D model.
 
-## Current prototype behaviour
+## Current branch implementation
 
 - Choose bracelet, necklace, earrings, thread bangle, or hair accessory.
 - Choose a pastel colour, motif, design style, and target budget.
@@ -20,9 +20,10 @@ The first version is a frontend-only prototype at `public/design-lab.html`. It u
 
 ## Important current limitations
 
-- This is **not yet linked from the storefront navigation**.
-- The prototype does not send a request to Juno, Google Sheets, an artisan, or a seller.
-- It does not reserve stock, calculate a verified quote, accept payment, or create an order.
+- The storefront has a Design Lab entry point; confirm the deployed build before expecting it to appear live.
+- Request submission depends on Netlify environment variables and Google Sheets permissions. The live spreadsheet connection has not been verified here.
+- Requests do not yet reserve stock, calculate a verified quote, match an artisan, accept payment, or create an order.
+- Basic honeypot filtering is present; production still needs robust rate limiting, monitoring, data-retention rules and a privacy notice.
 - No material quantities, supplier relationships, or artisan availability are asserted.
 - The design illustration is conceptual and is not a manufacturing specification.
 - It is not deployed until the branch is reviewed, merged, and the configured Netlify deployment succeeds.
@@ -95,14 +96,14 @@ Do not accept payment or promise delivery until a maker, required components, fi
 
 ## Suggested implementation phases
 
-### Phase 1 — prototype
-Current branch includes a standalone interactive UI and inventory template.
+### Phase 1 — prototype and request intake
+Current branch includes the interactive UI, storefront entry point, server-side request validation, Google Sheets persistence, inventory status endpoint and inventory template. It remains unmerged and needs automated checks.
 
-### Phase 2 — storefront discovery
-Add a clearly labelled Juno Design Lab entry to the existing mobile/desktop navigation and test accessibility, responsive layout, and route handling.
+### Phase 2 — verify spreadsheet connection
+Configure `SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, and `GOOGLE_PRIVATE_KEY` in Netlify; share the spreadsheet with the service account; test tab creation, request writes and safe inventory reads without exposing secrets.
 
-### Phase 3 — request persistence
-Add a Netlify Function with server-side validation and store requests in the existing Google Sheets integration (or chosen database). Keep credentials server-side. Add spam/rate-limit protections and a privacy notice.
+### Phase 3 — operational protection
+Add edge/server rate limiting, abuse monitoring, data retention and privacy wording. Restrict access to customer contact details.
 
 ### Phase 4 — artisan review
 Create a restricted admin view to match a request to a verified artisan, check stock, and prepare a quote. The customer must approve the quote before the request becomes a paid order.
@@ -115,7 +116,9 @@ Connect material stock movements, reservations, artisan capacity, finished-produ
 - Test mobile layout and keyboard-only navigation.
 - Test all product, colour, motif, style, and budget controls.
 - Verify downloaded briefs contain the selected values.
-- Confirm no design request is represented as a submitted order.
-- Confirm no stock quantity or maker availability is invented.
+- Confirm request submission writes one row to `CustomRequests` and returns a request reference.
+- Confirm no design request is represented as a confirmed order.
+- Confirm blank/unverified quantities return `confirmation_required`, never `available`.
+- Confirm the public inventory endpoint never returns quantities, costs or supplier contact details.
 - Add the navigation link only after route and deployment checks.
 - Verify Netlify build and existing checkout/catalogue flows before merging.
