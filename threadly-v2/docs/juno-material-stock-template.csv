@@ -1,0 +1,13 @@
+material_id,category,material_name,variant,unit,qty_on_hand,qty_reserved,reorder_level,unit_cost_inr,supplier,supplier_sku,last_counted_at,storage_location,quality_status,notes
+MAT-0001,Beads,Acrylic round beads,Pastel pink 6mm,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0002,Beads,Acrylic round beads,Lavender 6mm,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0003,Beads,Flower beads,Pastel mixed,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0004,Crystals,Decorative crystals,Clear assorted,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0005,Thread,Elastic jewellery cord,Clear 0.8mm,metres,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0006,Thread,Cotton embroidery thread,Pastel assorted,metres,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0007,Findings,Earring hooks,Silver tone,pairs,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0008,Findings,Jump rings,Silver tone 5mm,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0009,Findings,Clasps,Silver tone lobster clasp,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0010,Findings,Spacer beads,Gold tone,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0011,Charms,Decorative charms,Flower assorted,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
+MAT-0012,Packaging,Jewellery cards,Plain kraft,pieces,,,,,,,,,Not counted,Template row only; enter verified stock before offering for sale
