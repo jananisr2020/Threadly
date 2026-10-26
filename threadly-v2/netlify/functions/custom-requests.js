@@ -71,6 +71,22 @@ exports.handler = async event => {
 
   try {
     await sheets.ensureTab('CustomRequests', REQUEST_HEADERS);
+    await sheets.ensureTab('MaterialsStock', [
+      'material_id', 'category', 'material_name', 'variant', 'unit',
+      'qty_on_hand', 'qty_reserved', 'reorder_level', 'unit_cost_inr',
+      'supplier', 'supplier_sku', 'last_counted_at', 'storage_location',
+      'quality_status', 'notes'
+    ]);
+    await sheets.ensureTab('Artisans', [
+      'artisan_id', 'display_name', 'contact', 'location', 'techniques',
+      'supported_products', 'materials_provided', 'capacity_per_week',
+      'typical_lead_days', 'labour_rate', 'sample_work_links',
+      'quality_check_status', 'active_status', 'agreed_terms_date', 'last_verified_at'
+    ]);
+    await sheets.ensureTab('StockMovements', [
+      'movement_id', 'timestamp', 'material_id', 'movement_type', 'quantity',
+      'related_request_or_order', 'actor', 'notes'
+    ]);
     await sheets.append('CustomRequests', row);
     return json(201, {
       ok: true,
