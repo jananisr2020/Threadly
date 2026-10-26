@@ -6,7 +6,7 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 const html=read('games.html'),css=read('games.css'),js=read('games.js'),home=read('index.html'),sw=read('sw.js');
 const requiredHtml=['quiz-question','memory-board','ttt-board','spin-button','vibe-quiz','guess-options','games-played'];
 for(const id of requiredHtml)if(!html.includes('id="'+id+'"'))throw new Error('Missing Juno Play element: '+id);
-for(const feature of ['Daily Accessory Trivia','Match the Accessories','Tic-Tac-Toe','Spin & Discover','Find Your Accessory Vibe','Guess the Accessory'])if(!new RegExp(feature.replace(/[.*+?^${}()|[\]\\]/g,'\\for(const feature of ['Daily Accessory Trivia','Match the Accessories','Tic-Tac-Toe','Spin & Discover','Find Your Accessory Vibe','Guess the Accessory'])if(!html.includes(feature))throw new Error('Missing game: '+feature);'),'i').test(html))throw new Error('Missing game: '+feature);
+for(const feature of ['Daily Accessory Trivia','Match the Accessories','Tic-Tac-Toe','Spin & Discover','Find Your Accessory Vibe','Guess the Accessory'])if(!html.toLowerCase().includes(feature.toLowerCase()))throw new Error('Missing game: '+feature);
 for(const hook of ['showTrivia','resetMemory','moveTtt','lastSpin','drawVibe','drawGuess'])if(!js.includes(hook))throw new Error('Missing game logic: '+hook);
 if(!js.includes('juno_play_v1'))throw new Error('Progress storage key is missing');
 if(!js.includes('data.lastSpin===today()'))throw new Error('Daily spin restriction missing');
