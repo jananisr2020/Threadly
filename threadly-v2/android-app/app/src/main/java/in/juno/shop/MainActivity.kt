@@ -59,11 +59,50 @@ class ShopModel:ViewModel(){
  init { refresh() }
  fun refresh(){viewModelScope.launch{loading=true;try{val list=withContext(Dispatchers.IO){load()};if(list.isNotEmpty()){products=list;notice=""}}catch(_:Exception){notice="Live catalogue unavailable; showing sample products."}finally{loading=false}}}
  private fun load():List<Product>{
-  val c=URL(BuildConfig.API_BASE_URL+"/catalog.json").openConnection() as HttpURLConnection
-  c.connectTimeout=4500;c.readTimeout=4500
-  try{if(c.responseCode !in 200..299)return emptyList();val root=JSONObject(c.inputStream.bufferedReader().use{it.readText()});val arr=root.optJSONArray("products")?:return emptyList()
-   return buildList{for(i in 0 until arr.length()){val p=arr.optJSONObject(i)?:continue;val price=p.optInt("sellingPrice",p.optInt("price",0));val name=p.optString("name",p.optString("productName"));if(price in 1..500&&name.isNotBlank())add(Product(p.optString("id",p.optString("productId")),name,p.optString("category","Accessories"),price,p.optInt("mrp",price),p.optDouble("rating",0.0),p.optInt("stock",-1),p.optString("image",p.optString("imageUrl","")),p.optString("details","")))}}
-  }finally{c.disconnect()}
+  // Prefer a structured API, but use the repository's real CSV catalogue when that endpoint is absent.
+  val json=fetchText("/catalog.json")
+  if(json!=null){
+   try{
+    val root=JSONObject(json);val arr=root.optJSONArray("products")
+    if(arr!=null){
+     val parsed=buildList{for(i in 0 until arr.length()){val p=arr.optJSONObject(i)?:continue;val price=p.optInt("sellingPrice",p.optInt("price",0));val name=p.optString("name",p.optString("productName"));val category=p.optString("category","Accessories");if(price in 1..500&&name.isNotBlank()&&isAccessory(category))add(Product(p.optString("id",p.optString("productId")),name,category,price,p.optInt("mrp",price),p.optDouble("rating",0.0),p.optInt("stock",-1),p.optString("image",p.optString("imageUrl","")),p.optString("details","")))}}
+     if(parsed.isNotEmpty())return parsed
+    }
+   }catch(_:Exception){ /* Try the public CSV source below. */ }
+  }
+  val csv=fetchText("/products.csv")?:return emptyList()
+  val lines=csv.lineSequence().filter{it.isNotBlank()}.toList()
+  if(lines.size<2)return emptyList()
+  val headers=parseCsvLine(lines.first()).map{it.trim().lowercase()}
+  fun field(row:List<String>,vararg names:String):String {val i=headers.indexOfFirst{it in names};return if(i>=0)row.getOrElse(i){""}.trim() else ""}
+  return buildList {
+   for(line in lines.drop(1)){
+    val row=parseCsvLine(line);val name=field(row,"product name","name");val category=field(row,"category")
+    val price=field(row,"selling price","sellingprice","price").toIntOrNull()?:0
+    val mrp=field(row,"mrp").toIntOrNull()?:price
+    if(name.isBlank()||price !in 1..500||!isAccessory(category))continue
+    val id=field(row,"product id","productid","id").ifBlank{name.lowercase().replace(Regex("[^a-z0-9]+"),"-")}
+    val stock=field(row,"stock").toIntOrNull()?:-1
+    val rating=field(row,"rating").toDoubleOrNull()?:0.0
+    val image=field(row,"image","image url","imageurl")
+    val details=field(row,"details","description")
+    add(Product(id,name,category,price,mrp,rating,stock,image,details))
+   }
+  }
+ }
+ private fun fetchText(path:String):String?{
+  val c=URL(BuildConfig.API_BASE_URL+path).openConnection() as HttpURLConnection
+  c.connectTimeout=6000;c.readTimeout=6000
+  return try{if(c.responseCode !in 200..299)null else c.inputStream.bufferedReader().use{it.readText()}}catch(_:Exception){null}finally{c.disconnect()}
+ }
+ private fun isAccessory(category:String):Boolean{
+  val blocked=setOf("dresses","tops","kurtis","men wear","kids wear","footwear","clothing","shirts","trousers")
+  return category.isNotBlank()&&category.trim().lowercase() !in blocked
+ }
+ private fun parseCsvLine(line:String):List<String>{
+  val out=mutableListOf<String>();val cell=StringBuilder();var quoted=false;var i=0
+  while(i<line.length){val ch=line[i];if(ch=='"'){if(quoted&&i+1<line.length&&line[i+1]=='"'){cell.append('"');i++}else quoted=!quoted}else if(ch==','&&!quoted){out.add(cell.toString());cell.setLength(0)}else cell.append(ch);i++}
+  out.add(cell.toString());return out
  }
  val filtered get()=products.filter{it.price in 1..500&&(category=="All"||it.category==category)&&(search.isBlank()||"${it.name} ${it.category} ${it.details}".contains(search,true))}
  fun wish(p:Product){wishlist=if(p.id in wishlist)wishlist-p.id else wishlist+p.id}
