@@ -1,5 +1,6 @@
 package in.juno.shop
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -50,11 +51,19 @@ private val sample=listOf(
  Product("JN007","Minimal Pendant Necklace","Necklaces",149,299,4.1,7),
  Product("JN008","Mini Claw Clips Set","Claw Clips",39,79,4.5,42)
 )
-class ShopModel:ViewModel(){
+class ShopModel(application:Application):AndroidViewModel(application){
+ private val prefs = application.getSharedPreferences("juno_shop_state", Application.MODE_PRIVATE)
+ private fun restoreIds(key:String):Set<String> = prefs.getStringSet(key, emptySet())?.toSet() ?: emptySet()
+ private fun restoreCart():Map<String,Int> = runCatching {
+  val json=JSONObject(prefs.getString("cart_json","{}") ?: "{}")
+  buildMap { val keys=json.keys(); while(keys.hasNext()){val k=keys.next();val qty=json.optInt(k,0);if(qty>0)put(k,qty)} }
+ }.getOrDefault(emptyMap())
+ private fun saveWishlist(){prefs.edit().putStringSet("wishlist_ids",wishlist.toSet()).apply()}
+ private fun saveCart(){val json=JSONObject();cart.forEach{(id,qty)->if(qty>0)json.put(id,qty)};prefs.edit().putString("cart_json",json.toString()).apply()}
  var products by mutableStateOf(sample); private set
  var search by mutableStateOf(""); var category by mutableStateOf("All")
  var selected by mutableStateOf<Product?>(null); var tab by mutableStateOf("Home")
- var wishlist by mutableStateOf(setOf<String>()); var cart by mutableStateOf<Map<String,Int>>(emptyMap())
+ var wishlist by mutableStateOf(restoreIds("wishlist_ids")); var cart by mutableStateOf(restoreCart())
  var loading by mutableStateOf(false); var notice by mutableStateOf("Sample catalogue until live API response is confirmed.")
  init { refresh() }
  fun refresh(){viewModelScope.launch{loading=true;try{val list=withContext(Dispatchers.IO){load()};if(list.isNotEmpty()){products=list;notice=""}}catch(_:Exception){notice="Live catalogue unavailable; showing sample products."}finally{loading=false}}}
@@ -105,8 +114,9 @@ class ShopModel:ViewModel(){
   out.add(cell.toString());return out
  }
  val filtered get()=products.filter{it.price in 1..500&&(category=="All"||it.category==category)&&(search.isBlank()||"${it.name} ${it.category} ${it.details}".contains(search,true))}
- fun wish(p:Product){wishlist=if(p.id in wishlist)wishlist-p.id else wishlist+p.id}
- fun add(p:Product){cart=cart+(p.id to ((cart[p.id]?:0)+1))}
+ fun wish(p:Product){wishlist=if(p.id in wishlist)wishlist-p.id else wishlist+p.id;saveWishlist()}
+ fun add(p:Product){cart=cart+(p.id to ((cart[p.id]?:0)+1));saveCart()}
+ fun persistCart(){saveCart()}
  fun total()=products.sumOf{it.price*(cart[it.id]?:0)}
 }
 class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Pink)){JunoApp()}}}}
@@ -129,4 +139,4 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
 @Composable fun CardProduct(p:Product,wished:Boolean,open:()->Unit,wish:()->Unit,add:()->Unit){Card(modifier=Modifier.fillMaxWidth().clickable{open()},shape=RoundedCornerShape(14.dp)){Column{Box(Modifier.fillMaxWidth().height(135.dp).background(SoftPink),contentAlignment=Alignment.Center){if(p.image.isNotBlank())AsyncImage(p.image,p.name,Modifier.fillMaxSize())else Text("✦",fontSize=48.sp,color=Pink);IconButton(onClick=wish,modifier=Modifier.align(Alignment.TopEnd)){Icon(if(wished)Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,null,tint=Pink)}};Column(Modifier.padding(9.dp)){Text(p.name,minLines=2,maxLines=2,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.SemiBold);Row(verticalAlignment=Alignment.CenterVertically){Text("₹${p.price}",fontWeight=FontWeight.ExtraBold,fontSize=17.sp);if(p.discount>0)Text(" ${p.discount}% off",fontSize=10.sp,color=Color(0xFF16834A))};Text("★ ${p.rating} · ${p.category}",fontSize=10.sp,color=Color.Gray);Button(onClick=add,modifier=Modifier.fillMaxWidth()){Text("Add to bag")}}}}}
 @Composable fun Detail(vm:ShopModel,p:Product,back:()->Unit){Column(Modifier.fillMaxSize().padding(16.dp)){TextButton(onClick=back){Text("← Back")};if(p.image.isNotBlank())AsyncImage(p.image,p.name,Modifier.fillMaxWidth().height(260.dp))else Box(Modifier.fillMaxWidth().height(220.dp).background(SoftPink),contentAlignment=Alignment.Center){Text("✦",fontSize=70.sp,color=Pink)};Text(p.name,fontSize=26.sp,fontWeight=FontWeight.ExtraBold);Text(p.details.ifBlank{p.category},color=Color.Gray);Text("₹${p.price}   ₹${p.mrp}   ${p.discount}% off",fontSize=21.sp,fontWeight=FontWeight.Bold);Text("★ ${p.rating} · stock ${if(p.stock<0)"to be confirmed" else p.stock}",fontSize=12.sp);Text("Delivery estimate and PIN-code availability must be confirmed with the live service.",fontSize=12.sp,color=Color.Gray);Button(onClick={vm.add(p);back()},enabled=p.stock!=0,modifier=Modifier.fillMaxWidth()){Text("Add to bag")};OutlinedButton(onClick={vm.wish(p)},modifier=Modifier.fillMaxWidth()){Text(if(p.id in vm.wishlist)"Saved to wishlist" else "Add to wishlist")}}}
 @Composable fun Listing(vm:ShopModel,ps:List<Product>,title:String){Column{Text(title,fontSize=25.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(16.dp));LazyVerticalGrid(GridCells.Fixed(2),contentPadding=PaddingValues(10.dp)){items(ps){p->CardProduct(p,p.id in vm.wishlist,{vm.selected=p},{vm.wish(p)},{vm.add(p)})}}}}
-@Composable fun Cart(vm:ShopModel){val ps=vm.products.filter{(vm.cart[it.id]?:0)>0};Column(Modifier.fillMaxSize().padding(16.dp)){Text("Your bag",fontSize=26.sp,fontWeight=FontWeight.Bold);if(ps.isEmpty())Text("Your bag is empty.",Modifier.padding(top=16.dp));ps.forEach{p->Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Column(Modifier.weight(1f)){Text(p.name,fontWeight=FontWeight.SemiBold);Text("${vm.cart[p.id]} × ₹${p.price}",color=Color.Gray)};Text("₹${p.price*(vm.cart[p.id]?:0)}");TextButton(onClick={vm.cart=vm.cart-p.id}){Text("Remove")}}};Spacer(Modifier.weight(1f));Text("Subtotal: ₹${vm.total()}",fontSize=20.sp,fontWeight=FontWeight.Bold);Text("Cash on delivery is not available.",fontSize=12.sp,color=Color.Gray);Button(onClick={},enabled=ps.isNotEmpty(),modifier=Modifier.fillMaxWidth()){Text("Checkout integration required")};Text("Payments are not simulated. Connect verified order creation and Razorpay before release.",fontSize=11.sp,color=Color.Gray)}}
+@Composable fun Cart(vm:ShopModel){val ps=vm.products.filter{(vm.cart[it.id]?:0)>0};Column(Modifier.fillMaxSize().padding(16.dp)){Text("Your bag",fontSize=26.sp,fontWeight=FontWeight.Bold);if(ps.isEmpty())Text("Your bag is empty.",Modifier.padding(top=16.dp));ps.forEach{p->Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Column(Modifier.weight(1f)){Text(p.name,fontWeight=FontWeight.SemiBold);Text("${vm.cart[p.id]} × ₹${p.price}",color=Color.Gray)};Text("₹${p.price*(vm.cart[p.id]?:0)}");TextButton(onClick={vm.cart=vm.cart-p.id;vm.persistCart()}){Text("Remove")}}};Spacer(Modifier.weight(1f));Text("Subtotal: ₹${vm.total()}",fontSize=20.sp,fontWeight=FontWeight.Bold);Text("Cash on delivery is not available.",fontSize=12.sp,color=Color.Gray);Button(onClick={},enabled=ps.isNotEmpty(),modifier=Modifier.fillMaxWidth()){Text("Checkout integration required")};Text("Payments are not simulated. Connect verified order creation and Razorpay before release.",fontSize=11.sp,color=Color.Gray)}}
