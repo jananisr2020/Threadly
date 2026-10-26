@@ -13,3 +13,8 @@ Open this folder in Android Studio, use JDK 17, install Android SDK Platform 35,
 - Checkout, authentication, OTP, order history, reviews, seller onboarding, and personalized recommendations require verified shared backend endpoints. They are not falsely marked complete here.
 - COD is not offered. Do not simulate a payment. Integrate Razorpay only after server-side order creation and payment signature verification are implemented and tested.
 - Before publishing: run builds/tests, configure app signing securely, add privacy policy and data safety disclosures, test on real devices, and upload a signed Android App Bundle (.aab) through Play Console.
+
+
+## Build validation
+
+A GitHub Actions workflow at `.github/workflows/juno-android.yml` compiles the debug APK on Android-app changes. Check the Actions tab for the actual build result; a workflow file being committed does not mean the build has passed. The generated debug APK is not a Play Store release; a signed AAB and production integrations are still required.
