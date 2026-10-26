@@ -39,6 +39,10 @@ exports.handler = async event => {
   // Honeypot field for basic bot filtering. Real rate limiting should be enabled at the edge.
   if (text(input.website)) return json(200, { ok: true, requestId: null });
 
+  if (input.consent !== true) {
+    return json(400, { error: 'Please consent to Juno contacting you about this request.' });
+  }
+
   const contact = text(input.contact);
   const requestType = text(input.requestType);
   const productType = text(input.productType);
