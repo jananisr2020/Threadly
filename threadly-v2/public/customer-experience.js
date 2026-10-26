@@ -109,7 +109,7 @@
     const bands=document.createElement('section');bands.className='jrx';bands.innerHTML='<div class="jrx-head"><div><h2>Shop your budget</h2><p>Quick shortcuts to accessories under ₹500.</p></div></div><div class="jrx-tags"><button type="button" class="jrx-tag" data-jrx-budget="99">Under ₹99</button><button type="button" class="jrx-tag" data-jrx-budget="199">Under ₹199</button><button type="button" class="jrx-tag" data-jrx-budget="299">Under ₹299</button><button type="button" class="jrx-tag" data-jrx-budget="500">Under ₹500</button><button type="button" class="jrx-tag" data-jrx-budget="0">Clear price shortcut</button></div><p class="jrx-budget-status" aria-live="polite"></p>';
     sections.push(bands);
     const marker=$('.home-play',main)||$('.home-sale',main)||$('#home',main)||main.lastElementChild;
-    sections.forEach(el=>{if(marker&&marker.parentNode)marker.parentNode.insertBefore(el,marker.nextSibling);else main.append(el);});
+    if(marker&&marker.parentNode){let anchor=marker;sections.forEach(el=>{anchor.insertAdjacentElement('afterend',el);anchor=el;});}else sections.forEach(el=>main.append(el));
   }
   function renderProductRecommendations(products){
     const id=new URLSearchParams(location.search).get('p')||new URLSearchParams(location.search).get('id')||'';
