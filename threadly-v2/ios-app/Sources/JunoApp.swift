@@ -28,8 +28,10 @@ final class JunoStore: ObservableObject {
     @Published var status = "Loading the latest Juno accessories…"
 
     init() {
-        cart = (UserDefaults.standard.dictionary(forKey: "juno.cart") as? [String: Int]) ?? [:]
-        wishlist = Set(UserDefaults.standard.stringArray(forKey: "juno.wishlist") ?? [])
+        if let data = UserDefaults.standard.data(forKey: "juno.cart"),
+           let saved = try? JSONDecoder().decode([String: Int].self, from: data) { cart = saved }
+        if let data = UserDefaults.standard.data(forKey: "juno.wishlist"),
+           let saved = try? JSONDecoder().decode([String].self, from: data) { wishlist = Set(saved) }
         Task { await refresh() }
     }
 
@@ -160,7 +162,11 @@ struct CatalogueView: View {
                     }
                     if store.isLoading { ProgressView().frame(maxWidth: .infinity) }
                     if !store.status.isEmpty {
-                        ContentUnavailableView(store.status, systemImage: "bag", description: Text("Refresh to try the live catalogue again."))
+                        VStack(spacing: 10) {
+                            Image(systemName: "bag").font(.largeTitle).foregroundStyle(junoPink)
+                            Text(store.status).font(.subheadline).multilineTextAlignment(.center)
+                            Text("Refresh to try the live catalogue again.").font(.caption).foregroundStyle(.secondary)
+                        }.frame(maxWidth: .infinity).padding(24)
                         Button("Retry") { Task { await store.refresh() } }.frame(maxWidth: .infinity)
                     }
                     LazyVGrid(columns: columns, spacing: 12) {
@@ -226,7 +232,11 @@ struct CartView: View {
         NavigationStack {
             Group {
                 if store.cartProducts.isEmpty {
-                    ContentUnavailableView("Your bag is empty", systemImage: "bag", description: Text("Add a few lovely finds from the Shop tab."))
+                    VStack(spacing: 10) {
+                        Image(systemName: "bag").font(.largeTitle).foregroundStyle(junoPink)
+                        Text("Your bag is empty").font(.headline)
+                        Text("Add a few lovely finds from the Shop tab.").font(.subheadline).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(store.cartProducts) { product in
@@ -259,8 +269,12 @@ struct CartView: View {
 struct AccountView: View {
     var body: some View {
         NavigationStack {
-            ContentUnavailableView("Your Juno account", systemImage: "person.crop.circle",
-                                   description: Text("Secure sign-in, OTP verification, orders and profile settings require the shared account backend before release."))
+            VStack(spacing: 12) {
+                Image(systemName: "person.crop.circle").font(.system(size: 48)).foregroundStyle(junoPink)
+                Text("Your Juno account").font(.title2.bold())
+                Text("Secure sign-in, OTP verification, orders and profile settings require the shared account backend before release.")
+                    .multilineTextAlignment(.center).foregroundStyle(.secondary)
+            }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
                 .navigationTitle("Account")
         }
     }
