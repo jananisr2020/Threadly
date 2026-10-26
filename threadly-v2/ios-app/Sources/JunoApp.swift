@@ -170,10 +170,12 @@ struct CatalogueView: View {
                         Button("Retry") { Task { await store.refresh() } }.frame(maxWidth: .infinity)
                     }
                     LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(store.visibleProducts) { product in ProductCard(product: product)
+                        ForEach(store.visibleProducts) { product in
+                            ProductCard(product: product)
+                        }
                     }
-                }
-            }.padding(14)
+                }.padding(14)
+            }
             .navigationTitle("Discover")
             .toolbar { Button { Task { await store.refresh() } } label: { Image(systemName: "arrow.clockwise") }.accessibilityLabel("Refresh catalogue") }
         }
