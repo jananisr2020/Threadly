@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "threadly-v2/android-app/**"
+      - "threadly-v2/public/index.html"
       - ".github/workflows/juno-android.yml"
   pull_request:
     paths:
