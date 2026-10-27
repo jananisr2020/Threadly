@@ -283,15 +283,138 @@ struct CartView: View {
 }
 
 struct AccountView: View {
+    @AppStorage("juno.account.token") private var token = ""
+    @AppStorage("juno.account.email") private var savedEmail = ""
+    @AppStorage("juno.account.name") private var savedName = ""
+    @State private var email = ""
+    @State private var password = ""
+    @State private var name = ""
+    @State private var creating = false
+    @State private var busy = false
+    @State private var message = ""
+    @State private var orders: [[String: Any]] = []
+    private let baseURL = "https://threadly-fashion.netlify.app"
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                Image(systemName: "person.crop.circle").font(.system(size: 48)).foregroundStyle(junoPink)
-                Text("Your Juno account").font(.title2.bold())
-                Text("Secure sign-in, OTP verification, orders and profile settings require the shared account backend before release.")
-                    .multilineTextAlignment(.center).foregroundStyle(.secondary)
-            }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationTitle("Account")
+            ScrollView {
+                VStack(spacing: 14) {
+                    Image(systemName: "person.crop.circle").font(.system(size: 48)).foregroundStyle(junoPink)
+                    Text("Your Juno account").font(.title2.bold())
+                    if !token.isEmpty {
+                        Text("Signed in").font(.headline).foregroundStyle(.green)
+                        Text(savedName.isEmpty ? "Juno customer" : savedName).font(.title3.bold())
+                        Text(savedEmail).foregroundStyle(.secondary)
+                        Button(busy ? "Loading orders…" : "Refresh my orders") {
+                            Task { await loadOrders() }
+                        }.buttonStyle(.borderedProminent).tint(junoPink).disabled(busy)
+                        if !message.isEmpty { Text(message).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center) }
+                        ForEach(Array(orders.enumerated()), id: \.offset) { _, order in
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("Order " + (order["id"] as? String ?? "—")).font(.headline).foregroundStyle(junoPink)
+                                Text("Date: " + (order["date"] as? String ?? "—"))
+                                Text("Status: " + (order["status"] as? String ?? "New")).fontWeight(.semibold)
+                                Text("Total: ₹\(order["total"] as? Int ?? (order["total"] as? NSNumber)?.intValue ?? 0)")
+                                if let tracking = order["tracking"] as? String, !tracking.isEmpty { Text("Tracking: " + tracking) }
+                            }.font(.subheadline).frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                                .background(junoSoftPink, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                        Button("Sign out", role: .destructive) {
+                            token = ""; savedEmail = ""; savedName = ""; orders = []; message = "Signed out."
+                        }.buttonStyle(.bordered).padding(.top, 4)
+                    } else {
+                        Text(creating ? "Create your Juno account" : "Sign in to view your orders")
+                            .foregroundStyle(.secondary)
+                        if creating {
+                            TextField("Name", text: $name).textContentType(.name).textFieldStyle(.roundedBorder)
+                        }
+                        TextField("Email", text: $email).textContentType(.emailAddress)
+                            .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+                            .textFieldStyle(.roundedBorder)
+                        SecureField("Password (minimum 8 characters)", text: $password)
+                            .textContentType(creating ? .newPassword : .password).textFieldStyle(.roundedBorder)
+                        Button(busy ? "Please wait…" : (creating ? "Create account" : "Sign in")) {
+                            Task { await authenticate() }
+                        }.buttonStyle(.borderedProminent).tint(junoPink).disabled(busy || email.isEmpty || password.isEmpty)
+                        Button(creating ? "Already have an account? Sign in" : "New to Juno? Create account") {
+                            creating.toggle(); message = ""
+                        }.foregroundStyle(junoPink)
+                        if !creating {
+                            Button("Forgot password? Email me a reset link") {
+                                Task { await requestPasswordReset() }
+                            }.disabled(busy || email.isEmpty).foregroundStyle(junoPink)
+                        }
+                        Text("Use the same Juno account as the website. Never share your password.")
+                            .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    }
+                    if !message.isEmpty {
+                        Text(message).font(.subheadline).multilineTextAlignment(.center)
+                            .foregroundStyle(message.localizedCaseInsensitiveContains("success") ? .green : .secondary)
+                    }
+                }.padding(20)
+            }.navigationTitle("Account")
         }
     }
+
+    private func request(_ path: String, method: String = "POST", body: [String: Any]? = nil) async throws -> (Data, Int) {
+        guard let url = URL(string: baseURL + path) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if !token.isEmpty { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
+        if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
+    }
+
+    private func authenticate() async {
+        busy = true; defer { busy = false }
+        do {
+            let path = creating ? "/signup" : "/login"
+            let body: [String: Any] = creating
+                ? ["name": name, "email": email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), "password": password]
+                : ["email": email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), "password": password]
+            let (data, code) = try await request(path, body: body)
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+            guard (200..<300).contains(code), let newToken = json["token"] as? String,
+                  let user = json["user"] as? [String: Any] else {
+                message = json["error"] as? String ?? "Could not sign in. Please try again."
+                return
+            }
+            token = newToken
+            savedEmail = user["email"] as? String ?? email
+            savedName = user["name"] as? String ?? name
+            password = ""; message = "Signed in successfully."
+            await loadOrders()
+        } catch { message = "Could not connect to Juno. Check your connection and retry." }
+    }
+
+    private func requestPasswordReset() async {
+        busy = true; defer { busy = false }
+        do {
+            let (data, code) = try await request("/forgot", body: ["email": email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()])
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+            if (200..<300).contains(code) {
+                message = json["message"] as? String ?? "If your account exists, a password-reset email will be sent."
+            } else { message = json["error"] as? String ?? "Could not request a password reset." }
+        } catch { message = "Could not connect to Juno. Please retry." }
+    }
+
+    private func loadOrders() async {
+        guard !token.isEmpty else { return }
+        busy = true; defer { busy = false }
+        do {
+            let (data, code) = try await request("/my-orders", method: "GET")
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+            guard (200..<300).contains(code), let json else {
+                let errorJSON = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+                message = errorJSON?["error"] as? String ?? "Could not load your orders."
+                return
+            }
+            orders = json
+            message = json.isEmpty ? "You have no orders yet." : "Your latest orders are shown below."
+        } catch { message = "Could not load orders. Check your connection and retry." }
+    }
 }
+
