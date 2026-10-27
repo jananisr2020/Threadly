@@ -56,7 +56,47 @@ class ShopModel(application:Application):AndroidViewModel(application){
  var selected by mutableStateOf<Product?>(null); var tab by mutableStateOf("Home")
  var wishlist by mutableStateOf(restoreIds("wishlist_ids")); var cart by mutableStateOf(restoreCart())
  var loading by mutableStateOf(false); var notice by mutableStateOf("Loading the live Juno catalogue…")
+ var accountEmail by mutableStateOf(prefs.getString("account_email","") ?: "")
+ var accountName by mutableStateOf(prefs.getString("account_name","") ?: "")
+ var authToken by mutableStateOf(prefs.getString("auth_token","") ?: "")
+ var authMessage by mutableStateOf("")
+ var authBusy by mutableStateOf(false)
  init { refresh() }
+ fun login(emailInput:String,password:String){
+  val email=emailInput.trim().lowercase()
+  if(!email.contains("@")||password.isBlank()){authMessage="Enter a valid email and password.";return}
+  viewModelScope.launch{
+   authBusy=true;authMessage=""
+   try{
+    val result=withContext(Dispatchers.IO){postJson("/login",JSONObject().put("email",email).put("pw",password))}
+    val token=result.optString("token")
+    if(token.isBlank()) throw IllegalStateException(result.optString("error","Login could not be completed."))
+    val user=result.optJSONObject("user")
+    accountEmail=user?.optString("email",email) ?: email
+    accountName=user?.optString("name","") ?: ""
+    authToken=token
+    prefs.edit().putString("account_email",accountEmail).putString("account_name",accountName).putString("auth_token",token).apply()
+    authMessage="Signed in successfully."
+   }catch(e:Exception){authMessage=e.message?.take(180) ?: "Could not sign in. Check your connection and try again."}
+   finally{authBusy=false}
+  }
+ }
+ fun logout(){authToken="";accountEmail="";accountName="";authMessage="You are signed out.";prefs.edit().remove("auth_token").remove("account_email").remove("account_name").apply()}
+ private fun postJson(path:String,body:JSONObject):JSONObject{
+  val c=URL(BuildConfig.API_BASE_URL+path).openConnection() as HttpURLConnection
+  c.requestMethod="POST";c.connectTimeout=10000;c.readTimeout=10000;c.doOutput=true
+  c.setRequestProperty("Content-Type","application/json")
+  c.setRequestProperty("Accept","application/json")
+  return try{
+   c.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))}
+   val code=c.responseCode
+   val stream=if(code in 200..299)c.inputStream else c.errorStream
+   val text=stream?.bufferedReader()?.use{it.readText()} ?: "{}"
+   val result=runCatching{JSONObject(text)}.getOrElse{JSONObject()}
+   if(code !in 200..299)throw IllegalStateException(result.optString("error","Request failed (HTTP $code)."))
+   result
+  }finally{c.disconnect()}
+ }
  fun refresh(){viewModelScope.launch{loading=true;try{val list=withContext(Dispatchers.IO){load()};if(list.isNotEmpty()){products=list;notice=""}else{products=emptyList();notice="No eligible accessories are available from the live catalogue right now. Tap Refresh to try again."}}catch(_:Exception){if(products.isEmpty())notice="Could not connect to the live Juno catalogue. Check your connection and tap Refresh. No sample products are shown."}finally{loading=false}}}
  private fun load():List<Product>{
   // Prefer a structured API, but use the repository's real CSV catalogue when that endpoint is absent.
@@ -119,10 +159,31 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
  if(vm.selected!=null) Detail(vm,vm.selected!!){vm.selected=null} else when(vm.tab){
  "Wishlist"->Listing(vm,vm.products.filter{it.id in vm.wishlist},"Your wishlist")
  "Cart"->Cart(vm)
- "Account"->Column(Modifier.padding(20.dp)){Text("Your Juno account",fontSize=25.sp,fontWeight=FontWeight.Bold);Text("Connect the verified shared login and OTP API before release.",Modifier.padding(top=12.dp));Text("No credentials are collected by this starter.",color=Color.Gray)}
+ "Account"->AccountScreen(vm)
  else->Home(vm)
  }
  }
+ }
+}
+@Composable fun AccountScreen(vm:ShopModel){
+ var email by remember { mutableStateOf(vm.accountEmail) }
+ var password by remember { mutableStateOf("") }
+ Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+  Text("Your Juno account",fontSize=25.sp,fontWeight=FontWeight.Bold)
+  if(vm.authToken.isNotBlank()){
+   Text("Signed in",color=Color(0xFF16834A),fontWeight=FontWeight.Bold)
+   Text(vm.accountName.ifBlank{"Juno customer"},fontSize=20.sp,fontWeight=FontWeight.SemiBold)
+   Text(vm.accountEmail,color=Color.Gray)
+   Text("Your sign-in token is stored locally on this device. Sign out on shared devices.",fontSize=12.sp,color=Color.Gray)
+   Button(onClick={vm.logout()},modifier=Modifier.fillMaxWidth()){Text("Sign out")}
+  }else{
+   Text("Sign in with your Juno account",color=Color.Gray)
+   OutlinedTextField(value=email,onValueChange={email=it},label={Text("Email")},singleLine=true,modifier=Modifier.fillMaxWidth())
+   OutlinedTextField(value=password,onValueChange={password=it},label={Text("Password")},singleLine=true,modifier=Modifier.fillMaxWidth())
+   Button(onClick={vm.login(email,password)},enabled=!vm.authBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.authBusy)"Signing in…" else "Sign in")}
+   Text("Use the same account as the Juno website. If your account needs OTP verification, use the website's verified flow.",fontSize=12.sp,color=Color.Gray)
+  }
+  if(vm.authMessage.isNotBlank())Text(vm.authMessage,color=if(vm.authMessage.contains("successfully"))Color(0xFF16834A) else Color.Gray)
  }
 }
 @Composable fun Header(vm:ShopModel){Column(Modifier.fillMaxWidth().background(SoftPink).padding(16.dp)){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Column{Text("JUNO",fontSize=27.sp,fontWeight=FontWeight.Black,color=Pink,letterSpacing=1.sp);Text("Little finds. Lovely prices.",fontSize=11.sp)};Text("Under ₹500",color=Pink,fontWeight=FontWeight.Bold)};Spacer(Modifier.height(10.dp));OutlinedTextField(vm.search,{vm.search=it},Modifier.fillMaxWidth(),singleLine=true,placeholder={Text("Search clips, scrunchies, hoops…")},leadingIcon={Icon(Icons.Default.Search,null)})}}
