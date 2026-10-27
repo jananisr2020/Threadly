@@ -94,7 +94,7 @@ class ShopModel(application:Application):AndroidViewModel(application){
   viewModelScope.launch{
    authBusy=true;authMessage=""
    try{
-    val result=withContext(Dispatchers.IO){postJson("/login",JSONObject().put("email",email).put("pw",password))}
+    val result=withContext(Dispatchers.IO){postJson("/login",JSONObject().put("email",email).put("password",password))}
     val token=result.optString("token")
     if(token.isBlank()) throw IllegalStateException(result.optString("error","Login could not be completed."))
     val user=result.optJSONObject("user")
@@ -113,7 +113,7 @@ class ShopModel(application:Application):AndroidViewModel(application){
   viewModelScope.launch{
    authBusy=true;authMessage=""
    try{
-    val result=withContext(Dispatchers.IO){postJson("/signup",JSONObject().put("name",name).put("email",email).put("pw",password))}
+    val result=withContext(Dispatchers.IO){postJson("/signup",JSONObject().put("name",name).put("email",email).put("password",password))}
     val token=result.optString("token")
     if(token.isBlank())throw IllegalStateException(result.optString("error","Account could not be created."))
     val user=result.optJSONObject("user")
