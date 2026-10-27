@@ -81,6 +81,23 @@ class ShopModel(application:Application):AndroidViewModel(application){
    finally{authBusy=false}
   }
  }
+ fun signup(nameInput:String,emailInput:String,password:String){
+  val name=nameInput.trim();val email=emailInput.trim().lowercase()
+  if(name.length<2||!email.contains("@")||password.length<8){authMessage="Enter your name, a valid email and a password of at least 8 characters.";return}
+  viewModelScope.launch{
+   authBusy=true;authMessage=""
+   try{
+    val result=withContext(Dispatchers.IO){postJson("/signup",JSONObject().put("name",name).put("email",email).put("pw",password))}
+    val token=result.optString("token")
+    if(token.isBlank())throw IllegalStateException(result.optString("error","Account could not be created."))
+    val user=result.optJSONObject("user")
+    accountEmail=user?.optString("email",email) ?: email;accountName=user?.optString("name",name) ?: name;authToken=token
+    prefs.edit().putString("account_email",accountEmail).putString("account_name",accountName).putString("auth_token",token).apply()
+    authMessage="Account created successfully."
+   }catch(e:Exception){authMessage=e.message?.take(180) ?: "Could not create account. Try again."}
+   finally{authBusy=false}
+  }
+ }
  fun logout(){authToken="";accountEmail="";accountName="";authMessage="You are signed out.";prefs.edit().remove("auth_token").remove("account_email").remove("account_name").apply()}
  private fun postJson(path:String,body:JSONObject):JSONObject{
   val c=URL(BuildConfig.API_BASE_URL+path).openConnection() as HttpURLConnection
@@ -168,20 +185,24 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
 @Composable fun AccountScreen(vm:ShopModel){
  var email by remember { mutableStateOf(vm.accountEmail) }
  var password by remember { mutableStateOf("") }
+ var name by remember { mutableStateOf("") }
+ var creating by remember { mutableStateOf(false) }
  Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
   Text("Your Juno account",fontSize=25.sp,fontWeight=FontWeight.Bold)
   if(vm.authToken.isNotBlank()){
    Text("Signed in",color=Color(0xFF16834A),fontWeight=FontWeight.Bold)
    Text(vm.accountName.ifBlank{"Juno customer"},fontSize=20.sp,fontWeight=FontWeight.SemiBold)
    Text(vm.accountEmail,color=Color.Gray)
-   Text("Your sign-in token is stored locally on this device. Sign out on shared devices.",fontSize=12.sp,color=Color.Gray)
+   Text("Use sign out on shared devices.",fontSize=12.sp,color=Color.Gray)
    Button(onClick={vm.logout()},modifier=Modifier.fillMaxWidth()){Text("Sign out")}
   }else{
-   Text("Sign in with your Juno account",color=Color.Gray)
+   Text(if(creating)"Create your Juno account" else "Sign in with your Juno account",color=Color.Gray)
+   if(creating)OutlinedTextField(value=name,onValueChange={name=it},label={Text("Name")},singleLine=true,modifier=Modifier.fillMaxWidth())
    OutlinedTextField(value=email,onValueChange={email=it},label={Text("Email")},singleLine=true,modifier=Modifier.fillMaxWidth())
-   OutlinedTextField(value=password,onValueChange={password=it},label={Text("Password")},singleLine=true,modifier=Modifier.fillMaxWidth())
-   Button(onClick={vm.login(email,password)},enabled=!vm.authBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.authBusy)"Signing in…" else "Sign in")}
-   Text("Use the same account as the Juno website. If your account needs OTP verification, use the website's verified flow.",fontSize=12.sp,color=Color.Gray)
+   OutlinedTextField(value=password,onValueChange={password=it},label={Text("Password (minimum 8 characters)")},singleLine=true,modifier=Modifier.fillMaxWidth())
+   Button(onClick={if(creating)vm.signup(name,email,password) else vm.login(email,password)},enabled=!vm.authBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.authBusy)"Please wait…" else if(creating)"Create account" else "Sign in")}
+   TextButton(onClick={creating=!creating;vm.authMessage=""}){Text(if(creating)"Already have an account? Sign in" else "New to Juno? Create account")}
+   Text("Accounts use the shared Juno API. Keep your password private.",fontSize=12.sp,color=Color.Gray)
   }
   if(vm.authMessage.isNotBlank())Text(vm.authMessage,color=if(vm.authMessage.contains("successfully"))Color(0xFF16834A) else Color.Gray)
  }
