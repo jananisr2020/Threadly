@@ -37,3 +37,11 @@ jobs:
           gradle-version: "8.9"
       - name: Compile debug app
         run: gradle -p threadly-v2/android-app assembleDebug
+
+      - name: Upload debug APK for device testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: juno-android-debug-apk
+          path: threadly-v2/android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
