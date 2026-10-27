@@ -67,14 +67,19 @@ final class JunoStore: ObservableObject {
                 guard let index = header.firstIndex(where: { keys.contains($0.lowercased().trimmingCharacters(in: .whitespaces)) }), index < row.count else { return "" }
                 return row[index].trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            let blocked = ["clothing", "dresses", "tops", "kurtis", "shirts", "trousers", "footwear", "men wear", "kids wear"]
+            // Juno is accessories-only. An allow-list prevents bags, clothing,
+            // footwear and unknown categories from entering the mobile storefront.
+            let allowed: Set<String> = ["hair clips", "claw clips", "hair bands", "scrunchies",
+                                        "earrings", "necklaces", "bracelets", "bangles", "rings",
+                                        "sunglasses", "watches", "phone cases", "keychains", "caps",
+                                        "scarves", "belts"]
             products = rows.dropFirst().compactMap { line in
                 let row = Self.csvRow(line)
                 let name = field(row, ["product name", "name"])
                 let category = field(row, ["category"])
                 let price = Int(field(row, ["selling price", "sellingprice", "price"])) ?? 0
                 guard !name.isEmpty, (1...500).contains(price),
-                      !blocked.contains(category.lowercased()) else { return nil }
+                      allowed.contains(category.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) else { return nil }
                 let id = field(row, ["product id", "productid", "id"])
                 return JunoProduct(id: id.isEmpty ? name : id, name: name, category: category.isEmpty ? "Accessories" : category,
                                    price: price, mrp: Int(field(row, ["mrp"])) ?? price,
