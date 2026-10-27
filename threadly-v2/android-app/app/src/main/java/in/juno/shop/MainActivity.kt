@@ -96,8 +96,10 @@ class ShopModel(application:Application):AndroidViewModel(application){
   return try{if(c.responseCode !in 200..299)null else c.inputStream.bufferedReader().use{it.readText()}}catch(_:Exception){null}finally{c.disconnect()}
  }
  private fun isAccessory(category:String):Boolean{
-  val blocked=setOf("dresses","tops","kurtis","men wear","kids wear","footwear","clothing","shirts","trousers")
-  return category.isNotBlank()&&category.trim().lowercase() !in blocked
+  // Juno is an accessories-only shop: use an allow-list so clothing, footwear,
+  // bags and unknown categories never leak into the mobile catalogue.
+  val allowed=setOf("hair clips","claw clips","hair bands","scrunchies","earrings","necklaces","bracelets","bangles","rings","sunglasses","watches","phone cases","keychains","caps","scarves","belts")
+  return category.trim().lowercase() in allowed
  }
  private fun parseCsvLine(line:String):List<String>{
   val out=mutableListOf<String>();val cell=StringBuilder();var quoted=false;var i=0
