@@ -61,6 +61,32 @@ class ShopModel(application:Application):AndroidViewModel(application){
  var authToken by mutableStateOf(prefs.getString("auth_token","") ?: "")
  var authMessage by mutableStateOf("")
  var authBusy by mutableStateOf(false)
+ var orders by mutableStateOf<List<JSONObject>>(emptyList())
+ var ordersBusy by mutableStateOf(false)
+ var ordersMessage by mutableStateOf("")
+ fun loadOrders(){
+  if(authToken.isBlank()){ordersMessage="Sign in to view your orders.";return}
+  viewModelScope.launch{
+   ordersBusy=true;ordersMessage=""
+   try{
+    orders=withContext(Dispatchers.IO){
+     val c=URL(BuildConfig.API_BASE_URL+"/my-orders").openConnection() as HttpURLConnection
+     c.requestMethod="GET";c.connectTimeout=10000;c.readTimeout=10000
+     c.setRequestProperty("Accept","application/json");c.setRequestProperty("Authorization","Bearer "+authToken)
+     try{
+      val code=c.responseCode
+      val stream=if(code in 200..299)c.inputStream else c.errorStream
+      val raw=stream?.bufferedReader()?.use{it.readText()}?:"[]"
+      if(code !in 200..299){val err=runCatching{JSONObject(raw).optString("error")}.getOrDefault("Could not load orders (HTTP "+code+").");throw IllegalStateException(err)}
+      val arr=org.json.JSONArray(raw)
+      buildList{for(i in 0 until arr.length()){val item=arr.optJSONObject(i)?:continue;add(item)}}
+     }finally{c.disconnect()}
+    }
+    ordersMessage=if(orders.isEmpty())"No orders found for this account yet." else ""
+   }catch(e:Exception){ordersMessage=e.message?.take(180) ?: "Could not load your orders. Try again."}
+   finally{ordersBusy=false}
+  }
+ }
  init { refresh() }
  fun login(emailInput:String,password:String){
   val email=emailInput.trim().lowercase()
@@ -194,6 +220,17 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
    Text(vm.accountName.ifBlank{"Juno customer"},fontSize=20.sp,fontWeight=FontWeight.SemiBold)
    Text(vm.accountEmail,color=Color.Gray)
    Text("Use sign out on shared devices.",fontSize=12.sp,color=Color.Gray)
+   OutlinedButton(onClick={vm.loadOrders()},enabled=!vm.ordersBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.ordersBusy)"Loading orders…" else "View my orders")}
+   if(vm.ordersMessage.isNotBlank())Text(vm.ordersMessage,fontSize=13.sp,color=Color.Gray)
+   vm.orders.forEach { order ->
+    Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp)){Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+     Text("Order "+order.optString("id"),fontWeight=FontWeight.Bold,color=Pink)
+     Text("Date: "+order.optString("date","—"),fontSize=13.sp)
+     Text("Status: "+order.optString("status","New"),fontWeight=FontWeight.SemiBold)
+     Text("Total: ₹"+order.optInt("total"),fontSize=14.sp)
+     if(order.optString("tracking").isNotBlank())Text("Tracking: "+order.optString("tracking"),fontSize=12.sp)
+    }}
+   }
    Button(onClick={vm.logout()},modifier=Modifier.fillMaxWidth()){Text("Sign out")}
   }else{
    Text(if(creating)"Create your Juno account" else "Sign in with your Juno account",color=Color.Gray)
