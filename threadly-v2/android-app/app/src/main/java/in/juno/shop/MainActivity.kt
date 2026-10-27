@@ -41,16 +41,7 @@ private val SoftPink = Color(0xFFFFF1F7)
 data class Product(val id:String,val name:String,val category:String,val price:Int,val mrp:Int,val rating:Double,val stock:Int,val image:String="",val details:String="") {
  val discount:Int get()=if(mrp>price&&mrp>0)(mrp-price)*100/mrp else 0
 }
-private val sample=listOf(
- Product("JN001","Pastel Hair Clip","Hair Clips",45,90,4.4,24),
- Product("JN002","Matte Claw Clip","Claw Clips",72,120,4.6,18),
- Product("JN003","Satin Scrunchie","Scrunchies",49,99,4.5,35),
- Product("JN004","Everyday Hoop Earrings","Earrings",99,180,4.2,12),
- Product("JN005","Pastel Bracelet Set","Bracelets",129,249,4.3,15),
- Product("JN006","Pearl Hair Clip","Hair Clips",59,110,4.7,9),
- Product("JN007","Minimal Pendant Necklace","Necklaces",149,299,4.1,7),
- Product("JN008","Mini Claw Clips Set","Claw Clips",39,79,4.5,42)
-)
+
 class ShopModel(application:Application):AndroidViewModel(application){
  private val prefs = application.getSharedPreferences("juno_shop_state", Application.MODE_PRIVATE)
  private fun restoreIds(key:String):Set<String> = prefs.getStringSet(key, emptySet())?.toSet() ?: emptySet()
@@ -60,13 +51,13 @@ class ShopModel(application:Application):AndroidViewModel(application){
  }.getOrDefault(emptyMap())
  private fun saveWishlist(){prefs.edit().putStringSet("wishlist_ids",wishlist.toSet()).apply()}
  private fun saveCart(){val json=JSONObject();cart.forEach{(id,qty)->if(qty>0)json.put(id,qty)};prefs.edit().putString("cart_json",json.toString()).apply()}
- var products by mutableStateOf(sample); private set
+ var products by mutableStateOf<List<Product>>(emptyList()); private set
  var search by mutableStateOf(""); var category by mutableStateOf("All")
  var selected by mutableStateOf<Product?>(null); var tab by mutableStateOf("Home")
  var wishlist by mutableStateOf(restoreIds("wishlist_ids")); var cart by mutableStateOf(restoreCart())
- var loading by mutableStateOf(false); var notice by mutableStateOf("Sample catalogue until live API response is confirmed.")
+ var loading by mutableStateOf(false); var notice by mutableStateOf("Loading the live Juno catalogue…")
  init { refresh() }
- fun refresh(){viewModelScope.launch{loading=true;try{val list=withContext(Dispatchers.IO){load()};if(list.isNotEmpty()){products=list;notice=""}}catch(_:Exception){notice="Live catalogue unavailable; showing sample products."}finally{loading=false}}}
+ fun refresh(){viewModelScope.launch{loading=true;try{val list=withContext(Dispatchers.IO){load()};if(list.isNotEmpty()){products=list;notice=""}else{products=emptyList();notice="No eligible accessories are available from the live catalogue right now. Tap Refresh to try again."}}catch(_:Exception){if(products.isEmpty())notice="Could not connect to the live Juno catalogue. Check your connection and tap Refresh. No sample products are shown."}finally{loading=false}}}
  private fun load():List<Product>{
   // Prefer a structured API, but use the repository's real CSV catalogue when that endpoint is absent.
   val json=fetchText("/catalog.json")
@@ -115,7 +106,7 @@ class ShopModel(application:Application):AndroidViewModel(application){
  }
  val filtered get()=products.filter{it.price in 1..500&&(category=="All"||it.category==category)&&(search.isBlank()||"${it.name} ${it.category} ${it.details}".contains(search,true))}
  fun wish(p:Product){wishlist=if(p.id in wishlist)wishlist-p.id else wishlist+p.id;saveWishlist()}
- fun add(p:Product){cart=cart+(p.id to ((cart[p.id]?:0)+1));saveCart()}
+ fun add(p:Product){val current=cart[p.id]?:0;if(p.stock>=0&&current>=p.stock)return;cart=cart+(p.id to (current+1));saveCart()}
  fun persistCart(){saveCart()}
  fun total()=products.sumOf{it.price*(cart[it.id]?:0)}
 }
