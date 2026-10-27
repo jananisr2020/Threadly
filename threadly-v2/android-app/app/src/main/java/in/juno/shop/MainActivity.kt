@@ -125,6 +125,18 @@ class ShopModel(application:Application):AndroidViewModel(application){
   }
  }
  fun logout(){authToken="";accountEmail="";accountName="";authMessage="You are signed out.";prefs.edit().remove("auth_token").remove("account_email").remove("account_name").apply()}
+ fun requestPasswordReset(emailInput:String){
+  val email=emailInput.trim().lowercase()
+  if(!email.contains("@")){authMessage="Enter your account email first.";return}
+  viewModelScope.launch{
+   authBusy=true;authMessage=""
+   try{
+    val result=withContext(Dispatchers.IO){postJson("/forgot",JSONObject().put("email",email))}
+    authMessage=if(result.optBoolean("ok"))"If the account exists, a password reset link will be sent. Check your email." else result.optString("error","Could not request a reset.")
+   }catch(e:Exception){authMessage=e.message?.take(180) ?: "Could not request a password reset. Try again."}
+   finally{authBusy=false}
+  }
+ }
  private fun postJson(path:String,body:JSONObject):JSONObject{
   val c=URL(BuildConfig.API_BASE_URL+path).openConnection() as HttpURLConnection
   c.requestMethod="POST";c.connectTimeout=10000;c.readTimeout=10000;c.doOutput=true
@@ -239,6 +251,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
    OutlinedTextField(value=password,onValueChange={password=it},label={Text("Password (minimum 8 characters)")},singleLine=true,modifier=Modifier.fillMaxWidth())
    Button(onClick={if(creating)vm.signup(name,email,password) else vm.login(email,password)},enabled=!vm.authBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.authBusy)"Please wait…" else if(creating)"Create account" else "Sign in")}
    TextButton(onClick={creating=!creating;vm.authMessage=""}){Text(if(creating)"Already have an account? Sign in" else "New to Juno? Create account")}
+   if(!creating)TextButton(onClick={vm.requestPasswordReset(email),Unit},enabled=!vm.authBusy){Text("Forgot password?")}
    Text("Accounts use the shared Juno API. Keep your password private.",fontSize=12.sp,color=Color.Gray)
   }
   if(vm.authMessage.isNotBlank())Text(vm.authMessage,color=if(vm.authMessage.contains("successfully"))Color(0xFF16834A) else Color.Gray)
