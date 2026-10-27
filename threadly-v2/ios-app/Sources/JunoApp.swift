@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 private let junoPink = Color(red: 0.82, green: 0.08, blue: 0.36)
 private let junoSoftPink = Color(red: 1.0, green: 0.94, blue: 0.97)
@@ -166,8 +167,10 @@ struct CatalogueView: View {
                             Image(systemName: "bag").font(.largeTitle).foregroundStyle(junoPink)
                             Text(store.status).font(.subheadline).multilineTextAlignment(.center)
                             Text("Refresh to try the live catalogue again.").font(.caption).foregroundStyle(.secondary)
-                        }.frame(maxWidth: .infinity).padding(24)
-                        Button("Retry") { Task { await store.refresh() } }.frame(maxWidth: .infinity)
+                            Button("Retry") { Task { await store.refresh() } }
+                                .buttonStyle(.borderedProminent).tint(junoPink)
+                        }
+                        .frame(maxWidth: .infinity).padding(24)
                     }
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(store.visibleProducts) { product in
@@ -177,7 +180,13 @@ struct CatalogueView: View {
                 }.padding(14)
             }
             .navigationTitle("Discover")
-            .toolbar { Button { Task { await store.refresh() } } label: { Image(systemName: "arrow.clockwise") }.accessibilityLabel("Refresh catalogue") }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { Task { await store.refresh() } } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }.accessibilityLabel("Refresh catalogue")
+                }
+            }
         }
     }
 }
