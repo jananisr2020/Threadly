@@ -212,7 +212,7 @@ struct ProductCard: View {
                 Text("₹\(product.price)").font(.headline)
                 if product.discount > 0 { Text("\(product.discount)% off").font(.caption2).foregroundStyle(.green) }
             }
-            Text(product.rating > 0 ? "★ \(product.rating, specifier: "%.1f") · \(product.category)" : product.category)
+            Text(product.rating > 0 ? "★ \(String(format: "%.1f", product.rating)) · \(product.category)" : product.category)
                 .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             Button { store.add(product) } label: { Text("Add to bag").frame(maxWidth: .infinity) }
                 .buttonStyle(.borderedProminent).tint(junoPink).disabled(product.stock == 0)
