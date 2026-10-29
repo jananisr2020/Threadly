@@ -168,7 +168,7 @@ class ShopModel(application:Application):AndroidViewModel(application){
     }
     val key=created.optString("key");val rzpOrder=created.optString("id");pendingOrderToken=created.optString("orderToken")
     if(key.isBlank()||rzpOrder.isBlank()||pendingOrderToken.isBlank())throw IllegalStateException("Online payment is not configured. Please try again later.")
-    val options=JSONObject().put("key",key).put("name","Juno").put("description","Juno accessories order").put("currency","INR").put("amount",created.optInt("amount")).put("order_id",rzpOrder).put("prefill",JSONObject().put("email",accountEmail).put("contact",addressPhone.trim())).put("theme",JSONObject().put("color","#D9186C"))
+    val options=JSONObject().put("key",key).put("name","Juno").put("description","Juno accessories order").put("currency","INR").put("amount",created.optInt("amount")).put("order_id",rzpOrder).put("prefill",JSONObject().put("email",accountEmail).put("contact",addressPhone.trim())).put("theme",JSONObject().put("color","#D9186C")).put("config",JSONObject().put("display",JSONObject().put("blocks",JSONObject().put("juno_upi",JSONObject().put("name","Pay with UPI").put("instruments",org.json.JSONArray().put(JSONObject().put("method","upi"))))).put("sequence",org.json.JSONArray().put("block.juno_upi")).put("preferences",JSONObject().put("show_default_blocks",false))))
     withContext(Dispatchers.Main){Checkout().open(activity,options)}
    }catch(e:Exception){checkoutMessage=e.message?.take(180)?: "Could not start secure checkout."}
    finally{checkoutBusy=false}
@@ -352,7 +352,7 @@ class MainActivity:ComponentActivity(),PaymentResultWithDataListener{
   OutlinedTextField(value=vm.addressLine,onValueChange={vm.addressLine=it},label={Text("Full delivery address")},modifier=Modifier.fillMaxWidth(),minLines=2)
   OutlinedTextField(value=vm.addressPin,onValueChange={vm.addressPin=it.filter(Char::isDigit).take(6)},label={Text("Tamil Nadu PIN code")},singleLine=true,modifier=Modifier.fillMaxWidth())
   OutlinedTextField(value=vm.coupon,onValueChange={vm.coupon=it},label={Text("Coupon code (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth())
-  Text("Secure online payment via Razorpay (UPI / cards / netbanking). COD is unavailable.",fontSize=12.sp,color=Color.Gray)
+  Text("Secure UPI payment via Razorpay. Cash on delivery is unavailable.",fontSize=12.sp,color=Color.Gray)
   Button(onClick={if(activity!=null)vm.startCheckout(activity) else vm.checkoutMessage="Unable to open payment from this screen."},enabled=ps.isNotEmpty()&&!vm.checkoutBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.checkoutBusy)"Please wait…" else "Continue to secure payment")}
   if(vm.checkoutMessage.isNotBlank())Text(vm.checkoutMessage,fontSize=13.sp,color=if(vm.checkoutMessage.contains("verified"))Color(0xFF16834A) else Color.Gray)
  }}
