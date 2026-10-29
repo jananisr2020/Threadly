@@ -168,7 +168,7 @@ class ShopModel(application:Application):AndroidViewModel(application){
     }
     val key=created.optString("key");val rzpOrder=created.optString("id");pendingOrderToken=created.optString("orderToken")
     if(key.isBlank()||rzpOrder.isBlank()||pendingOrderToken.isBlank())throw IllegalStateException("Online payment is not configured. Please try again later.")
-    val options=JSONObject().put("name","Juno").put("description","Juno accessories order").put("currency","INR").put("amount",created.optInt("amount")).put("order_id",rzpOrder).put("prefill",JSONObject().put("email",accountEmail).put("contact",addressPhone.trim())).put("theme",JSONObject().put("color","#D9186C"))
+    val options=JSONObject().put("key",key).put("name","Juno").put("description","Juno accessories order").put("currency","INR").put("amount",created.optInt("amount")).put("order_id",rzpOrder).put("prefill",JSONObject().put("email",accountEmail).put("contact",addressPhone.trim())).put("theme",JSONObject().put("color","#D9186C"))
     withContext(Dispatchers.Main){Checkout().open(activity,options)}
    }catch(e:Exception){checkoutMessage=e.message?.take(180)?: "Could not start secure checkout."}
    finally{checkoutBusy=false}
