@@ -2,7 +2,11 @@ package in.juno.shop
 
 import android.app.Application
 import android.os.Bundle
+import android.app.Activity
 import androidx.activity.ComponentActivity
+import com.razorpay.Checkout
+import com.razorpay.PaymentData
+import com.razorpay.PaymentResultWithDataListener
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,6 +68,14 @@ class ShopModel(application:Application):AndroidViewModel(application){
  var orders by mutableStateOf<List<JSONObject>>(emptyList())
  var ordersBusy by mutableStateOf(false)
  var ordersMessage by mutableStateOf("")
+ var checkoutBusy by mutableStateOf(false)
+ var checkoutMessage by mutableStateOf("")
+ var addressName by mutableStateOf("")
+ var addressPhone by mutableStateOf("")
+ var addressLine by mutableStateOf("")
+ var addressPin by mutableStateOf("")
+ var coupon by mutableStateOf("")
+ private var pendingOrderToken = ""
  fun loadOrders(){
   if(authToken.isBlank()){ordersMessage="Sign in to view your orders.";return}
   viewModelScope.launch{
@@ -137,6 +149,58 @@ class ShopModel(application:Application):AndroidViewModel(application){
    finally{authBusy=false}
   }
  }
+ fun startCheckout(activity:Activity){
+  if(authToken.isBlank()){checkoutMessage="Please sign in before checkout.";tab="Account";return}
+  val items=products.filter{(cart[it.id]?:0)>0}
+  if(items.isEmpty()){checkoutMessage="Your bag is empty.";return}
+  if(addressName.trim().length<2||!addressPhone.matches(Regex("[6-9][0-9]{9}"))||addressLine.trim().length<8||!addressPin.matches(Regex("[0-9]{6}"))){checkoutMessage="Enter your name, 10-digit mobile number, full address and 6-digit Tamil Nadu PIN code.";return}
+  viewModelScope.launch{
+   checkoutBusy=true;checkoutMessage=""
+   try{
+    val created=withContext(Dispatchers.IO){
+     val body=JSONObject().put("method","UPI").put("coupon",coupon.trim().uppercase())
+     val addr=JSONObject().put("name",addressName.trim()).put("phone",addressPhone.trim()).put("line",addressLine.trim()).put("pin",addressPin.trim())
+     body.put("addr",addr)
+     val arr=org.json.JSONArray()
+     items.forEach{p->arr.put(JSONObject().put("id",p.id).put("n",cart[p.id]?:0).put("s",""))}
+     body.put("items",arr)
+     postAuthenticated("/create-order",body)
+    }
+    val key=created.optString("key");val rzpOrder=created.optString("id");pendingOrderToken=created.optString("orderToken")
+    if(key.isBlank()||rzpOrder.isBlank()||pendingOrderToken.isBlank())throw IllegalStateException("Online payment is not configured. Please try again later.")
+    val options=JSONObject().put("name","Juno").put("description","Juno accessories order").put("currency","INR").put("amount",created.optInt("amount")).put("order_id",rzpOrder).put("prefill",JSONObject().put("email",accountEmail).put("contact",addressPhone.trim())).put("theme",JSONObject().put("color","#D9186C"))
+    withContext(Dispatchers.Main){Checkout().open(activity,options)}
+   }catch(e:Exception){checkoutMessage=e.message?.take(180)?: "Could not start secure checkout."}
+   finally{checkoutBusy=false}
+  }
+ }
+ fun onPaymentSuccess(data:PaymentData){
+  val orderId=data.orderId ?: "";val paymentId=data.paymentId ?: "";val signature=data.signature ?: "";val token=pendingOrderToken
+  if(orderId.isBlank()||paymentId.isBlank()||signature.isBlank()||token.isBlank()){checkoutMessage="Payment response is incomplete. Do not pay again; check My Orders or contact support.";return}
+  viewModelScope.launch{
+   checkoutBusy=true;checkoutMessage="Verifying payment securely…"
+   try{
+    val result=withContext(Dispatchers.IO){postAuthenticated("/verify-payment",JSONObject().put("razorpay_order_id",orderId).put("razorpay_payment_id",paymentId).put("razorpay_signature",signature).put("orderToken",token))}
+    if(!result.optBoolean("ok"))throw IllegalStateException(result.optString("error","Payment verification is pending."))
+    cart=emptyMap();saveCart();ordersMessage="";checkoutMessage="Payment verified! Order "+result.optString("orderId")+" is confirmed.";tab="Account";loadOrders()
+   }catch(e:Exception){checkoutMessage=e.message?.take(220)?: "Payment verification is pending. Do not pay again; check My Orders."}
+   finally{checkoutBusy=false;pendingOrderToken=""}
+  }
+ }
+ fun onPaymentError(code:Int,message:String?){checkoutMessage=if(message.isNullOrBlank())"Payment was not completed. Your cart is still saved." else "Payment not completed: "+message.take(160);pendingOrderToken=""}
+ private fun postAuthenticated(path:String,body:JSONObject):JSONObject{
+  val c=URL(BuildConfig.API_BASE_URL+path).openConnection() as HttpURLConnection
+  c.requestMethod="POST";c.connectTimeout=15000;c.readTimeout=15000;c.doOutput=true
+  c.setRequestProperty("Content-Type","application/json");c.setRequestProperty("Accept","application/json");c.setRequestProperty("Authorization","Bearer "+authToken)
+  return try{
+   c.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))}
+   val code=c.responseCode;val stream=if(code in 200..299)c.inputStream else c.errorStream
+   val raw=stream?.bufferedReader()?.use{it.readText()}?:"{}"
+   val result=runCatching{JSONObject(raw)}.getOrElse{JSONObject()}
+   if(code !in 200..299)throw IllegalStateException(result.optString("error","Request failed (HTTP $code)."))
+   result
+  }finally{c.disconnect()}
+ }
  private fun postJson(path:String,body:JSONObject):JSONObject{
   val c=URL(BuildConfig.API_BASE_URL+path).openConnection() as HttpURLConnection
   c.requestMethod="POST";c.connectTimeout=10000;c.readTimeout=10000;c.doOutput=true
@@ -207,7 +271,12 @@ class ShopModel(application:Application):AndroidViewModel(application){
  fun persistCart(){saveCart()}
  fun total()=products.sumOf{it.price*(cart[it.id]?:0)}
 }
-class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Pink)){JunoApp()}}}}
+class MainActivity:ComponentActivity(),PaymentResultWithDataListener{
+ private var shopModel:ShopModel?=null
+ override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);Checkout.preload(applicationContext);setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Pink)){val vm:ShopModel=viewModel();shopModel=vm;JunoApp(vm)}}}
+ override fun onPaymentSuccess(razorpayPaymentId:String?,paymentData:PaymentData?){val data=paymentData;if(data!=null)shopModel?.onPaymentSuccess(data) else shopModel?.onPaymentError(0,"Payment confirmation was incomplete.")}
+ override fun onPaymentError(code:Int,description:String?,paymentData:PaymentData?){shopModel?.onPaymentError(code,description)}
+}
 @Composable fun JunoApp(vm:ShopModel=viewModel()){
  Scaffold(bottomBar={NavigationBar(containerColor=Color.White){listOf("Home","Wishlist","Cart","Account").forEach{label->val icon=when(label){"Home"->Icons.Default.Home;"Wishlist"->Icons.Default.Favorite;"Cart"->Icons.Default.ShoppingBag;else->Icons.Default.Person};NavigationBarItem(selected=vm.tab==label,onClick={vm.tab=label;vm.selected=null},icon={Icon(icon,null)},label={Text(label)})}}}){pad->
  Column(Modifier.fillMaxSize().padding(pad).background(Color.White)){
@@ -264,4 +333,26 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
 @Composable fun CardProduct(p:Product,wished:Boolean,open:()->Unit,wish:()->Unit,add:()->Unit){Card(modifier=Modifier.fillMaxWidth().clickable{open()},shape=RoundedCornerShape(14.dp)){Column{Box(Modifier.fillMaxWidth().height(135.dp).background(SoftPink),contentAlignment=Alignment.Center){if(p.image.isNotBlank())AsyncImage(p.image,p.name,Modifier.fillMaxSize())else Text("✦",fontSize=48.sp,color=Pink);IconButton(onClick=wish,modifier=Modifier.align(Alignment.TopEnd)){Icon(if(wished)Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,null,tint=Pink)}};Column(Modifier.padding(9.dp)){Text(p.name,minLines=2,maxLines=2,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.SemiBold);Row(verticalAlignment=Alignment.CenterVertically){Text("₹${p.price}",fontWeight=FontWeight.ExtraBold,fontSize=17.sp);if(p.discount>0)Text(" ${p.discount}% off",fontSize=10.sp,color=Color(0xFF16834A))};Text("★ ${p.rating} · ${p.category}",fontSize=10.sp,color=Color.Gray);Button(onClick=add,modifier=Modifier.fillMaxWidth()){Text("Add to bag")}}}}}
 @Composable fun Detail(vm:ShopModel,p:Product,back:()->Unit){Column(Modifier.fillMaxSize().padding(16.dp)){TextButton(onClick=back){Text("← Back")};if(p.image.isNotBlank())AsyncImage(p.image,p.name,Modifier.fillMaxWidth().height(260.dp))else Box(Modifier.fillMaxWidth().height(220.dp).background(SoftPink),contentAlignment=Alignment.Center){Text("✦",fontSize=70.sp,color=Pink)};Text(p.name,fontSize=26.sp,fontWeight=FontWeight.ExtraBold);Text(p.details.ifBlank{p.category},color=Color.Gray);Text("₹${p.price}   ₹${p.mrp}   ${p.discount}% off",fontSize=21.sp,fontWeight=FontWeight.Bold);Text("★ ${p.rating} · stock ${if(p.stock<0)"to be confirmed" else p.stock}",fontSize=12.sp);Text("Delivery estimate and PIN-code availability must be confirmed with the live service.",fontSize=12.sp,color=Color.Gray);Button(onClick={vm.add(p);back()},enabled=p.stock!=0,modifier=Modifier.fillMaxWidth()){Text("Add to bag")};OutlinedButton(onClick={vm.wish(p)},modifier=Modifier.fillMaxWidth()){Text(if(p.id in vm.wishlist)"Saved to wishlist" else "Add to wishlist")}}}
 @Composable fun Listing(vm:ShopModel,ps:List<Product>,title:String){Column{Text(title,fontSize=25.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(16.dp));LazyVerticalGrid(GridCells.Fixed(2),contentPadding=PaddingValues(10.dp)){items(ps){p->CardProduct(p,p.id in vm.wishlist,{vm.selected=p},{vm.wish(p)},{vm.add(p)})}}}}
-@Composable fun Cart(vm:ShopModel){val ps=vm.products.filter{(vm.cart[it.id]?:0)>0};Column(Modifier.fillMaxSize().padding(16.dp)){Text("Your bag",fontSize=26.sp,fontWeight=FontWeight.Bold);if(ps.isEmpty())Text("Your bag is empty.",Modifier.padding(top=16.dp));ps.forEach{p->Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Column(Modifier.weight(1f)){Text(p.name,fontWeight=FontWeight.SemiBold);Text("${vm.cart[p.id]} × ₹${p.price}",color=Color.Gray)};Text("₹${p.price*(vm.cart[p.id]?:0)}");TextButton(onClick={vm.cart=vm.cart-p.id;vm.persistCart()}){Text("Remove")}}};Spacer(Modifier.weight(1f));Text("Subtotal: ₹${vm.total()}",fontSize=20.sp,fontWeight=FontWeight.Bold);Text("Cash on delivery is not available.",fontSize=12.sp,color=Color.Gray);Button(onClick={},enabled=ps.isNotEmpty(),modifier=Modifier.fillMaxWidth()){Text("Checkout integration required")};Text("Payments are not simulated. Connect verified order creation and Razorpay before release.",fontSize=11.sp,color=Color.Gray)}}
+@Composable fun Cart(vm:ShopModel){
+ val context=androidx.compose.ui.platform.LocalContext.current
+ val activity=context as? Activity
+ val ps=vm.products.filter{(vm.cart[it.id]?:0)>0}
+ Column(Modifier.fillMaxSize().padding(16.dp)){
+  Text("Your bag",fontSize=26.sp,fontWeight=FontWeight.Bold)
+  if(ps.isEmpty())Text("Your bag is empty.",Modifier.padding(top=16.dp))
+  ps.forEach{p->Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+   Column(Modifier.weight(1f)){Text(p.name,fontWeight=FontWeight.SemiBold);Text("${vm.cart[p.id]} × ₹${p.price}",color=Color.Gray)}
+   Text("₹${p.price*(vm.cart[p.id]?:0)}")
+   TextButton(onClick={vm.cart=vm.cart-p.id;vm.persistCart()}){Text("Remove")}
+  }}
+  Text("Subtotal: ₹${vm.total()}",fontSize=20.sp,fontWeight=FontWeight.Bold)
+  Text("Delivery is ₹39 below ₹299 after discounts. Tamil Nadu PIN codes only.",fontSize=12.sp,color=Color.Gray)
+  OutlinedTextField(value=vm.addressName,onValueChange={vm.addressName=it},label={Text("Recipient name")},singleLine=true,modifier=Modifier.fillMaxWidth())
+  OutlinedTextField(value=vm.addressPhone,onValueChange={vm.addressPhone=it.filter(Char::isDigit).take(10)},label={Text("Mobile number")},singleLine=true,modifier=Modifier.fillMaxWidth())
+  OutlinedTextField(value=vm.addressLine,onValueChange={vm.addressLine=it},label={Text("Full delivery address")},modifier=Modifier.fillMaxWidth(),minLines=2)
+  OutlinedTextField(value=vm.addressPin,onValueChange={vm.addressPin=it.filter(Char::isDigit).take(6)},label={Text("Tamil Nadu PIN code")},singleLine=true,modifier=Modifier.fillMaxWidth())
+  OutlinedTextField(value=vm.coupon,onValueChange={vm.coupon=it},label={Text("Coupon code (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth())
+  Text("Secure online payment via Razorpay (UPI / cards / netbanking). COD is unavailable.",fontSize=12.sp,color=Color.Gray)
+  Button(onClick={if(activity!=null)vm.startCheckout(activity) else vm.checkoutMessage="Unable to open payment from this screen."},enabled=ps.isNotEmpty()&&!vm.checkoutBusy,modifier=Modifier.fillMaxWidth()){Text(if(vm.checkoutBusy)"Please wait…" else "Continue to secure payment")}
+  if(vm.checkoutMessage.isNotBlank())Text(vm.checkoutMessage,fontSize=13.sp,color=if(vm.checkoutMessage.contains("verified"))Color(0xFF16834A) else Color.Gray)
+ }}
