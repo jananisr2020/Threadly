@@ -9,7 +9,7 @@ const app = fs.readFileSync(path.join(root, 'sales.js'), 'utf8');
 const ids = Array.from(data.matchAll(/id:"([^"]+)"/g), m => m[1]);
 const starts = Array.from(data.matchAll(/start:"([^"]+)"/g), m => Date.parse(m[1]));
 const ends = Array.from(data.matchAll(/end:"([^"]+)"/g), m => Date.parse(m[1]));
-assert.ok(ids.length >= 10, 'expected a full-year calendar');
+assert.ok(ids.length >= 10, 'expected a full-year calendar with at least 10 campaigns');
 assert.equal(new Set(ids).size, ids.length, 'campaign IDs must be unique');
 assert.equal(starts.length, ids.length);
 assert.equal(ends.length, ids.length);
@@ -28,4 +28,4 @@ assert.match(home, /id="juno-home-sale"/, 'homepage campaign teaser must be pres
 assert.match(app, /Asia\/Kolkata/, 'countdown dates must display in India time');
 assert.match(data, /Juno Pink Friday/);
 assert.match(data, /Juno Fresh Start Sale/);
-console.log('Juno sale calendar tests passed (' + ids.length + ' campaigns).');
+console.log('Juno sale calendar tests passed (' + ids.length + ' campaigns, unique IDs, valid date windows, homepage link and countdown).');
