@@ -73,9 +73,19 @@ form.addEventListener('submit',async e=>{
  const data=Object.fromEntries(new FormData(form).entries());data.consent=document.getElementById('consent').checked;
  submit.disabled=true;submit.textContent='Submitting…';statusBox.className='status';
  try{
-  const response=await fetch('/api/seller-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  const result=await response.json().catch(()=>({error:'The server returned an invalid response.'}));
-  if(!response.ok)throw new Error(result.error||'Could not submit the application.');
+  // Call the deployed Netlify function directly. This avoids a rewrite-rule
+  // mismatch on preview deployments while remaining same-origin in production.
+  const response=await fetch('/.netlify/functions/seller-apply',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)});
+  const raw=await response.text();
+  let result;
+  try { result=JSON.parse(raw); }
+  catch(parseError) {
+   const detail='Juno’s seller service returned a non-JSON response (HTTP '+response.status+').';
+   throw new Error(response.status===404
+    ? detail+' The seller function may not be deployed in this Netlify preview. Check the deployment’s Functions list and redeploy from GitHub.'
+    : detail+' Please try again later. If this keeps happening, the site owner needs to check Netlify function logs.');
+  }
+  if(!response.ok)throw new Error(result.error||('Could not submit the application (HTTP '+response.status+').'));
   form.reset();status('Application received! Your details have been sent to Juno for review. This is an application only; seller access is not active yet. Reference: '+result.applicationId,'ok');
  }catch(err){status(err.message||'Could not submit. Please try again later.','err');}
  finally{submit.disabled=false;submit.textContent='Submit seller application';}
