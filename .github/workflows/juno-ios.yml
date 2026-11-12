@@ -1,0 +1,29 @@
+name: Juno iOS build
+
+on:
+  push:
+    paths:
+      - "threadly-v2/ios-app/**"
+      - ".github/workflows/juno-ios.yml"
+  pull_request:
+    paths:
+      - "threadly-v2/ios-app/**"
+      - ".github/workflows/juno-ios.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: threadly-v2/ios-app
+        run: xcodegen generate
+      - name: Build iOS Simulator app
+        working-directory: threadly-v2/ios-app
+        run: xcodebuild -project Juno.xcodeproj -scheme Juno -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build

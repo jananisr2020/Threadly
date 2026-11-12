@@ -1,67 +1,67 @@
 Product ID,Product Name,Category,For,MRP,Selling Price,Details,Sizes/Colours,Image,Stock,Flash Sale,Rating,Show on site
-TL001,Pastel Hair Clip,Hair Clips,Women,90,45,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,27,No,3.9,Yes
-TL002,Classic Hair Clip,Hair Clips,Women,40,24,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,18,No,4.4,Yes
-TL003,Boho Hair Clip,Hair Clips,Women,110,33,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,40,No,4.3,Yes
-TL004,Glossy Hair Clip,Hair Clips,Women,100,40,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,56,No,4.0,Yes
-TL005,Matte Hair Clip,Hair Clips,Women,40,19,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,26,No,4.9,Yes
-TL006,Floral Hair Clip,Hair Clips,Women,110,44,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,27,No,4.0,Yes
-TL007,Pearl Hair Clip,Hair Clips,Women,90,36,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,22,No,4.0,Yes
-TL008,Gold Hair Clip,Hair Clips,Women,40,24,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,29,No,4.1,Yes
-TL009,Mini Hair Clip,Hair Clips,Women,100,40,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,9,No,4.6,Yes
-TL010,Satin Hair Clip,Hair Clips,Women,80,24,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,41,No,3.9,Yes
+TL001,Pastel Hair Clip,Hair Clips,Women,90,45,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL001.jpg,27,No,3.9,Yes
+TL002,Classic Hair Clip,Hair Clips,Women,40,24,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL002.jpg,18,No,4.4,Yes
+TL003,Boho Hair Clip,Hair Clips,Women,110,33,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL003.jpg,40,No,4.3,Yes
+TL004,Glossy Hair Clip,Hair Clips,Women,100,40,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL004.jpg,56,No,4.0,Yes
+TL005,Matte Hair Clip,Hair Clips,Women,40,19,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL005.jpg,26,No,4.9,Yes
+TL006,Floral Hair Clip,Hair Clips,Women,110,44,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL006.jpg,27,No,4.0,Yes
+TL007,Pearl Hair Clip,Hair Clips,Women,90,36,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL007.jpg,22,No,4.0,Yes
+TL008,Gold Hair Clip,Hair Clips,Women,40,24,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL008.jpg,29,No,4.1,Yes
+TL009,Mini Hair Clip,Hair Clips,Women,100,40,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL009.jpg,9,No,4.6,Yes
+TL010,Satin Hair Clip,Hair Clips,Women,80,24,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,/images/products/TL010.jpg,41,No,3.9,Yes
 TL011,Velvet Hair Clip,Hair Clips,Women,140,56,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,27,No,4.3,Yes
 TL012,Trendy Hair Clip,Hair Clips,Women,80,32,Metal & acrylic,Pink|Black|Beige|Lilac|Mint,,45,No,4.1,Yes
-TL013,Pastel Claw Clip,Claw Clips,Women,90,54,Matte finish,Pink|Black|Beige|Lilac|Mint,,55,No,4.7,Yes
-TL014,Classic Claw Clip,Claw Clips,Women,160,80,Matte finish,Pink|Black|Beige|Lilac|Mint,,20,No,4.4,Yes
-TL015,Boho Claw Clip,Claw Clips,Women,80,32,Matte finish,Pink|Black|Beige|Lilac|Mint,,17,No,4.6,Yes
-TL016,Glossy Claw Clip,Claw Clips,Women,50,20,Matte finish,Pink|Black|Beige|Lilac|Mint,,7,No,4.4,Yes
-TL017,Matte Claw Clip,Claw Clips,Women,120,72,Matte finish,Pink|Black|Beige|Lilac|Mint,,9,No,4.4,Yes
-TL018,Floral Claw Clip,Claw Clips,Women,180,72,Matte finish,Pink|Black|Beige|Lilac|Mint,,43,No,3.8,Yes
-TL019,Pearl Claw Clip,Claw Clips,Women,150,90,Matte finish,Pink|Black|Beige|Lilac|Mint,,11,Yes,4.1,Yes
-TL020,Gold Claw Clip,Claw Clips,Women,60,19,Matte finish,Pink|Black|Beige|Lilac|Mint,,50,No,4.4,Yes
-TL021,Mini Claw Clip,Claw Clips,Women,120,36,Matte finish,Pink|Black|Beige|Lilac|Mint,,5,No,4.1,Yes
-TL022,Satin Claw Clip,Claw Clips,Women,80,32,Matte finish,Pink|Black|Beige|Lilac|Mint,,11,Yes,4.7,Yes
+TL013,Pastel Claw Clip,Claw Clips,Women,90,54,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL013.jpg,55,No,4.7,Yes
+TL014,Classic Claw Clip,Claw Clips,Women,160,80,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL014.jpg,20,No,4.4,Yes
+TL015,Boho Claw Clip,Claw Clips,Women,80,32,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL015.jpg,17,No,4.6,Yes
+TL016,Glossy Claw Clip,Claw Clips,Women,50,20,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL016.jpg,7,No,4.4,Yes
+TL017,Matte Claw Clip,Claw Clips,Women,120,72,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL017.jpg,9,No,4.4,Yes
+TL018,Floral Claw Clip,Claw Clips,Women,180,72,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL018.jpg,43,No,3.8,Yes
+TL019,Pearl Claw Clip,Claw Clips,Women,150,90,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL019.jpg,11,Yes,4.1,Yes
+TL020,Gold Claw Clip,Claw Clips,Women,60,19,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL020.jpg,50,No,4.4,Yes
+TL021,Mini Claw Clip,Claw Clips,Women,120,36,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL021.jpg,5,No,4.1,Yes
+TL022,Satin Claw Clip,Claw Clips,Women,80,32,Matte finish,Pink|Black|Beige|Lilac|Mint,/images/products/TL022.jpg,11,Yes,4.7,Yes
 TL023,Velvet Claw Clip,Claw Clips,Women,140,42,Matte finish,Pink|Black|Beige|Lilac|Mint,,29,No,4.2,Yes
 TL024,Trendy Claw Clip,Claw Clips,Women,50,30,Matte finish,Pink|Black|Beige|Lilac|Mint,,21,No,4.3,Yes
-TL025,Pastel Hair Band,Hair Bands,Women,160,80,Soft fabric,Pink|Black|Beige|Lilac|Mint,,6,No,4.1,Yes
-TL026,Classic Hair Band,Hair Bands,Women,60,19,Soft fabric,Pink|Black|Beige|Lilac|Mint,,3,No,4.0,Yes
-TL027,Boho Hair Band,Hair Bands,Women,110,44,Soft fabric,Pink|Black|Beige|Lilac|Mint,,32,No,4.4,Yes
-TL028,Glossy Hair Band,Hair Bands,Women,70,42,Soft fabric,Pink|Black|Beige|Lilac|Mint,,54,No,4.5,Yes
-TL029,Matte Hair Band,Hair Bands,Women,120,72,Soft fabric,Pink|Black|Beige|Lilac|Mint,,30,No,4.8,Yes
-TL030,Floral Hair Band,Hair Bands,Women,170,102,Soft fabric,Pink|Black|Beige|Lilac|Mint,,38,No,4.4,Yes
-TL031,Pearl Hair Band,Hair Bands,Women,120,36,Soft fabric,Pink|Black|Beige|Lilac|Mint,,39,No,4.9,Yes
-TL032,Gold Hair Band,Hair Bands,Women,160,96,Soft fabric,Pink|Black|Beige|Lilac|Mint,,53,No,4.4,Yes
-TL033,Mini Hair Band,Hair Bands,Women,60,24,Soft fabric,Pink|Black|Beige|Lilac|Mint,,40,No,4.3,Yes
-TL034,Satin Hair Band,Hair Bands,Women,150,45,Soft fabric,Pink|Black|Beige|Lilac|Mint,,20,Yes,4.0,Yes
+TL025,Pastel Hair Band,Hair Bands,Women,160,80,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL025.jpg,6,No,4.1,Yes
+TL026,Classic Hair Band,Hair Bands,Women,60,19,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL026.jpg,3,No,4.0,Yes
+TL027,Boho Hair Band,Hair Bands,Women,110,44,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL027.jpg,32,No,4.4,Yes
+TL028,Glossy Hair Band,Hair Bands,Women,70,42,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL028.jpg,54,No,4.5,Yes
+TL029,Matte Hair Band,Hair Bands,Women,120,72,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL029.jpg,30,No,4.8,Yes
+TL030,Floral Hair Band,Hair Bands,Women,170,102,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL030.jpg,38,No,4.4,Yes
+TL031,Pearl Hair Band,Hair Bands,Women,120,36,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL031.jpg,39,No,4.9,Yes
+TL032,Gold Hair Band,Hair Bands,Women,160,96,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL032.jpg,53,No,4.4,Yes
+TL033,Mini Hair Band,Hair Bands,Women,60,24,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL033.jpg,40,No,4.3,Yes
+TL034,Satin Hair Band,Hair Bands,Women,150,45,Soft fabric,Pink|Black|Beige|Lilac|Mint,/images/products/TL034.jpg,20,Yes,4.0,Yes
 TL035,Velvet Hair Band,Hair Bands,Women,190,95,Soft fabric,Pink|Black|Beige|Lilac|Mint,,12,No,3.8,Yes
 TL036,Trendy Hair Band,Hair Bands,Women,80,40,Soft fabric,Pink|Black|Beige|Lilac|Mint,,36,No,4.1,Yes
-TL037,Pastel Scrunchie,Scrunchies,Women,160,48,Satin,Pink|Black|Beige|Lilac|Mint,,53,No,4.2,Yes
-TL038,Classic Scrunchie,Scrunchies,Women,50,19,Satin,Pink|Black|Beige|Lilac|Mint,,25,No,4.3,Yes
-TL039,Boho Scrunchie,Scrunchies,Women,90,27,Satin,Pink|Black|Beige|Lilac|Mint,,28,No,3.9,Yes
-TL040,Glossy Scrunchie,Scrunchies,Women,170,51,Satin,Pink|Black|Beige|Lilac|Mint,,24,Yes,4.2,Yes
-TL041,Matte Scrunchie,Scrunchies,Women,60,30,Satin,Pink|Black|Beige|Lilac|Mint,,33,No,4.7,Yes
-TL042,Floral Scrunchie,Scrunchies,Women,90,27,Satin,Pink|Black|Beige|Lilac|Mint,,15,No,4.6,Yes
-TL043,Pearl Scrunchie,Scrunchies,Women,160,96,Satin,Pink|Black|Beige|Lilac|Mint,,48,No,4.2,Yes
-TL044,Gold Scrunchie,Scrunchies,Women,50,19,Satin,Pink|Black|Beige|Lilac|Mint,,36,No,3.9,Yes
-TL045,Mini Scrunchie,Scrunchies,Women,80,32,Satin,Pink|Black|Beige|Lilac|Mint,,55,No,4.2,Yes
-TL046,Satin Scrunchie,Scrunchies,Women,150,75,Satin,Pink|Black|Beige|Lilac|Mint,,9,No,4.1,Yes
-TL047,Velvet Scrunchie,Scrunchies,Women,170,85,Satin,Pink|Black|Beige|Lilac|Mint,,34,No,4.2,Yes
-TL048,Trendy Scrunchie,Scrunchies,Women,60,24,Satin,Pink|Black|Beige|Lilac|Mint,,32,No,4.7,Yes
-TL049,Pastel Earrings,Earrings,Women,200,80,Alloy,Pink|Black|Beige|Lilac|Mint,,23,No,3.9,Yes
-TL050,Classic Earrings,Earrings,Women,240,144,Alloy,Pink|Black|Beige|Lilac|Mint,,27,Yes,4.3,Yes
-TL051,Boho Earrings,Earrings,Women,270,108,Alloy,Pink|Black|Beige|Lilac|Mint,,4,No,4.1,Yes
-TL052,Glossy Earrings,Earrings,Women,140,84,Alloy,Pink|Black|Beige|Lilac|Mint,,33,Yes,4.7,Yes
-TL053,Matte Earrings,Earrings,Women,160,48,Alloy,Pink|Black|Beige|Lilac|Mint,,16,No,4.3,Yes
-TL054,Floral Earrings,Earrings,Women,190,57,Alloy,Pink|Black|Beige|Lilac|Mint,,30,Yes,4.4,Yes
-TL055,Pearl Earrings,Earrings,Women,50,20,Alloy,Pink|Black|Beige|Lilac|Mint,,37,Yes,4.3,Yes
-TL056,Gold Earrings,Earrings,Women,70,28,Alloy,Pink|Black|Beige|Lilac|Mint,,57,No,4.3,Yes
-TL057,Mini Earrings,Earrings,Women,90,27,Alloy,Pink|Black|Beige|Lilac|Mint,,51,No,4.7,Yes
-TL058,Satin Earrings,Earrings,Women,190,114,Alloy,Pink|Black|Beige|Lilac|Mint,,37,Yes,3.8,Yes
-TL059,Velvet Earrings,Earrings,Women,210,84,Alloy,Pink|Black|Beige|Lilac|Mint,,36,No,4.1,Yes
-TL060,Trendy Earrings,Earrings,Women,220,110,Alloy,Pink|Black|Beige|Lilac|Mint,,9,No,3.8,Yes
-TL061,Pastel Necklace,Necklaces,Women,120,48,Gold tone,Pink|Black|Beige|Lilac|Mint,,32,No,4.3,Yes
-TL062,Classic Necklace,Necklaces,Women,130,52,Gold tone,Pink|Black|Beige|Lilac|Mint,,10,No,3.9,Yes
-TL063,Boho Necklace,Necklaces,Women,140,56,Gold tone,Pink|Black|Beige|Lilac|Mint,,20,No,3.9,Yes
+TL037,Pastel Scrunchie,Scrunchies,Women,160,48,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL037.jpg,53,No,4.2,Yes
+TL038,Classic Scrunchie,Scrunchies,Women,50,19,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL038.jpg,25,No,4.3,Yes
+TL039,Boho Scrunchie,Scrunchies,Women,90,27,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL039.jpg,28,No,3.9,Yes
+TL040,Glossy Scrunchie,Scrunchies,Women,170,51,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL040.jpg,24,Yes,4.2,Yes
+TL041,Matte Scrunchie,Scrunchies,Women,60,30,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL041.jpg,33,No,4.7,Yes
+TL042,Floral Scrunchie,Scrunchies,Women,90,27,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL042.jpg,15,No,4.6,Yes
+TL043,Pearl Scrunchie,Scrunchies,Women,160,96,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL043.jpg,48,No,4.2,Yes
+TL044,Gold Scrunchie,Scrunchies,Women,50,19,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL044.jpg,36,No,3.9,Yes
+TL045,Mini Scrunchie,Scrunchies,Women,80,32,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL045.jpg,55,No,4.2,Yes
+TL046,Satin Scrunchie,Scrunchies,Women,150,75,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL046.jpg,9,No,4.1,Yes
+TL047,Velvet Scrunchie,Scrunchies,Women,170,85,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL047.jpg,34,No,4.2,Yes
+TL048,Trendy Scrunchie,Scrunchies,Women,60,24,Satin,Pink|Black|Beige|Lilac|Mint,/images/products/TL048.jpg,32,No,4.7,Yes
+TL049,Pastel Earrings,Earrings,Women,200,80,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL049.jpg,23,No,3.9,Yes
+TL050,Classic Earrings,Earrings,Women,240,144,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL050.jpg,27,Yes,4.3,Yes
+TL051,Boho Earrings,Earrings,Women,270,108,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL051.jpg,4,No,4.1,Yes
+TL052,Glossy Earrings,Earrings,Women,140,84,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL052.jpg,33,Yes,4.7,Yes
+TL053,Matte Earrings,Earrings,Women,160,48,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL053.jpg,16,No,4.3,Yes
+TL054,Floral Earrings,Earrings,Women,190,57,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL054.jpg,30,Yes,4.4,Yes
+TL055,Pearl Earrings,Earrings,Women,50,20,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL055.jpg,37,Yes,4.3,Yes
+TL056,Gold Earrings,Earrings,Women,70,28,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL056.jpg,57,No,4.3,Yes
+TL057,Mini Earrings,Earrings,Women,90,27,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL057.jpg,51,No,4.7,Yes
+TL058,Satin Earrings,Earrings,Women,190,114,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL058.jpg,37,Yes,3.8,Yes
+TL059,Velvet Earrings,Earrings,Women,210,84,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL059.jpg,36,No,4.1,Yes
+TL060,Trendy Earrings,Earrings,Women,220,110,Alloy,Pink|Black|Beige|Lilac|Mint,/images/products/TL060.jpg,9,No,3.8,Yes
+TL061,Pastel Necklace,Necklaces,Women,120,48,Gold tone,Pink|Black|Beige|Lilac|Mint,/images/products/TL061.jpg,32,No,4.3,Yes
+TL062,Classic Necklace,Necklaces,Women,130,52,Gold tone,Pink|Black|Beige|Lilac|Mint,/images/products/TL062.jpg,10,No,3.9,Yes
+TL063,Boho Necklace,Necklaces,Women,140,56,Gold tone,Pink|Black|Beige|Lilac|Mint,/images/products/TL063.jpg,20,No,3.9,Yes
 TL064,Glossy Necklace,Necklaces,Women,260,130,Gold tone,Pink|Black|Beige|Lilac|Mint,,22,No,4.8,Yes
 TL065,Matte Necklace,Necklaces,Women,260,104,Gold tone,Pink|Black|Beige|Lilac|Mint,,37,No,4.7,Yes
 TL066,Floral Necklace,Necklaces,Women,260,156,Gold tone,Pink|Black|Beige|Lilac|Mint,,26,No,3.9,Yes
@@ -71,41 +71,41 @@ TL069,Mini Necklace,Necklaces,Women,350,140,Gold tone,Pink|Black|Beige|Lilac|Min
 TL070,Satin Necklace,Necklaces,Women,100,60,Gold tone,Pink|Black|Beige|Lilac|Mint,,46,Yes,4.3,Yes
 TL071,Velvet Necklace,Necklaces,Women,440,264,Gold tone,Pink|Black|Beige|Lilac|Mint,,19,No,4.8,Yes
 TL072,Trendy Necklace,Necklaces,Women,420,210,Gold tone,Pink|Black|Beige|Lilac|Mint,,24,No,4.8,Yes
-TL073,Pastel Bracelet,Bracelets,Women,100,60,Adjustable,Pink|Black|Beige|Lilac|Mint,,22,No,4.4,Yes
-TL074,Classic Bracelet,Bracelets,Women,80,32,Adjustable,Pink|Black|Beige|Lilac|Mint,,32,No,4.2,Yes
-TL075,Boho Bracelet,Bracelets,Women,60,36,Adjustable,Pink|Black|Beige|Lilac|Mint,,15,No,4.5,Yes
-TL076,Glossy Bracelet,Bracelets,Women,120,60,Adjustable,Pink|Black|Beige|Lilac|Mint,,50,Yes,4.5,Yes
-TL077,Matte Bracelet,Bracelets,Women,90,27,Adjustable,Pink|Black|Beige|Lilac|Mint,,39,Yes,4.6,Yes
-TL078,Floral Bracelet,Bracelets,Women,60,19,Adjustable,Pink|Black|Beige|Lilac|Mint,,2,Yes,4.1,Yes
-TL079,Pearl Bracelet,Bracelets,Women,110,55,Adjustable,Pink|Black|Beige|Lilac|Mint,,16,No,4.5,Yes
-TL080,Gold Bracelet,Bracelets,Women,80,32,Adjustable,Pink|Black|Beige|Lilac|Mint,,42,No,3.8,Yes
-TL081,Mini Bracelet,Bracelets,Women,290,116,Adjustable,Pink|Black|Beige|Lilac|Mint,,42,Yes,4.8,Yes
-TL082,Satin Bracelet,Bracelets,Women,90,36,Adjustable,Pink|Black|Beige|Lilac|Mint,,35,No,4.4,Yes
-TL083,Velvet Bracelet,Bracelets,Women,290,174,Adjustable,Pink|Black|Beige|Lilac|Mint,,41,No,4.1,Yes
-TL084,Trendy Bracelet,Bracelets,Women,250,100,Adjustable,Pink|Black|Beige|Lilac|Mint,,20,No,4.2,Yes
-TL085,Pastel Ring,Rings,Women,240,72,Adjustable,Pink|Black|Beige|Lilac|Mint,,50,No,4.1,Yes
-TL086,Classic Ring,Rings,Women,200,60,Adjustable,Pink|Black|Beige|Lilac|Mint,,34,No,4.2,Yes
-TL087,Boho Ring,Rings,Women,160,64,Adjustable,Pink|Black|Beige|Lilac|Mint,,50,No,4.7,Yes
-TL088,Glossy Ring,Rings,Women,190,95,Adjustable,Pink|Black|Beige|Lilac|Mint,,59,Yes,3.8,Yes
-TL089,Matte Ring,Rings,Women,140,56,Adjustable,Pink|Black|Beige|Lilac|Mint,,22,No,4.2,Yes
-TL090,Floral Ring,Rings,Women,100,30,Adjustable,Pink|Black|Beige|Lilac|Mint,,17,No,4.0,Yes
-TL091,Pearl Ring,Rings,Women,120,36,Adjustable,Pink|Black|Beige|Lilac|Mint,,6,No,4.6,Yes
-TL092,Gold Ring,Rings,Women,70,35,Adjustable,Pink|Black|Beige|Lilac|Mint,,6,No,4.2,Yes
-TL093,Mini Ring,Rings,Women,220,132,Adjustable,Pink|Black|Beige|Lilac|Mint,,38,No,4.2,Yes
-TL094,Satin Ring,Rings,Women,230,115,Adjustable,Pink|Black|Beige|Lilac|Mint,,5,No,4.1,Yes
-TL095,Velvet Ring,Rings,Women,180,90,Adjustable,Pink|Black|Beige|Lilac|Mint,,43,No,4.0,Yes
-TL096,Trendy Ring,Rings,Women,120,60,Adjustable,Pink|Black|Beige|Lilac|Mint,,54,No,4.4,Yes
-TL097,Pastel Sunglasses,Sunglasses,Unisex,330,198,UV400,Pink|Black|Beige|Lilac|Mint,,58,Yes,4.6,Yes
-TL098,Classic Sunglasses,Sunglasses,Unisex,190,95,UV400,Pink|Black|Beige|Lilac|Mint,,17,Yes,4.9,Yes
-TL099,Boho Sunglasses,Sunglasses,Unisex,500,200,UV400,Pink|Black|Beige|Lilac|Mint,,7,No,4.5,Yes
-TL100,Glossy Sunglasses,Sunglasses,Unisex,510,153,UV400,Pink|Black|Beige|Lilac|Mint,,48,No,3.9,Yes
-TL101,Matte Sunglasses,Sunglasses,Unisex,360,180,UV400,Pink|Black|Beige|Lilac|Mint,,44,No,4.5,Yes
-TL102,Floral Sunglasses,Sunglasses,Unisex,210,126,UV400,Pink|Black|Beige|Lilac|Mint,,13,No,4.5,Yes
-TL103,Pearl Sunglasses,Sunglasses,Unisex,200,80,UV400,Pink|Black|Beige|Lilac|Mint,,34,No,4.3,Yes
-TL104,Gold Sunglasses,Sunglasses,Unisex,490,196,UV400,Pink|Black|Beige|Lilac|Mint,,8,No,4.1,Yes
-TL105,Mini Sunglasses,Sunglasses,Unisex,330,132,UV400,Pink|Black|Beige|Lilac|Mint,,15,No,4.5,Yes
-TL106,Satin Sunglasses,Sunglasses,Unisex,310,124,UV400,Pink|Black|Beige|Lilac|Mint,,14,No,4.5,Yes
-TL107,Velvet Sunglasses,Sunglasses,Unisex,590,177,UV400,Pink|Black|Beige|Lilac|Mint,,26,Yes,4.7,Yes
+TL073,Pastel Bracelet,Bracelets,Women,100,60,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL073.jpg,22,No,4.4,Yes
+TL074,Classic Bracelet,Bracelets,Women,80,32,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL074.jpg,32,No,4.2,Yes
+TL075,Boho Bracelet,Bracelets,Women,60,36,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL075.jpg,15,No,4.5,Yes
+TL076,Glossy Bracelet,Bracelets,Women,120,60,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL076.jpg,50,Yes,4.5,Yes
+TL077,Matte Bracelet,Bracelets,Women,90,27,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL077.jpg,39,Yes,4.6,Yes
+TL078,Floral Bracelet,Bracelets,Women,60,19,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL078.jpg,2,Yes,4.1,Yes
+TL079,Pearl Bracelet,Bracelets,Women,110,55,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL079.jpg,16,No,4.5,Yes
+TL080,Gold Bracelet,Bracelets,Women,80,32,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL080.jpg,42,No,3.8,Yes
+TL081,Mini Bracelet,Bracelets,Women,290,116,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL081.jpg,42,Yes,4.8,Yes
+TL082,Satin Bracelet,Bracelets,Women,90,36,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL082.jpg,35,No,4.4,Yes
+TL083,Velvet Bracelet,Bracelets,Women,290,174,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL083.jpg,41,No,4.1,Yes
+TL084,Trendy Bracelet,Bracelets,Women,250,100,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL084.jpg,20,No,4.2,Yes
+TL085,Pastel Ring,Rings,Women,240,72,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL085.jpg,50,No,4.1,Yes
+TL086,Classic Ring,Rings,Women,200,60,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL086.jpg,34,No,4.2,Yes
+TL087,Boho Ring,Rings,Women,160,64,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL087.jpg,50,No,4.7,Yes
+TL088,Glossy Ring,Rings,Women,190,95,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL088.jpg,59,Yes,3.8,Yes
+TL089,Matte Ring,Rings,Women,140,56,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL089.jpg,22,No,4.2,Yes
+TL090,Floral Ring,Rings,Women,100,30,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL090.jpg,17,No,4.0,Yes
+TL091,Pearl Ring,Rings,Women,120,36,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL091.jpg,6,No,4.6,Yes
+TL092,Gold Ring,Rings,Women,70,35,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL092.jpg,6,No,4.2,Yes
+TL093,Mini Ring,Rings,Women,220,132,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL093.jpg,38,No,4.2,Yes
+TL094,Satin Ring,Rings,Women,230,115,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL094.jpg,5,No,4.1,Yes
+TL095,Velvet Ring,Rings,Women,180,90,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL095.jpg,43,No,4.0,Yes
+TL096,Trendy Ring,Rings,Women,120,60,Adjustable,Pink|Black|Beige|Lilac|Mint,/images/products/TL096.jpg,54,No,4.4,Yes
+TL097,Pastel Sunglasses,Sunglasses,Unisex,330,198,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL097.jpg,58,Yes,4.6,Yes
+TL098,Classic Sunglasses,Sunglasses,Unisex,190,95,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL098.jpg,17,Yes,4.9,Yes
+TL099,Boho Sunglasses,Sunglasses,Unisex,500,200,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL099.jpg,7,No,4.5,Yes
+TL100,Glossy Sunglasses,Sunglasses,Unisex,510,153,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL100.jpg,48,No,3.9,Yes
+TL101,Matte Sunglasses,Sunglasses,Unisex,360,180,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL101.jpg,44,No,4.5,Yes
+TL102,Floral Sunglasses,Sunglasses,Unisex,210,126,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL102.jpg,13,No,4.5,Yes
+TL103,Pearl Sunglasses,Sunglasses,Unisex,200,80,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL103.jpg,34,No,4.3,Yes
+TL104,Gold Sunglasses,Sunglasses,Unisex,490,196,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL104.jpg,8,No,4.1,Yes
+TL105,Mini Sunglasses,Sunglasses,Unisex,330,132,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL105.jpg,15,No,4.5,Yes
+TL106,Satin Sunglasses,Sunglasses,Unisex,310,124,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL106.jpg,14,No,4.5,Yes
+TL107,Velvet Sunglasses,Sunglasses,Unisex,590,177,UV400,Pink|Black|Beige|Lilac|Mint,/images/products/TL107.jpg,26,Yes,4.7,Yes
 TL108,Trendy Sunglasses,Sunglasses,Unisex,410,205,UV400,Pink|Black|Beige|Lilac|Mint,,11,No,4.3,Yes
 TL109,Pastel Watch,Watches,Unisex,810,324,Analog,Pink|Black|Beige|Lilac|Mint,,48,No,4.7,Yes
 TL110,Classic Watch,Watches,Unisex,480,240,Analog,Pink|Black|Beige|Lilac|Mint,,38,No,4.1,Yes
