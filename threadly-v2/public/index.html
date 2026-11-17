@@ -451,7 +451,7 @@ const JUNO_SALES=[{name:"Juno Festive Edit",start:"2026-10-25T00:00:00+05:30",en
 {name:"Payday Pink Picks",start:"2026-11-20T00:00:00+05:30",end:"2026-11-26T23:59:59+05:30",tag:"Little treats, lovely prices"},
 {name:"Christmas Accessory Edit",start:"2026-12-05T00:00:00+05:30",end:"2026-12-12T23:59:59+05:30",tag:"Gift-ready accessories"},
 {name:"Juno Christmas Sale",start:"2026-12-18T00:00:00+05:30",end:"2026-12-25T23:59:59+05:30",tag:"Festive gifting days"},
-{name:"Year-End Stock Clearance",start:"2026-12-28T00:00:00+05:30",end:"2027-01-02T23:59:59+05:30",tag:"Clearance on selected styles",coupon:"FRESHSTART10 · 10% off, max ₹50"},
+{name:"Juno Fresh Start Sale",start:"2026-12-28T00:00:00+05:30",end:"2027-01-02T23:59:59+05:30",tag:"Year-end and New Year accessory savings",coupon:"FRESHSTART10 · 10% off, max ₹50"},
 {name:"Juno New Year Sale",start:"2027-01-03T00:00:00+05:30",end:"2027-01-08T23:59:59+05:30",tag:"Start the year with a little sparkle"},
 {name:"Last-Chance Clearance",start:"2027-01-11T00:00:00+05:30",end:"2027-01-16T23:59:59+05:30",tag:"Last pieces at special prices"},
 {name:"Juno Republic Day Sale",start:"2027-01-20T00:00:00+05:30",end:"2027-01-26T23:59:59+05:30",tag:"Republic Day special offers"},
@@ -690,12 +690,13 @@ function openP(id){
 
 
 /* ---- cart ---- */
-const COUPONS={JUNO10:{pct:10}};
+const COUPONS={JUNO10:{pct:10},JUNOFEST10:{pct:10,max:50,start:"2026-10-25T00:00:00+05:30",end:"2026-11-08T23:59:59+05:30"},DIWALIGLOW15:{pct:15,max:75,start:"2026-11-05T00:00:00+05:30",end:"2026-11-09T23:59:59+05:30"},PINKFRIDAY15:{pct:15,max:75,start:"2026-11-27T00:00:00+05:30",end:"2026-11-30T23:59:59+05:30"},FRESHSTART10:{pct:10,max:50,start:"2026-12-28T00:00:00+05:30",end:"2027-01-02T23:59:59+05:30"}};
+function couponActive(code){const r=COUPONS[code];return !!r&&(!r.start||Date.now()>=Date.parse(r.start))&&(!r.end||Date.now()<=Date.parse(r.end))}
 function invoice(id){const o=(window._ord||[]).find(x=>x.id===id);if(!o)return toast('Order not found');const w=window.open('','_blank');if(!w)return toast('Allow pop-ups to view the invoice');w.document.write('<!doctype html><title>Invoice '+esc(o.id)+'</title><style>body{font:15px system-ui;max-width:640px;margin:24px auto;padding:0 16px;color:#16162e}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left}.r{text-align:right}h1{margin:0}@media print{button{display:none}}</style><h1>Juno</h1><p>Tax invoice / order receipt</p><p><b>Invoice for order:</b> '+esc(o.id)+'<br><b>Date:</b> '+esc(o.date)+'<br><b>Customer:</b> '+esc(user.name)+' ('+esc(user.email)+')<br><b>Payment:</b> '+esc(o.method)+(o.status?' · '+esc(o.status):'')+'</p><table><tr><th>Description</th><th class="r">Amount</th></tr><tr><td>'+o.n+' item(s) (delivery by '+esc(o.eta||'')+')</td><td class="r">'+inr(o.total)+'</td></tr><tr><th>Total paid</th><th class="r">'+inr(o.total)+'</th></tr></table><p style="color:#666;font-size:13px">Item-wise breakup and GST details can be added once product tax data is stored in the sheet.</p><button onclick="print()">Print / Save as PDF</button>');w.document.close()}
 S.cmp=[];
 function cmpBar(){let b=document.getElementById('cmpbar');if(!S.cmp.length){if(b)b.remove();return}if(!b){b=document.createElement('button');b.id='cmpbar';b.className='cta';b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:50';b.onclick=cmpOpen;document.body.appendChild(b)}b.textContent='Compare ('+S.cmp.length+') ⇄'}
 function cmpOpen(){const ps=S.cmp.map(i=>P.find(x=>x.id===i)).filter(Boolean);if(ps.length<2)return toast('Pick at least 2 products to compare');const row=(l,f)=>'<tr><th>'+l+'</th>'+ps.map(p=>'<td>'+f(p)+'</td>').join('')+'</tr>';$('#auth').innerHTML='<div class="md"><button class="x" data-x="#aov" aria-label="Close">×</button><h2 style="margin:0">Compare</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+row('Product',p=>'<b>'+esc(p.name)+'</b>')+row('Price',p=>inr(p.price))+row('MRP',p=>'<s>'+inr(p.mrp)+'</s> ('+p.off+'% off)')+row('Rating',p=>p.rc?'★ '+p.rr+' ('+p.rc+')':'No reviews')+row('Sizes/colors',p=>esc(p.sizes.slice(0,6).join(', ')||'-'))+row('Stock',p=>p.stock<=0?'Out of stock':p.stock<=5?'Only '+p.stock+' left':'In stock')+'</table></div><button class="chip" id="cmpclr">Clear</button></div>';show('#aov');$('#cmpclr').onclick=()=>{S.cmp=[];cmpBar();render();document.querySelector('[data-x="#aov"]').click()}}
-function cpDisc(c,sub){const r=COUPONS[c];if(!r||sub<(r.min||0))return 0;let d=r.pct?Math.round(sub*r.pct/100):(r.flat||0);if(r.max)d=Math.min(d,r.max);return Math.max(0,Math.min(d,sub))}
+function cpDisc(c,sub){const r=COUPONS[c];if(!couponActive(c)||sub<(r.min||0))return 0;let d=r.pct?Math.round(sub*r.pct/100):(r.flat||0);if(r.max)d=Math.min(d,r.max);return Math.max(0,Math.min(d,sub))}
 fetch('/api/coupons').then(r=>r.json()).then(j=>{Object.assign(COUPONS,j.coupons||{});if(typeof drawCart==='function'&&S.cart.length)try{drawCart()}catch(e){}}).catch(()=>{});
 function totals(){const it=S.cart.map(c=>({c,p:P.find(x=>x.id===c.id)})).filter(x=>x.p),sub=it.reduce((a,x)=>a+x.p.price*x.c.n,0),mrp=it.reduce((a,x)=>a+x.p.mrp*x.c.n,0),disc=cpDisc(S.coupon,sub),ship=sub&&sub-disc<299?39:0;return{it,sub,mrp,disc,ship,tot:sub-disc+ship,save:mrp-sub+disc}}
 function drawCart(){if(!S.coupon&&!S.noAuto&&S.cart.length){S.coupon='JUNO10';toast('Best coupon JUNO10 applied')}const t=totals();
@@ -712,7 +713,7 @@ $('#cov').onclick=e=>{const t=e.target,d=t.dataset;
   else if(d.ml!==undefined){S.cart.push(S.later.splice(+d.ml,1)[0]);drawCart();render()}
   else if(d.rl!==undefined){S.later.splice(+d.rl,1);drawCart();render()}
   else if(t.id==='rc'){S.coupon='';S.noAuto=true;drawCart();render()}
-  else if(t.id==='ac'){const c=$('#cp').value.trim().toUpperCase();if(!c)S.coupon='';else if(COUPONS[c]){const r=COUPONS[c],sb=totals().sub;if(sb<(r.min||0))toast('Add items worth ₹'+(r.min-sb)+' more to use '+c);else{S.coupon=c;toast('Coupon applied')}}else toast('Invalid coupon');drawCart()}
+  else if(t.id==='ac'){const c=$('#cp').value.trim().toUpperCase();if(!c)S.coupon='';else if(couponActive(c)){const r=COUPONS[c],sb=totals().sub;if(sb<(r.min||0))toast('Add items worth ₹'+(r.min-sb)+' more to use '+c);else{S.coupon=c;toast('Coupon applied')}}else toast(COUPONS[c]?'This coupon is not active right now':'Invalid coupon');drawCart()}
   else if(t.id==='co'){show('#cov',false);checkoutStart()}
   else if(t.id==='cov'||d.close!==undefined)show('#cov',false)};
 
