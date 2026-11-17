@@ -127,66 +127,22 @@ nav#nav{border-top:1px solid var(--line);position:relative}.nv{gap:clamp(10px,1.
 footer a{color:var(--acc2)}footer{text-align:center;color:var(--mut);font-size:13px;padding:24px 16px 40px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 .seller-promo{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:#fff0f6;border-top:2px solid #d9186c;border-bottom:2px solid #f4b8d2;font-size:14px;font-weight:700;color:#3a1230}.seller-promo>a{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;background:#d9186c;color:#fff;text-decoration:none;font-weight:800;box-shadow:0 2px 8px #d9186c33}.seller-promo>a:hover{filter:brightness(.95);text-decoration:underline}.seller-promo small{color:#713653;font-weight:600}@media(max-width:520px){.seller-promo{gap:8px;padding:12px 8px;font-size:13px}.seller-promo>a{padding:9px 15px}.seller-promo small{width:100%;text-align:center}}
+/* Juno pink sale campaign experience */
+.sale-alert{margin:12px 16px 0;border:1px solid #f3bfd5;border-radius:14px;background:#fff0f6;color:#8f174e;padding:10px 14px;display:flex;align-items:center;justify-content:center;gap:9px;text-align:center;font-size:13px;font-weight:750}.sale-alert .dot{width:8px;height:8px;border-radius:50%;background:#d9186c;box-shadow:0 0 0 4px #fbd5e5;flex:none}
+.sale-home{max-width:1400px;margin:14px auto 18px;padding:0 16px}.sale-main{position:relative;overflow:hidden;border-radius:22px;padding:clamp(22px,4vw,42px);background:linear-gradient(115deg,#ff9bc5 0%,#f04b91 52%,#d9186c 100%);color:#fff;box-shadow:0 12px 30px #d9186c20}.sale-main:after{content:"";position:absolute;width:260px;height:260px;border:1px solid #ffffff40;border-radius:50%;right:-70px;top:-110px;box-shadow:0 0 0 26px #ffffff12,0 0 0 54px #ffffff0c;pointer-events:none}
+.sale-kicker{display:inline-flex;background:#fff;color:#c31561;border-radius:99px;padding:6px 12px;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.sale-main h2{font-size:clamp(29px,5vw,48px);line-height:1.05;letter-spacing:-1.2px;margin:12px 0 7px;max-width:18ch}.sale-main p{font-size:14px;line-height:1.5;margin:0 0 18px;max-width:58ch}
+.sale-clock{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 18px}.sale-time{min-width:66px;padding:9px 10px;background:#ffffff22;border:1px solid #ffffff50;border-radius:12px;text-align:center;backdrop-filter:blur(4px)}.sale-time b{display:block;font-size:clamp(21px,3vw,29px);font-variant-numeric:tabular-nums;line-height:1.1}.sale-time small{font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.sale-shop{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 18px;border-radius:999px;background:#fff;color:#c31561;font-weight:850;text-decoration:none}.sale-upcoming{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 4px}.sale-card{border:1px solid #f1c9da;background:#fff;border-radius:14px;padding:14px;color:var(--ink);min-width:0}.sale-card small{color:#bd2869;font-weight:850;text-transform:uppercase;letter-spacing:.06em;font-size:10px}.sale-card h3{font-size:16px;line-height:1.2;margin:6px 0}.sale-card p{color:var(--mut);font-size:12px;margin:0 0 9px}.sale-card a{color:#c31561;font-size:12px;font-weight:800;text-decoration:none}.sale-calendar-link{display:block;text-align:right;padding:7px 3px;color:#c31561;font-size:12px;font-weight:800;text-decoration:none}
+@media(max-width:650px){.sale-alert{margin:9px 10px 0;font-size:12px}.sale-home{padding:0 10px}.sale-main{border-radius:17px;padding:22px 18px}.sale-upcoming{grid-template-columns:1fr}.sale-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 10px}.sale-card small,.sale-card h3,.sale-card p{grid-column:1}.sale-card a{grid-column:2;grid-row:1/4;white-space:nowrap}.sale-time{min-width:59px}}
+
 </style>
 
-<style id="juno-checkout-polish">.checkout-flow{gap:16px!important}.checkout-head{padding-bottom:4px}.checkout-head>small{letter-spacing:.12em;color:var(--acc);font-weight:800}.checkout-head p,.section-title small,.pm label small,.muted{display:block;color:var(--mut);font-size:12px;margin:3px 0 0}.checkout-section{border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px}.section-title{display:flex;gap:10px;align-items:center}.step{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fde5ef;color:#b50e59;font-weight:800;flex:0 0 28px}.addr-list{display:grid;gap:8px}.addr-card{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:7px}.addr-card.selected{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 5%,var(--card))}.addr-pick{border:0;background:none;color:inherit;text-align:left;display:flex;gap:10px;align-items:flex-start;padding:0;width:100%;font:inherit;cursor:pointer}.addr-radio{border:1px solid var(--line);border-radius:50%;width:21px;height:21px;display:grid;place-items:center;flex:0 0 21px;font-size:12px;color:white}.selected .addr-radio{background:var(--acc);border-color:var(--acc)}.addr-actions{display:flex;gap:16px;padding-left:31px}.addr-empty{font-size:13px;color:var(--mut);padding:8px 0}.addr-add{justify-self:start}.address-form{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px}.address-form label{display:grid;gap:5px;font-size:12px;font-weight:700}.address-form input:not([type=checkbox]),.address-form textarea,.address-form select{width:100%;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;font-size:14px}.address-form .default-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}.default-check input{width:auto}.checkout-section .pm label{align-items:flex-start}.checkout-section .pm label span{display:block}.checkout-section .sum{display:grid;gap:7px}.checkout-section .sum p{margin:0}.checkout-section .grand-total{border-top:1px solid var(--line);padding-top:10px;margin-top:4px!important;font-size:19px}.positive{color:var(--ok)}.checkout-submit{width:100%;font-size:16px}.checkout-flow .dm{line-height:1.5}.q button:disabled{opacity:.35;cursor:not-allowed}@media(max-width:520px){.checkout-section{padding:11px}.checkout-flow{padding:14px!important}.checkout-section .row2{grid-template-columns:1fr}.addr-actions{padding-left:0}}#pov .modal.one{width:min(820px,96%);max-width:820px;max-height:94%}#pay .checkout-flow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start}#pay .checkout-head,#pay .err,#pay .checkout-submit,#pay .dm{grid-column:1/-1}#pay .checkout-section:nth-of-type(1){grid-column:1;grid-row:2/span 2}#pay .checkout-section:nth-of-type(2){grid-column:2;grid-row:2}#pay .checkout-section:nth-of-type(3){grid-column:2;grid-row:3}@media(max-width:650px){#pov .modal.one{width:96%;max-width:480px}#pay .checkout-flow{display:flex}#pay .checkout-section{width:100%}}.product-title-link{color:inherit;text-decoration:none}.product-title-link:hover{text-decoration:underline;text-decoration-color:var(--acc)}</style><style id="juno-bold-storefront">
-:root{--bg:#fbf9ff;--card:#fff;--ink:#201333;--mut:#71677f;--line:#e9e1f2;--acc:#6425bd;--acc2:#e83e8c;--ok:#087443}
-body{background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.top{background:#291044;color:#fff;padding:9px 12px;font-weight:700;letter-spacing:.01em}
-header{box-shadow:0 4px 20px rgba(42,17,71,.06);border-bottom:1px solid #eee7f5}
-.hr{max-width:1440px;padding-top:12px;padding-bottom:12px}
-.logo{font-size:30px;letter-spacing:-1.5px}.logo i,.logo span{color:#6425bd}
-.search{background:#f5f0fb;border:1px solid #e7dcf3;border-radius:999px;padding-left:16px}
-.search input{padding:13px 6px}.pin{border-radius:999px;background:#faf7ff}
-.ib{border-radius:999px;padding:10px 14px;font-weight:700;background:#fff}
-.ib:hover{border-color:var(--acc);color:var(--acc)}
-nav#nav{border-top:1px solid #f0eaf6}.nv{gap:4px}.nb{padding:13px 16px;font-size:13px;letter-spacing:.01em}
-.seller-promo{background:#f5efff;border:0;color:#4c2776;padding:9px 16px;font-size:13px}
-.seller-promo>a{background:#6425bd;box-shadow:none}
-.hero2{max-width:1440px;margin:18px auto 22px;padding:0 18px}
-.hero2>div{position:relative;isolation:isolate;min-height:390px;border-radius:28px;padding:clamp(28px,5vw,64px);background:radial-gradient(circle at 83% 15%,rgba(255,255,255,.22) 0 9%,transparent 9.5%),radial-gradient(circle at 88% 83%,rgba(255,255,255,.15) 0 18%,transparent 18.5%),linear-gradient(112deg,#321052 0%,#6524b9 52%,#e83e8c 100%);box-shadow:0 18px 42px rgba(72,26,117,.18);overflow:hidden}
-.hero2>div:after{content:"J";position:absolute;z-index:-1;right:7%;top:-22%;font-size:clamp(280px,42vw,560px);line-height:1;font-weight:900;color:rgba(255,255,255,.09);transform:rotate(-12deg)}
-.hero2>div>div:first-child{max-width:620px}
-.hero2 h2{font-size:clamp(38px,6vw,72px);max-width:10ch;line-height:.98;letter-spacing:-2.8px;margin:16px 0}
-.hero2 p{font-size:clamp(16px,1.6vw,19px);line-height:1.6;max-width:44ch;color:#f5eaff}
-.hero2 .pill{background:#fff;color:#5a209d;padding:8px 14px;letter-spacing:.08em}
-.hero2 .cta.w{background:#fff;color:#4e1b8e;border-radius:999px;padding:14px 22px;font-weight:800}
-.hero2 .cta.o{border-radius:999px}
-.usp{padding:12px 16px 20px;color:#5c4a70;font-weight:600;gap:10px 28px}
-.sec{max-width:1440px;padding-left:18px;padding-right:18px;margin-bottom:28px}
-.sh2 h2,.sec h2{font-size:clamp(20px,2.1vw,26px);letter-spacing:-.5px}
-.gts{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}
-.gt{border:1px solid #eee5f7;border-radius:18px;padding:12px 8px 14px;background:#fff;box-shadow:0 5px 18px rgba(52,22,83,.04);transition:transform .2s,box-shadow .2s}
-.gt:hover{transform:translateY(-4px);box-shadow:0 12px 25px rgba(52,22,83,.1);border-color:#d7c2f0}
-.cat-art{display:grid;place-items:center;width:100%;aspect-ratio:1;border-radius:14px;margin-bottom:10px;font-size:clamp(30px,4vw,48px);background:linear-gradient(145deg,#f1e5ff,#ffe5f1)}
-.gt:nth-child(3n+2) .cat-art{background:linear-gradient(145deg,#e5eaff,#f4e6ff)}
-.gt:nth-child(3n) .cat-art{background:linear-gradient(145deg,#ffe8f0,#fff0d8)}
-.gt small{margin-top:4px;font-size:12px}
-.pro{gap:16px}.pc{border:1px solid #ece3f5;border-radius:20px;padding:20px;box-shadow:0 6px 20px rgba(52,22,83,.04)}
-.pc h3{font-size:18px}.dl2{background:linear-gradient(125deg,#6425bd,#e83e8c);border-radius:15px}
-.lnk{background:#f7f2fc;border-radius:12px}
-.rail{gap:16px;padding:4px 2px 12px}.rail .p{flex-basis:clamp(175px,18vw,225px)}
-.p{border:1px solid #eee7f3;border-radius:17px;box-shadow:0 4px 15px rgba(41,16,68,.035);transition:transform .2s,box-shadow .2s}
-.p:hover{transform:translateY(-4px);box-shadow:0 12px 25px rgba(41,16,68,.11)}
-.im{background:#f5f0f9}.pi{padding:12px 13px 14px}.pi h3{line-height:1.35}.tag{background:#e83e8c;border-radius:5px}
-.wl,.sh,.cmp{box-shadow:0 2px 9px rgba(0,0,0,.12)}
-.cta{background:#6425bd;border-radius:11px}.cta:hover{filter:brightness(1.06)}
-.chip{border-radius:999px}.chip.on{background:#6425bd;border-color:#6425bd}
-.grid{max-width:1440px;gap:16px}.bar{max-width:1440px}
-.foot{background:#251039;color:#fff;border:0}.fg{max-width:1440px;padding-top:42px;padding-bottom:36px}.fg h3{color:#e9d8ff}.fg a,.fg button.lk{color:#e8dff1}.fb{color:#c6b5d7;border-color:#4b3560}
-.toast{background:#251039;color:#fff}
-@media(max-width:1000px){.gts{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:760px){.hero2{padding:0 12px;margin:12px auto 16px}.hero2>div{min-height:350px;padding:30px 24px;border-radius:22px}.hero2 h2{font-size:clamp(38px,10vw,54px);max-width:9ch}.hero2>div:after{right:-5%;top:20%;font-size:300px}.usp{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;white-space:nowrap;padding:8px 14px 18px;font-size:12px}.usp span{background:#fff;border:1px solid #eee5f7;border-radius:999px;padding:8px 12px}.sec{padding-left:13px;padding-right:13px;margin-bottom:23px}.gts{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.gt{padding:8px 7px 11px}.cat-art{border-radius:11px}.pro{grid-template-columns:1fr}.rail .p{flex-basis:168px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding-left:10px;padding-right:10px}.p{border-radius:13px}.pi{padding:9px}.pi h3{font-size:13px}.hr{padding:10px 12px}.logo{font-size:25px}.pin{max-width:100%}.seller-promo{font-size:12px}}
-@media(max-width:420px){.gts{grid-template-columns:repeat(2,minmax(0,1fr))}.hero2>div{min-height:330px}.hero2 h2{font-size:39px}.ib{padding:8px 10px}}
-.image-unavailable{background:linear-gradient(145deg,#f3eaff,#fff0f5)!important}.image-unavailable:after{content:"JUNO";font-weight:900;letter-spacing:.15em;color:#8b69b5;font-size:13px}
-.juno-image-missing{background:linear-gradient(145deg,#f3eaff,#fff0f5)!important;color:#67428c!important}
-:focus-visible{outline:3px solid #a875e8!important;outline-offset:3px}
-@media(prefers-reduced-motion:reduce){.gt,.p{transition:none}}
-</style></head>
+<style id="juno-checkout-polish">.checkout-flow{gap:16px!important}.checkout-head{padding-bottom:4px}.checkout-head>small{letter-spacing:.12em;color:var(--acc);font-weight:800}.checkout-head p,.section-title small,.pm label small,.muted{display:block;color:var(--mut);font-size:12px;margin:3px 0 0}.checkout-section{border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px}.section-title{display:flex;gap:10px;align-items:center}.step{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fde5ef;color:#b50e59;font-weight:800;flex:0 0 28px}.addr-list{display:grid;gap:8px}.addr-card{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:7px}.addr-card.selected{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 5%,var(--card))}.addr-pick{border:0;background:none;color:inherit;text-align:left;display:flex;gap:10px;align-items:flex-start;padding:0;width:100%;font:inherit;cursor:pointer}.addr-radio{border:1px solid var(--line);border-radius:50%;width:21px;height:21px;display:grid;place-items:center;flex:0 0 21px;font-size:12px;color:white}.selected .addr-radio{background:var(--acc);border-color:var(--acc)}.addr-actions{display:flex;gap:16px;padding-left:31px}.addr-empty{font-size:13px;color:var(--mut);padding:8px 0}.addr-add{justify-self:start}.address-form{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px}.address-form label{display:grid;gap:5px;font-size:12px;font-weight:700}.address-form input:not([type=checkbox]),.address-form textarea,.address-form select{width:100%;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;font-size:14px}.address-form .default-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}.default-check input{width:auto}.checkout-section .pm label{align-items:flex-start}.checkout-section .pm label span{display:block}.checkout-section .sum{display:grid;gap:7px}.checkout-section .sum p{margin:0}.checkout-section .grand-total{border-top:1px solid var(--line);padding-top:10px;margin-top:4px!important;font-size:19px}.positive{color:var(--ok)}.checkout-submit{width:100%;font-size:16px}.checkout-flow .dm{line-height:1.5}.q button:disabled{opacity:.35;cursor:not-allowed}@media(max-width:520px){.checkout-section{padding:11px}.checkout-flow{padding:14px!important}.checkout-section .row2{grid-template-columns:1fr}.addr-actions{padding-left:0}}#pov .modal.one{width:min(820px,96%);max-width:820px;max-height:94%}#pay .checkout-flow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start}#pay .checkout-head,#pay .err,#pay .checkout-submit,#pay .dm{grid-column:1/-1}#pay .checkout-section:nth-of-type(1){grid-column:1;grid-row:2/span 2}#pay .checkout-section:nth-of-type(2){grid-column:2;grid-row:2}#pay .checkout-section:nth-of-type(3){grid-column:2;grid-row:3}@media(max-width:650px){#pov .modal.one{width:96%;max-width:480px}#pay .checkout-flow{display:flex}#pay .checkout-section{width:100%}}.product-title-link{color:inherit;text-decoration:none}.product-title-link:hover{text-decoration:underline;text-decoration-color:var(--acc)}</style></head>
 <body>
 <a class="skip" href="#main">Skip to main content</a>
-<div class="top">🔥 Big Budget Sale is live · Extra 10% off with code <b>JUNO10</b> · Free delivery over ₹299 · 📍 Delivering across Tamil Nadu</div>
+<div class="top">💗 Juno Sale Days · Fresh accessory offers all month · Free delivery over ₹299 · 📍 Delivering across Tamil Nadu</div>
 <header>
+<div class="sale-alert" id="sale-alert"><span class="dot" aria-hidden="true"></span><span id="sale-alert-text">Juno Sale Calendar · New accessory offers every month</span></div>
 <div class="hr">
   <button class="ib" id="mb" aria-label="Open menu" aria-expanded="false" aria-controls="mnu">☰</button>
   <a class="logo" href="/" aria-label="Juno home"><svg class='lg' aria-hidden='true' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ff7eb6'/><stop offset='.55' stop-color='#f0287a'/><stop offset='1' stop-color='#7b3fe4'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='url(#g)'/><path d='M34 26H70V58C70 78 57 82 43 71' fill='none' stroke='#fff' stroke-width='12' stroke-linecap='round' stroke-linejoin='round'/><path d='M31 60C14 62 17 80 32 77' fill='none' stroke='#fff' stroke-opacity='.75' stroke-width='3.5' stroke-linecap='round' stroke-dasharray='1 7'/><circle cx='32' cy='77' r='4' fill='#fff' fill-opacity='.9'/></svg><span>Juno</span></a>
@@ -488,8 +444,64 @@ function seoInit(){const ld=(id,o)=>{let e=document.getElementById(id);if(!e){e=
 function productLD(p){let e=document.getElementById('pld');if(!e){e=document.createElement('script');e.type='application/ld+json';e.id='pld';document.head.append(e)}
   const o={'@context':'https://schema.org','@type':'Product',name:p.name,sku:p.id,category:p.cat,description:p.name+(p.brand?' – '+p.brand:''),offers:{'@type':'Offer',priceCurrency:'INR',price:p.price,availability:p.stock>0?'https://schema.org/InStock':'https://schema.org/OutOfStock',url:location.origin+location.pathname+'?p='+encodeURIComponent(p.id)}};
   if(p.img&&/^https?:/.test(p.img))o.image=p.img;if(p.rc)o.aggregateRating={'@type':'AggregateRating',ratingValue:p.rr,reviewCount:p.rc};e.text=JSON.stringify(o)}
+/* Juno year-round accessories sale calendar */
+const JUNO_SALES=[{name:"Juno Pink Friday",start:"2026-11-27T00:00:00+05:30",end:"2026-11-30T23:59:59+05:30",tag:"Biggest pink deals"},
+{name:"Stock Clearance Sale",start:"2026-11-18T00:00:00+05:30",end:"2026-11-24T23:59:59+05:30",tag:"Last pieces · limited stock"},
+{name:"Payday Pink Picks",start:"2026-11-20T00:00:00+05:30",end:"2026-11-26T23:59:59+05:30",tag:"Little treats, lovely prices"},
+{name:"Christmas Accessory Edit",start:"2026-12-05T00:00:00+05:30",end:"2026-12-12T23:59:59+05:30",tag:"Gift-ready accessories"},
+{name:"Juno Christmas Sale",start:"2026-12-18T00:00:00+05:30",end:"2026-12-25T23:59:59+05:30",tag:"Festive gifting days"},
+{name:"Year-End Stock Clearance",start:"2026-12-28T00:00:00+05:30",end:"2027-01-02T23:59:59+05:30",tag:"Clearance on selected styles"},
+{name:"Juno New Year Sale",start:"2027-01-03T00:00:00+05:30",end:"2027-01-08T23:59:59+05:30",tag:"Start the year with a little sparkle"},
+{name:"Last-Chance Clearance",start:"2027-01-11T00:00:00+05:30",end:"2027-01-16T23:59:59+05:30",tag:"Last pieces at special prices"},
+{name:"Juno Republic Day Sale",start:"2027-01-20T00:00:00+05:30",end:"2027-01-26T23:59:59+05:30",tag:"Republic Day special offers"},
+{name:"Little Love Sale",start:"2027-02-08T00:00:00+05:30",end:"2027-02-14T23:59:59+05:30",tag:"A little love for your everyday look"},
+{name:"Payday Accessory Deals",start:"2027-02-20T00:00:00+05:30",end:"2027-02-26T23:59:59+05:30",tag:"Monthly payday treats"},
+{name:"Month-End Clearance",start:"2027-02-27T00:00:00+05:30",end:"2027-02-28T23:59:59+05:30",tag:"Selected styles, while stocks last"},
+{name:"Colour Pop Sale",start:"2027-03-01T00:00:00+05:30",end:"2027-03-07T23:59:59+05:30",tag:"Bright accessories, happy prices"},
+{name:"Women’s Day Edit",start:"2027-03-08T00:00:00+05:30",end:"2027-03-12T23:59:59+05:30",tag:"Everyday favourites for you"},
+{name:"March Payday Sale",start:"2027-03-25T00:00:00+05:30",end:"2027-03-31T23:59:59+05:30",tag:"End-of-month accessory offers"},
+{name:"Summer Switch Sale",start:"2027-04-01T00:00:00+05:30",end:"2027-04-10T23:59:59+05:30",tag:"Freshen up your accessory shelf"},
+{name:"Everyday Accessory Edit",start:"2027-04-14T00:00:00+05:30",end:"2027-04-19T23:59:59+05:30",tag:"Easy add-ons for every day"},
+{name:"April Payday Picks",start:"2027-04-25T00:00:00+05:30",end:"2027-04-30T23:59:59+05:30",tag:"Monthly special prices"},
+{name:"Summer Essentials Sale",start:"2027-05-01T00:00:00+05:30",end:"2027-05-10T23:59:59+05:30",tag:"Sunny-day accessories"},
+{name:"Little Gifts Sale",start:"2027-05-11T00:00:00+05:30",end:"2027-05-16T23:59:59+05:30",tag:"Thoughtful little gifts"},
+{name:"May Payday Clearance",start:"2027-05-25T00:00:00+05:30",end:"2027-05-31T23:59:59+05:30",tag:"Month-end savings"},
+{name:"Juno Mid-Year Sale",start:"2027-06-01T00:00:00+05:30",end:"2027-06-10T23:59:59+05:30",tag:"Mid-year accessory specials"},
+{name:"Mid-Year Stock Clearance",start:"2027-06-15T00:00:00+05:30",end:"2027-06-21T23:59:59+05:30",tag:"Selected last pieces"},
+{name:"June Payday Deals",start:"2027-06-25T00:00:00+05:30",end:"2027-06-30T23:59:59+05:30",tag:"Payday prices on favourites"},
+{name:"Monsoon Mood Sale",start:"2027-07-01T00:00:00+05:30",end:"2027-07-10T23:59:59+05:30",tag:"A fresh rainy-season edit"},
+{name:"Rainy Day Accessory Edit",start:"2027-07-15T00:00:00+05:30",end:"2027-07-20T23:59:59+05:30",tag:"Everyday add-ons"},
+{name:"July Payday Sale",start:"2027-07-25T00:00:00+05:30",end:"2027-07-31T23:59:59+05:30",tag:"Monthly accessory deals"},
+{name:"August Edit",start:"2027-08-01T00:00:00+05:30",end:"2027-08-10T23:59:59+05:30",tag:"New month, new favourites"},
+{name:"Independence Day Sale",start:"2027-08-12T00:00:00+05:30",end:"2027-08-16T23:59:59+05:30",tag:"Celebrate with special prices"},
+{name:"August Payday Picks",start:"2027-08-25T00:00:00+05:30",end:"2027-08-31T23:59:59+05:30",tag:"Payday treats"},
+{name:"Festive Preview Sale",start:"2027-09-01T00:00:00+05:30",end:"2027-09-07T23:59:59+05:30",tag:"First look at festive favourites"},
+{name:"Juno Gifting Edit",start:"2027-09-15T00:00:00+05:30",end:"2027-09-20T23:59:59+05:30",tag:"Little gifts, lovely prices"},
+{name:"September Payday Sale",start:"2027-09-25T00:00:00+05:30",end:"2027-09-30T23:59:59+05:30",tag:"Month-end accessory offers"},
+{name:"Juno Festive Edit",start:"2027-10-01T00:00:00+05:30",end:"2027-10-12T23:59:59+05:30",tag:"Festive-ready accessories"},
+{name:"Festive Stock Clearance",start:"2027-10-17T00:00:00+05:30",end:"2027-10-22T23:59:59+05:30",tag:"Selected styles, limited stock"},
+{name:"Diwali Glow Days",start:"2027-10-25T00:00:00+05:30",end:"2027-11-02T23:59:59+05:30",tag:"Light up your festive look"},
+{name:"Juno Pink Friday",start:"2027-11-26T00:00:00+05:30",end:"2027-11-30T23:59:59+05:30",tag:"A whole lot of pink deals"},
+{name:"November Stock Clearance",start:"2027-11-10T00:00:00+05:30",end:"2027-11-17T23:59:59+05:30",tag:"Last pieces, special prices"},
+{name:"Payday Accessory Days",start:"2027-11-19T00:00:00+05:30",end:"2027-11-24T23:59:59+05:30",tag:"Monthly payday offers"},
+{name:"Christmas Gift Edit",start:"2027-12-05T00:00:00+05:30",end:"2027-12-12T23:59:59+05:30",tag:"Giftable little favourites"},
+{name:"Christmas & Year-End Sale",start:"2027-12-18T00:00:00+05:30",end:"2027-12-31T23:59:59+05:30",tag:"Close the year with a deal"}];
+const junoDate=d=>new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+function junoSaleMarkup(){
+ const now=Date.now(),sales=JUNO_SALES.map(s=>({...s,startMs:Date.parse(s.start),endMs:Date.parse(s.end)})).sort((a,b)=>a.startMs-b.startMs);
+ const active=sales.find(s=>now>=s.startMs&&now<=s.endMs),next=active||sales.find(s=>s.startMs>now)||sales[0];
+ const upcoming=sales.filter(s=>s.endMs>=now&&s!==next).slice(0,3);
+ const target=active?active.endMs:next.startMs,mode=active?'ends':'starts';
+ const cards=upcoming.map(s=>'<article class="sale-card"><small>'+(s.name.includes('Republic')?'National special':s.name.includes('Clearance')?'Clearance event':'Upcoming sale')+'</small><h3>'+s.name+'</h3><p>'+junoDate(s.startMs)+' – '+junoDate(s.endMs)+' · '+s.tag+'</p><a href="#grid">Explore deals →</a></article>').join('');
+ return '<section class="sale-home" aria-label="Juno sale offers"><div class="sale-main"><span class="sale-kicker">💗 Juno Sale Alert</span><h2 id="juno-sale-title">'+next.name+'</h2><p id="juno-sale-copy">'+(active?'Hurry! This sale ends soon. Explore selected Juno accessories before the offer closes.':'Get ready! The next Juno accessories sale is coming up. Save your favourites now.')+' '+next.tag+'.</p><div class="sale-clock" id="juno-sale-clock" data-target="'+target+'" data-mode="'+mode+'" aria-label="Sale countdown"><span class="sale-time"><b data-time="days">00</b><small>Days</small></span><span class="sale-time"><b data-time="hours">00</b><small>Hours</small></span><span class="sale-time"><b data-time="minutes">00</b><small>Minutes</small></span><span class="sale-time"><b data-time="seconds">00</b><small>Seconds</small></span></div><a class="sale-shop" href="#grid">Shop Juno sale picks →</a></div><div class="sale-upcoming">\${cards}</div><a class="sale-calendar-link" href="#grid">New sales and clearance events added every month →</a></section>';
+}
+function junoStartSaleClock(){
+ const root=document.getElementById('juno-sale-clock');if(!root)return;
+ const tick=()=>{const left=Math.max(0,Number(root.dataset.target)-Date.now()),sec=Math.floor(left/1000),vals={days:Math.floor(sec/86400),hours:Math.floor(sec%86400/3600),minutes:Math.floor(sec%3600/60),seconds:sec%60};Object.entries(vals).forEach(([k,v])=>{const el=root.querySelector('[data-time="'+k+'"]');if(el)el.textContent=String(v).padStart(2,'0')});};
+ tick();if(window.junoSaleTimer)clearInterval(window.junoSaleTimer);window.junoSaleTimer=setInterval(tick,1000);
+}
+
 function homeSecs(){
-  const catGlyph=c=>{const s=String(c).toLowerCase();if(/women|dress|kurti|saree/.test(s))return '👗';if(/men|shirt|trouser/.test(s))return '👔';if(/kid|baby/.test(s))return '🧸';if(/footwear|shoe|sandal/.test(s))return '👟';if(/bag|purse|tote/.test(s))return '👜';if(/jewel|earring|necklace|bracelet/.test(s))return '💎';if(/hair|clip|scrunch/.test(s))return '🎀';if(/watch/.test(s))return '⌚';if(/phone|case|tech/.test(s))return '📱';if(/beauty|makeup/.test(s))return '💄';return '✨'};
   const live=P.filter(p=>p.stock>0),ids=arr('tl_rv'),rv=ids.map(i=>live.find(p=>p.id===i)).filter(Boolean),byId=i=>live.find(p=>p.id===i);
   const best=(SIG.bestsellers||[]).map(byId).filter(Boolean),trend=(SIG.trending||[]).map(byId).filter(Boolean),flash=live.filter(p=>p.sale).slice(0,12);
   const saves=[...live].sort((a,b)=>b.off-a.off||a.price-b.price),fresh=[...live].reverse(),gs=GROUPS.filter(g=>P.some(g.test)),cats=[...new Set(live.map(p=>p.cat))];
@@ -502,9 +514,9 @@ function homeSecs(){
   const offs=cats.map(c=>({c,off:Math.max(...live.filter(p=>p.cat===c).map(p=>p.off))})).filter(x=>isFinite(x.off)&&x.off>=10).sort((a,b)=>b.off-a.off).slice(0,3);
   const cnt={};fresh.slice(0,24).forEach(p=>cnt[p.cat]=(cnt[p.cat]||0)+1);const news=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);
   const eds=COLL.filter(c=>live.some(c.test)).map((c,i)=>{const l=live.filter(c.test);return `<div class="ed" style="background:${['#ffe3ef','#e9e0ff','#fff1d6'][i%3]}"><h3>${esc(c.label)}</h3><p style="margin:0">${l.length} styles from ${inr(Math.min(...l.map(p=>p.price)))}</p><div class="hv">${l.slice(0,3).map(p=>`<button class="hp" data-open="${esc(p.id)}" aria-label="${esc(p.name)}" style="${bg(p)}">${img(p)}</button>`).join('')}</div><button class="cta" data-g="${c.id}">Shop ${esc(c.label)}</button></div>`}).join('');
-  $('#home').innerHTML=`<section class="hero2" aria-label="Juno affordable fashion campaign"><div><div><span class="pill">THE JUNO STYLE EDIT</span><h2>Style more. Spend less.</h2><p>Fresh fashion, statement accessories and everyday favourites — all at prices that make you smile.</p><div class="cta-row"><button class="cta w" data-browse="all">Shop the collection →</button></div></div><div class="hv" aria-hidden="true"></div></div></section>
+  $('#home').innerHTML=`${junoSaleMarkup()}<section class="hero2" aria-label="Juno affordable fashion campaign"><div><div><span class="pill">Everyday style · Easy prices</span><h2>Good style. Small prices. For everyone.</h2><p>Discover wallet-friendly fashion and little everyday favourites for women, men and kids. Find your style without stretching your budget.</p><div class="cta-row"><button class="cta w" data-browse="all">Browse all products</button></div></div><div class="hv" aria-hidden="true"></div></div></section>
   <div class="usp"><span>🚚 Free delivery ₹299+ across Tamil Nadu</span><span>↩️ 7-day easy returns</span><span>📲 UPI · Cards · Netbanking</span><span>🔒 Secure payments</span></div>
-  <section class="sec" aria-label="Shop Juno categories"><div class="sh2"><div><h2>Shop by category</h2><small style="color:var(--mut)">Fashion, accessories and everyday lifestyle finds</small></div></div><div class="gts">${cats.map(c=>{const p=live.find(x=>x.cat===c&&x.img)||live.find(x=>x.cat===c);return p?`<button class="gt" data-c="${esc(c)}"><span class="cat-art" aria-hidden="true">${catGlyph(c)}</span>${esc(c)}<small>${live.filter(x=>x.cat===c).length} styles</small></button>` : ''}).join('')}</div></section>
+  <section class="sec" aria-label="Shop Juno categories"><div class="sh2"><div><h2>Shop by category</h2><small style="color:var(--mut)">Fashion, accessories and everyday lifestyle finds</small></div></div><div class="gts">${cats.map(c=>{const p=live.find(x=>x.cat===c&&x.img)||live.find(x=>x.cat===c);return p?`<button class="gt" data-c="${esc(c)}"><span class="tci" style="${bg(p)}">${img(p)}</span>${esc(c)}<small>${live.filter(x=>x.cat===c).length} styles</small></button>` : ''}).join('')}</div></section>
   <section class="sec" aria-label="Offers"><div class="pro">
    <div class="pc"><h3>Shop by budget</h3><small>Styles at or under each price</small><div class="deals">${under.map(x=>`<button class="dl2" data-under="${x.n}">Under<b>₹${x.n}</b><small>${x.c} styles</small></button>`).join('')}</div></div>
    <div class="pc"><h3>Sale offers</h3><small>Selling price versus MRP</small>${offs.map(x=>`<button class="lnk" data-c="${esc(x.c)}"><span>${esc(x.c)}</span><b>Up to ${x.off}% off</b></button>`).join('')}<div class="lnk" style="cursor:default"><span>Every order</span><b>Extra 10% off · JUNO10</b></div></div>
@@ -776,7 +788,7 @@ $('#pov').onclick=e=>{const t=e.target.closest('button')||e.target;if(t.id==='po
 $('#pov').addEventListener('input',e=>{if(e.target.id==='dz'&&e.target.value.length===6)$('#pe').innerHTML='🚚 Delivery by <b>'+eta(e.target.value)+'</b>'});
 $('#pov').addEventListener('change',e=>{if(e.target.name==='pm'&&!LIVE)$('#upi').style.display=e.target.value==='UPI'?'':'none'});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.ov').forEach(o=>o.classList.remove('show'))});
-(async()=>{ubtn();await loadSheet();S.cart=S.cart.filter(c=>P.some(p=>p.id===c.id));S.wl=new Set([...S.wl].filter(i=>P.some(p=>p.id===i)));applySig();renderNav();chips();render();seoInit();loadSignals();
+(async()=>{ubtn();await loadSheet();S.cart=S.cart.filter(c=>P.some(p=>p.id===c.id));S.wl=new Set([...S.wl].filter(i=>P.some(p=>p.id===i)));applySig();renderNav();chips();render();seoInit();loadSignals();junoStartSaleClock();
   if(!ST.get('tl_cookie')||new URLSearchParams(location.search).get('cookies'))showCookie();
   if(new URLSearchParams(location.search).get('ticket'))openTicket();
   const qs=new URLSearchParams(location.search),pp=qs.get('p');if(pp)location.replace('/product.html?p='+encodeURIComponent(pp));else if(qs.get('checkout')==='1')checkoutStart();else if(qs.get('cart')==='1'){drawCart();show('#cov')}else if(qs.get('wishlist')==='1'){S.wv=true;render()}else if(qs.get('login')==='1')authUI('in');else if(qs.get('q')){$('#q').value=qs.get('q');render()}
