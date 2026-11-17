@@ -446,12 +446,12 @@ function productLD(p){let e=document.getElementById('pld');if(!e){e=document.cre
   const o={'@context':'https://schema.org','@type':'Product',name:p.name,sku:p.id,category:p.cat,description:p.name+(p.brand?' – '+p.brand:''),offers:{'@type':'Offer',priceCurrency:'INR',price:p.price,availability:p.stock>0?'https://schema.org/InStock':'https://schema.org/OutOfStock',url:location.origin+location.pathname+'?p='+encodeURIComponent(p.id)}};
   if(p.img&&/^https?:/.test(p.img))o.image=p.img;if(p.rc)o.aggregateRating={'@type':'AggregateRating',ratingValue:p.rr,reviewCount:p.rc};e.text=JSON.stringify(o)}
 /* Juno year-round accessories sale calendar */
-const JUNO_SALES=[{name:"Juno Pink Friday",start:"2026-11-27T00:00:00+05:30",end:"2026-11-30T23:59:59+05:30",tag:"Biggest pink deals"},
+const JUNO_SALES=[{name:"Juno Festive Edit",start:"2026-10-25T00:00:00+05:30",end:"2026-11-08T23:59:59+05:30",tag:"Festive accessory edit",coupon:"JUNOFEST10 · 10% off, max ₹50"},{name:"Diwali Glow Days",start:"2026-11-05T00:00:00+05:30",end:"2026-11-09T23:59:59+05:30",tag:"Diwali accessory offers",coupon:"DIWALIGLOW15 · 15% off, max ₹75"},{name:"Juno Pink Friday",start:"2026-11-27T00:00:00+05:30",end:"2026-11-30T23:59:59+05:30",tag:"Biggest pink deals",coupon:"PINKFRIDAY15 · 15% off, max ₹75"},
 {name:"Stock Clearance Sale",start:"2026-11-18T00:00:00+05:30",end:"2026-11-24T23:59:59+05:30",tag:"Last pieces · limited stock"},
 {name:"Payday Pink Picks",start:"2026-11-20T00:00:00+05:30",end:"2026-11-26T23:59:59+05:30",tag:"Little treats, lovely prices"},
 {name:"Christmas Accessory Edit",start:"2026-12-05T00:00:00+05:30",end:"2026-12-12T23:59:59+05:30",tag:"Gift-ready accessories"},
 {name:"Juno Christmas Sale",start:"2026-12-18T00:00:00+05:30",end:"2026-12-25T23:59:59+05:30",tag:"Festive gifting days"},
-{name:"Year-End Stock Clearance",start:"2026-12-28T00:00:00+05:30",end:"2027-01-02T23:59:59+05:30",tag:"Clearance on selected styles"},
+{name:"Year-End Stock Clearance",start:"2026-12-28T00:00:00+05:30",end:"2027-01-02T23:59:59+05:30",tag:"Clearance on selected styles",coupon:"FRESHSTART10 · 10% off, max ₹50"},
 {name:"Juno New Year Sale",start:"2027-01-03T00:00:00+05:30",end:"2027-01-08T23:59:59+05:30",tag:"Start the year with a little sparkle"},
 {name:"Last-Chance Clearance",start:"2027-01-11T00:00:00+05:30",end:"2027-01-16T23:59:59+05:30",tag:"Last pieces at special prices"},
 {name:"Juno Republic Day Sale",start:"2027-01-20T00:00:00+05:30",end:"2027-01-26T23:59:59+05:30",tag:"Republic Day special offers"},
@@ -486,18 +486,19 @@ const JUNO_SALES=[{name:"Juno Pink Friday",start:"2026-11-27T00:00:00+05:30",end
 {name:"November Stock Clearance",start:"2027-11-10T00:00:00+05:30",end:"2027-11-17T23:59:59+05:30",tag:"Last pieces, special prices"},
 {name:"Payday Accessory Days",start:"2027-11-19T00:00:00+05:30",end:"2027-11-24T23:59:59+05:30",tag:"Monthly payday offers"},
 {name:"Christmas Gift Edit",start:"2027-12-05T00:00:00+05:30",end:"2027-12-12T23:59:59+05:30",tag:"Giftable little favourites"},
-{name:"Christmas & Year-End Sale",start:"2027-12-18T00:00:00+05:30",end:"2027-12-31T23:59:59+05:30",tag:"Close the year with a deal"}];
+{name:"December Stock Clearance",start:"2027-12-13T00:00:00+05:30",end:"2027-12-17T23:59:59+05:30",tag:"Selected last pieces"},{name:"Christmas & Year-End Sale",start:"2027-12-18T00:00:00+05:30",end:"2027-12-31T23:59:59+05:30",tag:"Close the year with a deal"}];
 const junoDate=d=>new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
 function junoSaleMarkup(){
  const now=Date.now(),sales=JUNO_SALES.map(s=>({...s,startMs:Date.parse(s.start),endMs:Date.parse(s.end)})).sort((a,b)=>a.startMs-b.startMs);
  const active=sales.find(s=>now>=s.startMs&&now<=s.endMs),next=active||sales.find(s=>s.startMs>now)||sales[0];
- const upcoming=sales.filter(s=>s.endMs>=now&&s!==next).slice(0,3);
+ const upcoming=sales.filter(s=>s.endMs>=now&&s!==next).slice(0,6);
  const target=active?active.endMs:next.startMs,mode=active?'ends':'starts';
- const cards=upcoming.map(s=>'<article class="sale-card"><small>'+(s.name.includes('Republic')?'National special':s.name.includes('Clearance')?'Clearance event':'Upcoming sale')+'</small><h3>'+s.name+'</h3><p>'+junoDate(s.startMs)+' – '+junoDate(s.endMs)+' · '+s.tag+'</p><a href="#grid">Explore deals →</a></article>').join('');
+ const cards=upcoming.map(s=>'<article class="sale-card"><small>'+(s.name.includes('Republic')?'National special':s.name.includes('Clearance')?'Clearance event':'Upcoming sale')+'</small><h3>'+s.name+'</h3><p>'+junoDate(s.startMs)+' – '+junoDate(s.endMs)+' · '+s.tag+(s.coupon?' · Code '+s.coupon:'')+'</p><a href="#grid">Explore deals →</a></article>').join('');
  return '<section class="sale-home" aria-label="Juno sale offers"><div class="sale-main"><span class="sale-kicker">💗 Juno Sale Alert</span><h2 id="juno-sale-title">'+next.name+'</h2><p id="juno-sale-copy">'+(active?'Hurry! This sale ends soon. Explore selected Juno accessories before the offer closes.':'Get ready! The next Juno accessories sale is coming up. Save your favourites now.')+' '+next.tag+'.</p><div class="sale-clock" id="juno-sale-clock" data-target="'+target+'" data-mode="'+mode+'" aria-label="Sale countdown"><span class="sale-time"><b data-time="days">00</b><small>Days</small></span><span class="sale-time"><b data-time="hours">00</b><small>Hours</small></span><span class="sale-time"><b data-time="minutes">00</b><small>Minutes</small></span><span class="sale-time"><b data-time="seconds">00</b><small>Seconds</small></span></div><a class="sale-shop" href="#grid">Shop Juno sale picks →</a></div><div class="sale-upcoming">'+cards+'</div><a class="sale-calendar-link" href="#grid">New sales and clearance events added every month →</a></section>';
 }
 function junoStartSaleClock(){
  const root=document.getElementById('juno-sale-clock');if(!root)return;
+ const alertText=document.getElementById('sale-alert-text'),title=document.getElementById('juno-sale-title');if(alertText&&title)alertText.textContent=(root.dataset.mode==='ends'?'Ends soon: ':'Starting soon: ')+title.textContent+' · Live countdown';
  const tick=()=>{const left=Math.max(0,Number(root.dataset.target)-Date.now()),sec=Math.floor(left/1000),vals={days:Math.floor(sec/86400),hours:Math.floor(sec%86400/3600),minutes:Math.floor(sec%3600/60),seconds:sec%60};Object.entries(vals).forEach(([k,v])=>{const el=root.querySelector('[data-time="'+k+'"]');if(el)el.textContent=String(v).padStart(2,'0')});};
  tick();if(window.junoSaleTimer)clearInterval(window.junoSaleTimer);window.junoSaleTimer=setInterval(()=>{if(Date.now()>=Number(root.dataset.target)){clearInterval(window.junoSaleTimer);location.reload();return}tick()},1000);
 }
