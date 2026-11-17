@@ -817,7 +817,7 @@ Every tracked file is listed below except package lockfiles and this generated g
 ### `threadly-v2/package.json`
 
 - **Purpose:** Node requirements, dependencies and npm commands.
-- **Type:** json; **size:** 649 bytes; **lines:** 23.
+- **Type:** json; **size:** 682 bytes; **lines:** 24.
 
 ### `threadly-v2/public/_headers`
 
